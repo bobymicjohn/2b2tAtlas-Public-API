@@ -1,0 +1,26 @@
+# 2b2tAtlas API Examples
+
+Purpose: public, read-only developer documentation and examples for the 2b2tAtlas historical entity and map API.
+
+Canonical Atlas: https://2b2tatlas.com
+API discovery: https://api.blackportal.cloud/api
+OpenAPI: https://api.blackportal.cloud/openapi/v1.json
+Dataset description: https://2b2tatlas.com/dataset.json
+Locations JSONL: https://2b2tatlas.com/entities/locations.jsonl
+Groups JSONL: https://2b2tatlas.com/entities/groups.jsonl
+Media JSONL: https://2b2tatlas.com/entities/media.jsonl
+
+Primary docs:
+- README.md
+- docs/API-REFERENCE.md
+- docs/COORDINATES-AND-RENDERS.md
+- docs/2B2T-IDEAS.md
+- ATTRIBUTION.md
+
+Important semantics:
+- Dimension 0 is Overworld, 1 is Nether, and 2 is End.
+- Atlas records are historical public records, not live safety or activity claims.
+- Prefer returned apiUrl/canonicalUrl/interactiveUrl link fields over constructing URLs.
+- Public integrations should tolerate additive JSON fields and nullable historical metadata.
+- Preserve sourceUrl, attribution, caption, and evidence fields.
+- Do not use or describe private write/admin routes from this repository.

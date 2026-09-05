@@ -1,0 +1,55 @@
+name: Integration showcase
+description: Show a mod, bot, map, site, research project, or tool powered by 2b2tAtlas.
+title: "[Showcase]: "
+labels: [showcase]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for building with the public 2b2tAtlas API.
+  - type: input
+    id: project
+    attributes:
+      label: Project name
+      placeholder: My Atlas-powered waypoint mod
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Public project URL
+      placeholder: https://github.com/you/project
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Project type
+      options:
+        - Minecraft client mod
+        - Map or waypoint integration
+        - Discord/chat bot
+        - Website or visualization
+        - Preservation/research tool
+        - LLM/RAG/search project
+        - Library or SDK
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: usage
+    attributes:
+      label: How it uses Atlas
+      description: Which endpoints or static feeds do you use, and what player workflow does it enable?
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Integration checklist
+      options:
+        - label: The project caches data and does not poll Atlas every tick/frame.
+          required: true
+        - label: The project links or credits 2b2tAtlas where its data is visible.
+          required: true
+        - label: Historical coordinates are not represented as live safety/activity claims.
+          required: true

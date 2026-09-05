@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Browse 2b2tAtlas
+    url: https://2b2tatlas.com
+    about: Check the live Atlas and canonical entity pages.
+  - name: Live API contract
+    url: https://api.blackportal.cloud/openapi/v1.json
+    about: Inspect the current machine-readable public contract.

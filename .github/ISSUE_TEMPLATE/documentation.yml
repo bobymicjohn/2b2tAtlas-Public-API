@@ -1,0 +1,43 @@
+name: Documentation or example problem
+description: Report an unclear, broken, or stale public API example.
+title: "[Docs]: "
+labels: [documentation]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: File, section, or example
+      placeholder: examples/csharp/Program.cs
+    validations:
+      required: true
+  - type: input
+    id: endpoint
+    attributes:
+      label: Relevant public endpoint
+      placeholder: GET /api/renders
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened?
+      description: Include the HTTP status and a minimal redacted response shape when useful. Never include credentials or private coordinates.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: Environment
+      options:
+        - C# / .NET
+        - Java / Fabric / Forge
+        - JavaScript / TypeScript
+        - Python
+        - HTTP / OpenAPI
+        - Other
+    validations:
+      required: true

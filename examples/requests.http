@@ -1,0 +1,49 @@
+@api = https://api.blackportal.cloud
+
+### Discover the public API
+GET {{api}}/api
+Accept: application/json
+
+### Live OpenAPI contract
+GET {{api}}/openapi/v1.json
+Accept: application/json
+
+### All locations (cache this rich response)
+GET {{api}}/api/locations
+Accept: application/json
+
+### One location
+GET {{api}}/api/locations/5
+Accept: application/json
+
+### Archive warps for that location
+GET {{api}}/api/warps?locationId=5&limit=100
+Accept: application/json
+
+### WDL-derived renders for that location
+GET {{api}}/api/renders?locationId=5&limit=100
+Accept: application/json
+
+### All public Nether renders, first page
+GET {{api}}/api/renders?dimension=1&limit=500&offset=0
+Accept: application/json
+
+### Historical images for one location
+GET {{api}}/api/attachments?locationId=1030&mediaType=Image&limit=100
+Accept: application/json
+
+### Group directory
+GET {{api}}/api/groups
+Accept: application/json
+
+### One group with its builds and highways
+GET {{api}}/api/groups/7
+Accept: application/json
+
+### Public reviewed highways and canals
+GET {{api}}/api/highways
+Accept: application/json
+
+### Combined primary/base render catalog
+GET {{api}}/api/maprenders/catalog
+Accept: application/json
