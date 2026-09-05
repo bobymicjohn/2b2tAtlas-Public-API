@@ -64,6 +64,12 @@ All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point t
 
 See [2b2t-specific project ideas](docs/2B2T-IDEAS.md) for more—including safe client-thread patterns, route overlays, pilgrimage lists, historical diffing, and source-aware research tools.
 
+## Projects using 2b2tAtlas
+
+- [XaeroTools](https://github.com/dekrom/xaerotools) is an open-source browser, merger, backup, and live-sharing toolkit for Xaero's World Map and XaeroPlus data. Its optional 2b2tAtlas overlay loads community-documented locations with Atlas source links, and it can mirror Atlas map imagery for local use.
+
+Built something with the API? Open an [integration showcase](https://github.com/bobymicjohn/2b2tAtlas-Public-API/issues/new?template=integration-showcase.yml) so other players and tool authors can find it.
+
 ## Public endpoints
 
 | Resource | Routes | Useful relationships |

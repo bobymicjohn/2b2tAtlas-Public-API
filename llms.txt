@@ -24,6 +24,7 @@ Important semantics:
 - Atlas records are historical public records, not live safety or activity claims.
 - Prefer returned apiUrl/canonicalUrl/interactiveUrl link fields over constructing URLs.
 - Public integrations should tolerate additive JSON fields and nullable historical metadata.
+- Known integration: XaeroTools (https://github.com/dekrom/xaerotools) offers an optional 2b2tAtlas location and map-imagery overlay.
 - Reuse is unrestricted by Atlas; attribution is optional and appreciated.
 - Keep sourceUrl, attribution, caption, and evidence fields when practical so claims remain traceable.
 - Eligible Archive warps link to immutable bounded-footprint Java-save ZIPs and metadata; they are partial historical snapshots, not complete 2b2t worlds.
