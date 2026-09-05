@@ -1,31 +1,20 @@
-name: Public API smoke test
+name: Examples and contract checks
 
 on:
   push:
     branches: [main]
   pull_request:
-  schedule:
-    - cron: "17 12 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: public-api-smoke
+  group: examples-contract-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  public-api:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check documented public reads
-        run: bash scripts/smoke-test.sh
-
   examples:
-    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -33,9 +22,21 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Run C# example
-        run: dotnet run --project examples/csharp -- "Mu Megabase"
-      - name: Run JavaScript example
-        run: node examples/javascript/atlas-examples.mjs "Mu Megabase"
-      - name: Run Python example
-        run: python examples/python/atlas_examples.py "Mu Megabase"
+      - name: Run every example against the fixture
+        env:
+          ATLAS_API_BASE_URL: http://127.0.0.1:8765
+        run: |
+          python tests/mock_atlas_api.py &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8765/api >/dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+          curl --fail --silent http://127.0.0.1:8765/api >/dev/null
+          dotnet run --project examples/csharp -- "Mu Megabase"
+          node examples/javascript/atlas-examples.mjs "Mu Megabase"
+          python examples/python/atlas_examples.py "Mu Megabase"
+          bash scripts/smoke-test.sh

@@ -1,5 +1,9 @@
 $ErrorActionPreference = 'Stop'
-$baseUrl = 'https://api.blackportal.cloud'
+$baseUrl = if ([string]::IsNullOrWhiteSpace($env:ATLAS_API_BASE_URL)) {
+    'https://api.blackportal.cloud'
+} else {
+    $env:ATLAS_API_BASE_URL.TrimEnd('/')
+}
 $routes = @(
     '/api',
     '/openapi/v1.json',

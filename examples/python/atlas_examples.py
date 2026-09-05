@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.parse
 import urllib.request
 
-API = "https://api.blackportal.cloud"
+API = os.environ.get("ATLAS_API_BASE_URL", "https://api.blackportal.cloud").rstrip("/")
 
 
 def get(path: str, params: dict[str, object] | None = None):

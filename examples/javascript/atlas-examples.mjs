@@ -1,11 +1,13 @@
+import http from "node:http";
 import https from "node:https";
 
-const API = "https://api.blackportal.cloud";
+const API = (process.env.ATLAS_API_BASE_URL || "https://api.blackportal.cloud").replace(/\/$/, "");
 const search = process.argv.slice(2).join(" ") || "Mu Megabase";
 
 function get(path) {
   return new Promise((resolve, reject) => {
-    const request = https.get(`${API}${path}`, {
+    const transport = API.startsWith("https:") ? https : http;
+    const request = transport.get(`${API}${path}`, {
       headers: {
         Accept: "application/json",
         "User-Agent": "2b2tAtlas-API-Examples/1.0",

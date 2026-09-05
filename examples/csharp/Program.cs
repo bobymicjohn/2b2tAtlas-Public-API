@@ -1,7 +1,9 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 
-const string baseUrl = "https://api.blackportal.cloud/";
+var baseUrl = Environment.GetEnvironmentVariable("ATLAS_API_BASE_URL")
+    ?? "https://api.blackportal.cloud/";
+baseUrl = baseUrl.TrimEnd('/') + "/";
 var search = args.Length == 0 ? "Mu Megabase" : string.Join(' ', args);
 
 using var http = new HttpClient

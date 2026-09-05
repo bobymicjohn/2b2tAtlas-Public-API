@@ -39,6 +39,8 @@ var highways = await http.GetFromJsonAsync<List<Highway>>("api/highways");
 
 The complete, runnable version is in [`examples/csharp`](examples/csharp). Dependency-free [JavaScript](examples/javascript), [Python](examples/python), and a [Fabric-oriented Java pattern](examples/fabric) are included too.
 
+All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point them at a mock or development server; the repository's CI uses this seam to test every example without generating bursts against the public service.
+
 ## What can I build?
 
 | Project idea | Atlas data to use |

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-base="https://api.blackportal.cloud"
+base="${ATLAS_API_BASE_URL:-https://api.blackportal.cloud}"
+base="${base%/}"
 routes=(
   "/api"
   "/openapi/v1.json"
