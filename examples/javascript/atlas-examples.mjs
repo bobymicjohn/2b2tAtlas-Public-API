@@ -10,7 +10,7 @@ function get(path) {
     const request = transport.get(`${API}${path}`, {
       headers: {
         Accept: "application/json",
-        "User-Agent": "2b2tAtlas-API-Examples/1.0",
+        "User-Agent": "2b2tAtlas-Public-API/1.0",
       },
       timeout: 30_000,
     }, response => {

@@ -18,7 +18,7 @@ def get(path: str, params: dict[str, object] | None = None):
         API + path + query,
         headers={
             "Accept": "application/json",
-            "User-Agent": "2b2tAtlas-API-Examples/1.0",
+            "User-Agent": "2b2tAtlas-Public-API/1.0",
         },
     )
     with urllib.request.urlopen(request, timeout=30) as response:

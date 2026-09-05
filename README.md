@@ -1,4 +1,4 @@
-# 2b2tAtlas API Examples
+# 2b2tAtlas Public API
 
 [![API status](https://img.shields.io/website?url=https%3A%2F%2Fapi.blackportal.cloud%2Fapi&label=public%20API)](https://api.blackportal.cloud/api)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-live-6BA539)](https://api.blackportal.cloud/openapi/v1.json)
@@ -121,7 +121,7 @@ docs/
 
 ## Contributing and integrations
 
-- Open an [integration showcase](https://github.com/jbrack14/2b2tAtlas-API-Examples/issues/new?template=integration-showcase.yml) when your tool uses the API.
+- Open an [integration showcase](https://github.com/bobymicjohn/2b2tAtlas-Public-API/issues/new?template=integration-showcase.yml) when your tool uses the API.
 - Report unclear or stale documentation through the issue templates.
 - Add examples in another language or a small integration recipe through a pull request.
 - Ask for a new **public read** projection by describing the player/developer use case; never post credentials or non-public coordinates.

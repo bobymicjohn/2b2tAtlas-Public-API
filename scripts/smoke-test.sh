@@ -18,7 +18,7 @@ routes=(
 for route in "${routes[@]}"; do
   curl --fail --silent --show-error --location \
     --header "Accept: application/json" \
-    --user-agent "2b2tAtlas-API-Examples-Smoke/1.0" \
+    --user-agent "2b2tAtlas-Public-API-Smoke/1.0" \
     "${base}${route}" >/dev/null
   echo "OK ${route}"
 done

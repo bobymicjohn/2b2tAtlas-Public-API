@@ -11,7 +11,7 @@ using var http = new HttpClient
     BaseAddress = new Uri(baseUrl),
     Timeout = TimeSpan.FromSeconds(30),
 };
-http.DefaultRequestHeaders.UserAgent.ParseAdd("2b2tAtlas-API-Examples/1.0");
+http.DefaultRequestHeaders.UserAgent.ParseAdd("2b2tAtlas-Public-API/1.0");
 http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
 
 var api = new AtlasApi(http);
