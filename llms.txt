@@ -1,4 +1,4 @@
-# 2b2tAtlas API Examples
+# 2b2tAtlas Public API
 
 Purpose: public, read-only developer documentation and examples for the 2b2tAtlas historical entity and map API.
 
