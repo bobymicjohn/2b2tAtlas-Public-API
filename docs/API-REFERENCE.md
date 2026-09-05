@@ -128,6 +128,10 @@ These files are **bounded historical Minecraft Java saves**, not complete 2b2t w
 
 Use the returned URL rather than constructing it. Not every warp has a downloadable object. `404` means no public collector WDL is attached; `503` means the catalog record exists but its archived bytes are temporarily unavailable. Bulk tools should download serially or with very low concurrency and honor `429`/`Retry-After`.
 
+The metadata `fileName` and ZIP response `Content-Disposition` use a descriptive name such as
+`2b2tAtlas-La-Rosa-warp-123.zip`. Preserve the server-provided filename when possible: the
+location slug is useful to people, while the warp ID keeps downloads unambiguous.
+
 For bulk discovery without paging through the live API, use the crawlable [world-download catalog](https://2b2tatlas.com/entities/world-downloads/) or [world-download JSONL](https://2b2tatlas.com/entities/world-downloads.jsonl). Each JSONL record carries the exact warp and owning-location relationship, capture date, dimension/coordinates, related render IDs, ZIP and metadata URLs, SHA-256, and explicit bounded/partial-world semantics. The live metadata endpoint remains authoritative for current byte length, bounds, and availability.
 
 Resume an interrupted download and then verify it:
