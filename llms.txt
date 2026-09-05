@@ -9,6 +9,8 @@ Dataset description: https://2b2tatlas.com/dataset.json
 Locations JSONL: https://2b2tatlas.com/entities/locations.jsonl
 Groups JSONL: https://2b2tatlas.com/entities/groups.jsonl
 Media JSONL: https://2b2tatlas.com/entities/media.jsonl
+World-download catalog: https://2b2tatlas.com/entities/world-downloads/
+World-download JSONL: https://2b2tatlas.com/entities/world-downloads.jsonl
 
 Primary docs:
 - README.md

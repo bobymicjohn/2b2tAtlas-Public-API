@@ -60,6 +60,7 @@ All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point t
 | WDL coverage dashboard | locations with renders, render dates, footprints, warp provenance |
 | Offline archaeology / block analysis | immutable bounded-world ZIP, SHA-256, chunk count, exact bounds |
 | LLM/RAG history corpus | static JSONL entity feeds, canonical pages, cited media records |
+| World-download browser or mirroring tool | WDL JSONL catalog, resumable ZIP links, checksums, scope warnings |
 
 See [2b2t-specific project ideas](docs/2B2T-IDEAS.md) for more—including safe client-thread patterns, route overlays, pilgrimage lists, historical diffing, and source-aware research tools.
 
@@ -96,9 +97,11 @@ For crawlers, archives, bulk research, and language-model tools, 2b2tAtlas also 
 - [`locations.jsonl`](https://2b2tatlas.com/entities/locations.jsonl)
 - [`groups.jsonl`](https://2b2tatlas.com/entities/groups.jsonl)
 - [`media.jsonl`](https://2b2tatlas.com/entities/media.jsonl)
+- [`world-downloads.jsonl`](https://2b2tatlas.com/entities/world-downloads.jsonl)
+- [crawlable world-download catalog](https://2b2tatlas.com/entities/world-downloads/)
 - canonical HTML/JSON-LD pages under `/entities/locations/{id}/` and `/entities/groups/{id}/`
 
-Use the live API for interactive applications and the static feeds for deliberate bulk ingestion. See [LLM and bulk-data guidance](docs/2B2T-IDEAS.md#llm-search-and-research-tools).
+Use the live API for interactive applications and the static feeds for deliberate bulk ingestion. The WDL feed identifies each available ZIP as a bounded, partial Java save and links it to the exact Archive warp, canonical location, dimension/coordinates, capture date, related render IDs, metadata endpoint, and SHA-256 digest. See [LLM and bulk-data guidance](docs/2B2T-IDEAS.md#llm-search-and-research-tools).
 
 ## Credit the data
 
