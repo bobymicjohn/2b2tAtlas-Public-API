@@ -103,7 +103,7 @@ GET /api/warps?limit=500&offset=0
 GET /api/warps?locationId=5&limit=100
 ```
 
-Warp records include their exact Archive identity, owning location, dimension, canonical links, and—when known—world-download date, Archive SHA-256, provenance, and Archive coordinates.
+Warp records include their exact Archive identity, owning location, dimension, canonical links, and—when known—world-download date, Archive SHA-256, provenance, Archive coordinates, `worldDownloadMetadataUrl`, `worldDownloadUrl`, and `worldDownloadScope`.
 
 An Archive warp identifies at most one WDL/render snapshot. One Atlas location may have multiple warps from different dates or variants.
 
@@ -111,6 +111,30 @@ An Archive warp identifies at most one WDL/render snapshot. One Atlas location m
 
 ```http
 GET /api/warps/145
+```
+
+### Download a bounded historical world
+
+Eligible collector warps expose two stable links:
+
+```http
+GET /api/warps/8/world-download
+GET /api/warps/8/world-download.zip
+```
+
+The first returns JSON metadata including the owning location, ZIP byte length, SHA-256, dimension, retained chunk count and half-open bounds when known, source date/provenance, and an explicit fidelity warning. The ZIP route supports HTTP byte ranges and uses the SHA-256 as its ETag, so large downloads can be resumed and immutable copies safely deduplicated.
+
+These files are **bounded historical Minecraft Java saves**, not complete 2b2t worlds and not the collector's broader raw survey. They contain the chunks retained for one Archive warp/render footprint. Minecraft may generate new terrain outside the retained footprint if a save is opened normally; analyze a copy and prevent chunk generation when historical fidelity matters.
+
+Use the returned URL rather than constructing it. Not every warp has a downloadable object. `404` means no public collector WDL is attached; `503` means the catalog record exists but its archived bytes are temporarily unavailable. Bulk tools should download serially or with very low concurrency and honor `429`/`Retry-After`.
+
+Resume an interrupted download and then verify it:
+
+```bash
+curl --fail --location --continue-at - \
+  https://api.blackportal.cloud/api/warps/8/world-download.zip \
+  --output 2b2tAtlas-warp-8.zip
+sha256sum 2b2tAtlas-warp-8.zip
 ```
 
 ## WDL-derived renders

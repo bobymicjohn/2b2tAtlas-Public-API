@@ -30,6 +30,9 @@ var groupWithBuilds = await http.GetFromJsonAsync<Group>($"api/groups/{group.Id}
 // Query Archive warps for a location
 var warps = await http.GetFromJsonAsync<List<Warp>>($"api/warps?locationId={mu.Rowid}&limit=100");
 
+// Follow an eligible warp's worldDownloadMetadataUrl or worldDownloadUrl.
+// These are bounded historical Java saves, not complete copies of 2b2t.
+
 // Find locations with WDL-derived map renders
 var renders = await http.GetFromJsonAsync<List<Render>>("api/renders?limit=1000");
 var renderedLocationIds = renders!.Select(x => x.LocationId).Distinct().ToHashSet();
@@ -55,6 +58,7 @@ All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point t
 | Group lineage/build explorer | reciprocal group-to-build and group-to-highway records |
 | Offline nearest-landmark search | cache `/api/locations` and build a local spatial index |
 | WDL coverage dashboard | locations with renders, render dates, footprints, warp provenance |
+| Offline archaeology / block analysis | immutable bounded-world ZIP, SHA-256, chunk count, exact bounds |
 | LLM/RAG history corpus | static JSONL entity feeds, canonical pages, cited media records |
 
 See [2b2t-specific project ideas](docs/2B2T-IDEAS.md) for more—including safe client-thread patterns, route overlays, pilgrimage lists, historical diffing, and source-aware research tools.
@@ -64,7 +68,8 @@ See [2b2t-specific project ideas](docs/2B2T-IDEAS.md) for more—including safe 
 | Resource | Routes | Useful relationships |
 | --- | --- | --- |
 | Locations | `GET /api/locations`, `GET /api/locations/{id}` | warps, attachments, renders, builder groups |
-| Archive warps | `GET /api/warps`, `GET /api/warps/{id}` | owning location, WDL date/SHA when known |
+| Archive warps | `GET /api/warps`, `GET /api/warps/{id}` | owning location, WDL date/SHA and bounded-world links when available |
+| Bounded world ZIPs | `GET /api/warps/{id}/world-download`, `GET /api/warps/{id}/world-download.zip` | size, digest, bounds, resumable immutable Java-save download |
 | WDL renders | `GET /api/renders`, `GET /api/renders/{id}`, `GET /api/locations/{id}/renders` | location, Archive warp, tile template, footprint |
 | Historical media | `GET /api/attachments`, `GET /api/attachments/{id}` | location, source, caption, attribution |
 | Groups | `GET /api/groups`, `GET /api/groups/{id}` | aliases, attributed builds and highways |

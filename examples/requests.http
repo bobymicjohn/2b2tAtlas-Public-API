@@ -20,6 +20,14 @@ Accept: application/json
 GET {{api}}/api/warps?locationId=5&limit=100
 Accept: application/json
 
+### Metadata for an eligible bounded historical Java save
+GET {{api}}/api/warps/8/world-download
+Accept: application/json
+
+### Resumable immutable bounded-world ZIP
+GET {{api}}/api/warps/8/world-download.zip
+Range: bytes=0-1048575
+
 ### WDL-derived renders for that location
 GET {{api}}/api/renders?locationId=5&limit=100
 Accept: application/json
