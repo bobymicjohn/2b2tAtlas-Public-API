@@ -16,7 +16,7 @@ Good contributions include:
 2. Never commit tokens, passwords, session files, private coordinates, collector details, or production configuration.
 3. Test examples against `https://api.blackportal.cloud` without producing high request volume.
 4. Use a descriptive User-Agent where the language permits it and cache bulk data locally.
-5. Preserve entity links and source-specific attribution.
+5. Keep entity links and source-specific provenance when practical.
 6. Ignore unknown response fields and handle nullable historical fields.
 
 ## Before opening a pull request

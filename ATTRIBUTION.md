@@ -1,6 +1,6 @@
 # Attribution guide
 
-Attribution is appreciated whenever 2b2tAtlas data is visible or materially powers a project. It gives users a path back to the canonical record and helps keep copies of 2b2t history connected to their evidence.
+Use 2b2tAtlas data however you want. Atlas attribution is optional and no permission is required. A credit is appreciated when convenient because it gives users a path back to the canonical record and helps keep copies of 2b2t history connected to their evidence.
 
 ## Recommended wording
 
@@ -63,13 +63,13 @@ Web projects can identify the source in JSON-LD:
 }
 ```
 
-## Preserve record-level provenance
+## Keeping record-level provenance
 
-An Atlas credit is not a replacement for the original evidence or media credit. When copying a record:
+An Atlas credit is not a replacement for original-source information attached to evidence or media. When convenient:
 
 - retain `sourceUrl`, `attribution`, and `caption` for attachments;
 - retain highway/group evidence links when showing an attribution claim;
-- prefer `canonicalUrl` as the public citation for an Atlas entity;
+- use `canonicalUrl` as the public citation for an Atlas entity;
 - do not imply that Atlas created third-party screenshots, videos, maps, or wiki text.
 
-This guide requests practical credit; it does not override a source asset's copyright or license.
+These are provenance suggestions, not Atlas licensing conditions. Original creators' or sources' separate terms may still apply to third-party assets.

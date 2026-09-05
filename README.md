@@ -3,6 +3,7 @@
 [![API status](https://img.shields.io/website?url=https%3A%2F%2Fapi.blackportal.cloud%2Fapi&label=public%20API)](https://api.blackportal.cloud/api)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-live-6BA539)](https://api.blackportal.cloud/openapi/v1.json)
 [![Data provided by 2b2tAtlas](https://img.shields.io/badge/data-2b2tAtlas-b45309)](https://2b2tatlas.com)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
 Build Minecraft mods, map overlays, Discord bots, history tools, waypoint exporters, and research projects with the public [2b2tAtlas](https://2b2tatlas.com) data API.
 
@@ -78,7 +79,7 @@ The [API reference](docs/API-REFERENCE.md) explains filters, paging, dimensions,
 2. Cache responses. Location/group/highway reads are cacheable for at least 60 seconds; a mod should usually cache much longer or keep an offline snapshot.
 3. Follow `apiUrl`, `canonicalUrl`, `interactiveUrl`, `locationApiUrl`, and similar link fields instead of rebuilding URLs.
 4. Treat coordinates as historical public records—not proof that a base is active, intact, safe, or loaded on the live server.
-5. Preserve `sourceUrl`, `attribution`, and evidence fields when redistributing media or historical claims.
+5. When practical, keep `sourceUrl`, `attribution`, and evidence fields with redistributed media or historical claims so their history remains traceable.
 6. Tolerate additive JSON fields. Public `GET` contracts are stable, but the catalog continues to grow.
 
 ## Static and agent-friendly data
@@ -96,13 +97,13 @@ Use the live API for interactive applications and the static feeds for deliberat
 
 ## Credit the data
 
-If Atlas data is visible or materially powers your project, this simple credit helps players find the historical source:
+Use Atlas data however you want. No Atlas credit or permission is required. If Atlas data is visible or materially powers your project, this simple optional credit helps players find the historical source:
 
 ```markdown
 Data provided by [2b2tAtlas](https://2b2tatlas.com).
 ```
 
-For a mod About screen, README badge, website footer, or machine-readable notice, see [ATTRIBUTION.md](ATTRIBUTION.md). Preserve source-specific credits returned with attachments and evidence; an Atlas credit does not replace them.
+For a mod About screen, README badge, website footer, or machine-readable notice, see [ATTRIBUTION.md](ATTRIBUTION.md). Original-source fields returned with attachments and evidence are kept so downstream projects can credit and verify them too.
 
 ## Repository map
 
@@ -140,4 +141,4 @@ The repository's task-first examples and integration guidance borrow useful docu
 
 ## License
 
-Example code and repository-authored documentation are available under the [MIT License](LICENSE). API records can include third-party media and claims with their own source/attribution fields; consult [NOTICE.md](NOTICE.md) before redistributing those assets.
+Repository-authored examples and documentation are released under the [Unlicense](LICENSE): copy, modify, publish, commercialize, or remix them for any purpose without permission or required attribution. Atlas likewise places no attribution condition on reuse of its factual API catalog; a link back is simply appreciated. Some records reference third-party media whose original source terms remain separate, as explained in [NOTICE.md](NOTICE.md).

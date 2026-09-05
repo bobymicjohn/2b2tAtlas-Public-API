@@ -22,5 +22,6 @@ Important semantics:
 - Atlas records are historical public records, not live safety or activity claims.
 - Prefer returned apiUrl/canonicalUrl/interactiveUrl link fields over constructing URLs.
 - Public integrations should tolerate additive JSON fields and nullable historical metadata.
-- Preserve sourceUrl, attribution, caption, and evidence fields.
+- Reuse is unrestricted by Atlas; attribution is optional and appreciated.
+- Keep sourceUrl, attribution, caption, and evidence fields when practical so claims remain traceable.
 - Do not use or describe private write/admin routes from this repository.

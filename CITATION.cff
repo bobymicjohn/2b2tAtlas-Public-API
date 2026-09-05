@@ -1,10 +1,10 @@
 cff-version: 1.2.0
-message: "If this repository or the 2b2tAtlas API supports your project, please cite 2b2tAtlas and preserve record-level provenance."
+message: "Citation is optional, but a link to 2b2tAtlas and the record's original sources is always appreciated."
 title: "2b2tAtlas Public API"
 type: software
 authors:
   - name: "2b2tAtlas contributors"
 repository-code: "https://github.com/bobymicjohn/2b2tAtlas-Public-API"
 url: "https://2b2tatlas.com"
-license: MIT
+license: Unlicense
 date-released: 2026-09-05

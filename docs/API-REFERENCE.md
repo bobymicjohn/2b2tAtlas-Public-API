@@ -162,7 +162,7 @@ GET /api/attachments/1
 
 `mediaType` values currently used by the catalog include `Image`, `Video`, `Wiki`, and `Link`. Treat the vocabulary as extensible.
 
-Useful fields include `path`, `thumbnailPath`, `sourceUrl`, `caption`, and `attribution`. A self-hosted path is a convenience copy; keep the original source and credit when presenting or redistributing it.
+Useful fields include `path`, `thumbnailPath`, `sourceUrl`, `caption`, and `attribution`. A self-hosted path is a convenience copy; the original-source fields make optional credit and verification straightforward when presenting or redistributing it.
 
 ## Highways and canals
 
