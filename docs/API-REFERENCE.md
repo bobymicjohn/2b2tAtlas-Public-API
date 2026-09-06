@@ -175,7 +175,9 @@ A render can expose:
   `worldDownloadSha256`, and `worldDownloadSource` when Atlas has a verified
   pre-Archive/community source but no Archive warp;
 - exact `minX`, `minZ`, `maxXExclusive`, `maxZExclusive` footprint;
-- `tileUrlTemplate`, `hasDayNight`, `maxNativeZoom`, and `coordinateScheme`.
+- `tileUrlTemplate`, `hasDayNight`, `maxNativeZoom`, and `coordinateScheme`;
+- nullable `blueMapUrl`, `blueMapPath`, and `blueMapProfileVersion` when Atlas
+  currently advertises a validated interactive 3D derivative.
 
 ### Get one render or a location's renders
 
@@ -183,6 +185,21 @@ A render can expose:
 GET /api/renders/38
 GET /api/locations/5/renders
 ```
+
+### Open a BlueMap 3D derivative
+
+`blueMapUrl` is the absolute public viewer URL. `blueMapPath` is the equivalent
+same-origin-relative `/bluemap/` path, and `blueMapProfileVersion` identifies
+the Atlas derivative profile that passed the current quality gate. Follow the
+returned URL rather than constructing a path from a render ID or version.
+
+These fields are additive and nullable. Their absence means that no validated
+3D derivative is currently advertised for this exact render; it does not make
+the 2D tiles or source WDL unavailable. New renders can gain the fields later
+because BlueMap generation is asynchronous and downstream from ingestion.
+Treat each historical date and dimension as an independent viewer, retain a 2D
+fallback, and never silently substitute a different render. See the dedicated
+[BlueMap 3D guide](BLUEMAP-3D.md).
 
 ### Download a verified legacy render source
 

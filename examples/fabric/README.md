@@ -24,6 +24,7 @@ The example client:
 - sends a descriptive User-Agent;
 - has a bounded request timeout;
 - supports location search, group detail, warps, renders, and highways;
+- exposes each render's nullable BlueMap URL/profile so a user-initiated 3D action can retain a 2D fallback;
 - returns `CompletableFuture` so the caller chooses the correct game-thread handoff;
 - models unknown/additive JSON fields safely through Gson.
 

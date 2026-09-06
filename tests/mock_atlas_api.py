@@ -101,6 +101,9 @@ RENDER = {
     "worldDownloadScope": "preserved-render-source",
     "worldDownloadSha256": "d65772796528bbccdbc6dc9afc41472c99cc4f5b50121754f4960cb5b5aee121",
     "worldDownloadSource": "Fixture community source",
+    "blueMapUrl": "https://api.blackportal.cloud/bluemap/render-38-fixture-v5.23-p7/web/",
+    "blueMapPath": "/bluemap/render-38-fixture-v5.23-p7/web/",
+    "blueMapProfileVersion": 7,
 }
 
 RENDER_WORLD_DOWNLOAD = {

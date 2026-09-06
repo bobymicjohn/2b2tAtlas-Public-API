@@ -56,6 +56,8 @@ async function main() {
     date: item.worldDownloadDate,
     apiUrl: item.apiUrl,
     sourceWdl: item.worldDownloadUrl || (item.archiveWarp && item.archiveWarp.worldDownloadUrl) || null,
+    blueMapUrl: item.blueMapUrl || null,
+    blueMapProfileVersion: item.blueMapProfileVersion || null,
   })));
 
   if (location.groups && location.groups.length) {

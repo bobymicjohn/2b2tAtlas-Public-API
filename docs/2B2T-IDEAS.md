@@ -50,7 +50,7 @@ Avoid automatic chat spam and avoid sending the player's live coordinates to thi
 
 ### Base time machine
 
-For locations with multiple renders, add a date selector, swipe comparison, or day/night toggle. Use exact render footprints so each snapshot remains independently selectable even when its coverage differs.
+For locations with multiple renders, add a date selector, swipe comparison, day/night toggle, or user-initiated BlueMap 3D tab. Use exact render identities and footprints so each snapshot remains independently selectable even when its coverage differs. Enable 3D only when that render's `blueMapUrl` is present; do not substitute another date or dimension.
 
 ## Bots and community services
 
@@ -98,6 +98,15 @@ Use render footprints to show which historical locations have WDL-derived covera
 ### WDL snapshot diff viewer
 
 Group renders by `locationId`, order by `worldDownloadDate`, and compare matching geographic regions. This can document construction, griefing, terrain changes, and incomplete captures while keeping each source snapshot distinct.
+
+### Historical 3D viewer
+
+Use the render catalog to add an **Open in 3D** action for validated BlueMap
+derivatives. A desktop tool can use a browser tab; a mod or launcher companion
+can use an optional webview. Keep the canonical location, render date,
+dimension, warp/source provenance, and WDL link beside the viewer so users do
+not confuse a historical model with the live server. See
+[the BlueMap developer guide](BLUEMAP-3D.md).
 
 ### Highway history visualization
 
@@ -152,3 +161,4 @@ These are catalog statistics, not measurements of the live server population or 
 - Republishing media without its source and attribution.
 - Hard-coding entity IDs when a name/alias discovery step is available.
 - Scraping rendered website HTML when the API, JSONL, or JSON-LD already exposes the relationship.
+- Preloading a BlueMap WebGL viewer for every row or trying to merge model data from unrelated historical renders.

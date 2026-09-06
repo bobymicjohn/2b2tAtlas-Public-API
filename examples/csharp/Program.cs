@@ -41,12 +41,14 @@ Console.WriteLine("\nWDL-derived renders for this location:");
 var locationRenders = await api.GetRendersAsync(location.Rowid);
 foreach (var render in locationRenders)
     Console.WriteLine($"  {render.Name} | {render.WorldDownloadDate ?? "date unknown"} | {render.ApiUrl}" +
-        (string.IsNullOrWhiteSpace(render.WorldDownloadUrl) ? "" : $" | source WDL: {render.WorldDownloadUrl}"));
+        (string.IsNullOrWhiteSpace(render.WorldDownloadUrl) ? "" : $" | source WDL: {render.WorldDownloadUrl}") +
+        (string.IsNullOrWhiteSpace(render.BlueMapUrl) ? "" : $" | 3D: {render.BlueMapUrl} (profile {render.BlueMapProfileVersion})"));
 if (locationRenders.Count == 0) Console.WriteLine("  none catalogued");
 
 var allRenders = await api.GetAllRendersAsync();
 var renderedLocationCount = allRenders.Select(render => render.LocationId).Distinct().Count();
 Console.WriteLine($"\nCatalog: {allRenders.Count:N0} public renders across {renderedLocationCount:N0} locations");
+Console.WriteLine($"          {allRenders.Count(render => !string.IsNullOrWhiteSpace(render.BlueMapUrl)):N0} currently advertise BlueMap 3D");
 
 var relatedGroup = location.Groups.FirstOrDefault();
 var groupSearch = relatedGroup?.GroupName ?? "Highway Workers Union";
@@ -191,6 +193,9 @@ sealed class Render
     public string? WorldDownloadScope { get; init; }
     public string? WorldDownloadSha256 { get; init; }
     public string? WorldDownloadSource { get; init; }
+    public string? BlueMapUrl { get; init; }
+    public string? BlueMapPath { get; init; }
+    public int? BlueMapProfileVersion { get; init; }
 }
 
 sealed class Highway

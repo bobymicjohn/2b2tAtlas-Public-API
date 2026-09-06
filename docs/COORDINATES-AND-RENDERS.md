@@ -63,3 +63,18 @@ One location can have multiple WDL snapshots. Useful UI patterns include:
 - do not merge footprints merely because they overlap.
 
 Overlap is geographic evidence, not identity. Use the owning location and Archive warp relationships supplied by the API.
+
+## BlueMap 3D derivatives
+
+A render can optionally advertise `blueMapUrl`, `blueMapPath`, and
+`blueMapProfileVersion`. BlueMap uses the same exact historical render identity,
+dimension, source, and location relationship, but its output is an interactive
+3D web application rather than a `{z}/{y}/{x}` tile template. Its initial camera
+is anchored to the canonical `locationX`/`locationZ`, not necessarily the WDL
+footprint midpoint.
+
+Do not convert the BlueMap path into Leaflet bounds or combine its model files
+with another render. Open the returned `blueMapUrl` only after a user requests
+3D, label it with the render date/dimension, and preserve the normal 2D overlay
+when the field is null. Full discovery, embedding, caching, and fallback
+guidance is in [BlueMap 3D render derivatives](BLUEMAP-3D.md).

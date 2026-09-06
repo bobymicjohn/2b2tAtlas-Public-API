@@ -47,7 +47,7 @@ The endpoint negotiates the MCP protocol itself. Do not append `/api`, and do no
 | `get_highway` | Fetch one approved public highway and builder relationships |
 | `get_warps` | List Archive warp identities belonging to a location |
 | `get_world_downloads` | List publicly downloadable, provenance-validated partial WDLs for a location |
-| `get_render_metadata` | List public render footprints, dates, tile/preview URLs, and provenance |
+| `get_render_metadata` | List public render footprints, dates, tile/preview URLs, validated BlueMap 3D URL/profile, and provenance |
 | `get_dataset_stats` | Return synchronized catalog and relationship counts |
 
 Tool inputs are server-bounded. Search result limits cannot be raised above 100, and nearby searches cannot exceed the server's coordinate-radius ceiling. Clients should make focused calls instead of attempting to reproduce a bulk export through repeated MCP requests.
@@ -74,11 +74,15 @@ Once the server is connected, an agent can handle requests such as:
 - “Find locations with render or warp evidence between 2016 and 2018.”
 - “List downloadable partial worlds for this location and include their checksums and scope warnings.”
 
+An agent can also ask which dated renders for a location currently have a
+BlueMap 3D view. The result should keep each date/dimension distinct and cite
+the canonical location rather than treating the viewer as a new entity.
+
 MCP tool results are deterministic projections of current Atlas records. The calling model may summarize or infer from those records, so important claims should still cite the returned canonical entity page and preserve any original evidence/source links.
 
 ## WDL and media safety
 
-The MCP server never returns ZIP or image bytes. It returns metadata and HTTPS URLs for resources that Atlas already exposes publicly. Downloadable worlds are partial historical Minecraft Java saves, either an exact retained Archive collector footprint or a verified preserved render source; they are not complete copies of 2b2t.
+The MCP server never returns ZIP, image, or BlueMap model bytes. It returns metadata and HTTPS URLs for resources that Atlas already exposes publicly. Downloadable worlds are partial historical Minecraft Java saves, either an exact retained Archive collector footprint or a verified preserved render source; they are not complete copies of 2b2t. A BlueMap URL belongs to one exact render/date/dimension and should be opened by the user rather than expanded into model context.
 
 For bulk analysis, use the static [JSONL catalogs](https://2b2tatlas.com/llms.txt) rather than treating MCP as a bulk-transfer protocol. For interactive mods and deterministic application code, the [REST/OpenAPI surface](API-REFERENCE.md) may be more direct.
 

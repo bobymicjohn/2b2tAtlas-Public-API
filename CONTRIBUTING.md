@@ -18,6 +18,7 @@ Good contributions include:
 4. Use a descriptive User-Agent where the language permits it and cache bulk data locally.
 5. Keep entity links and source-specific provenance when practical.
 6. Ignore unknown response fields and handle nullable historical fields.
+7. Treat `blueMapUrl` as an optional render-scoped link: do not construct generation paths, auto-load the catalog, or substitute another date/dimension.
 
 ## Before opening a pull request
 

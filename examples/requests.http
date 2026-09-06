@@ -32,6 +32,10 @@ Range: bytes=0-1048575
 GET {{api}}/api/renders?locationId=5&limit=100
 Accept: application/json
 
+### One render (follow blueMapUrl when non-null; do not construct /bluemap paths)
+GET {{api}}/api/renders/38
+Accept: application/json
+
 ### All public Nether renders, first page
 GET {{api}}/api/renders?dimension=1&limit=500&offset=0
 Accept: application/json

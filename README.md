@@ -40,6 +40,7 @@ var warps = await http.GetFromJsonAsync<List<Warp>>($"api/warps?locationId={mu.R
 // Find locations with WDL-derived map renders
 var renders = await http.GetFromJsonAsync<List<Render>>("api/renders?limit=1000");
 var renderedLocationIds = renders!.Select(x => x.LocationId).Distinct().ToHashSet();
+var threeDimensional = renders.Where(x => x.BlueMapUrl is not null).ToList();
 
 // Query public, reviewed highways and canals
 var highways = await http.GetFromJsonAsync<List<Highway>>("api/highways");
@@ -75,7 +76,8 @@ All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point t
 | Project idea | Atlas data to use |
 | --- | --- |
 | JourneyMap/Xaero-style landmark layer | locations, dimensions, coordinates, canonical URLs |
-| Historical base time machine | render footprints, dates, day/night tile templates |
+| Historical base time machine | render footprints, dates, day/night tile templates, optional BlueMap 3D viewers |
+| In-mod 3D history browser | render-scoped `blueMapUrl` links with 2D fallback and exact date/dimension labels |
 | Highway and canal route planner | reviewed geometry, dimensions, widths, builder groups |
 | Nether portal travel helper | Overworld/Nether coordinates plus local 8:1 conversion |
 | `/whereis`, `/history`, or `/group` Discord bot | locations, warps, groups, builds, source links |
@@ -103,14 +105,14 @@ Built something with the API? Open an [integration showcase](https://github.com/
 | Locations | `GET /api/locations`, `GET /api/locations/{id}` | warps, attachments, renders, builder groups |
 | Archive warps | `GET /api/warps`, `GET /api/warps/{id}` | owning location, WDL date/SHA and bounded-world links when available |
 | Archive world ZIPs | `GET /api/warps/{id}/world-download`, `GET /api/warps/{id}/world-download.zip` | size, digest, bounds, resumable immutable Java-save download |
-| WDL renders | `GET /api/renders`, `GET /api/renders/{id}`, `GET /api/locations/{id}/renders` | location, Archive warp or preserved source, tile template, footprint |
+| WDL renders | `GET /api/renders`, `GET /api/renders/{id}`, `GET /api/locations/{id}/renders` | location, Archive warp or preserved source, tile template, footprint, optional BlueMap 3D URL/profile |
 | Legacy render-source ZIPs | `GET /api/renders/{id}/world-download`, `GET /api/renders/{id}/world-download.zip` | verified pre-Archive/community source, digest, provenance, resumable download |
 | Historical media | `GET /api/attachments`, `GET /api/attachments/{id}` | location, source, caption, attribution |
 | Groups | `GET /api/groups`, `GET /api/groups/{id}` | aliases, attributed builds and highways |
 | Highways | `GET /api/highways`, `GET /api/highways/{id}` | geometry and reviewed group roles |
 | Map layers | `GET /api/maprenders`, `GET /api/maprenders/catalog` | primary layers plus per-location renders |
 
-The [API reference](docs/API-REFERENCE.md) explains filters, paging, dimensions, stable links, errors, and caching. The live OpenAPI document is the machine-readable source of truth.
+The [API reference](docs/API-REFERENCE.md) explains filters, paging, dimensions, stable links, errors, and caching. See the [BlueMap 3D guide](docs/BLUEMAP-3D.md) before embedding historical 3D viewers. The live OpenAPI document is the machine-readable source of truth.
 
 ## 2b2t-aware client guidance
 
@@ -159,6 +161,7 @@ examples/
   requests.http copy-ready REST Client requests
 docs/
   API-REFERENCE.md
+  BLUEMAP-3D.md
   MCP.md
   COORDINATES-AND-RENDERS.md
   2B2T-IDEAS.md

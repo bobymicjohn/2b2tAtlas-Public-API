@@ -54,6 +54,8 @@ def main() -> int:
             item.get("worldDownloadDate"),
             item["apiUrl"],
             item.get("worldDownloadUrl") or (item.get("archiveWarp") or {}).get("worldDownloadUrl"),
+            item.get("blueMapUrl"),
+            item.get("blueMapProfileVersion"),
         )
         for item in renders
     ])

@@ -156,7 +156,8 @@ public final class AtlasApiClient {
         String tileUrlTemplate, Long minX, Long minZ, Long maxXExclusive, Long maxZExclusive,
         Integer maxNativeZoom, String coordinateScheme, String apiUrl,
         String worldDownloadUrl, String worldDownloadMetadataUrl, String worldDownloadScope,
-        String worldDownloadSha256, String worldDownloadSource
+        String worldDownloadSha256, String worldDownloadSource,
+        String blueMapUrl, String blueMapPath, Integer blueMapProfileVersion
     ) {}
 
     public record Attachment(
