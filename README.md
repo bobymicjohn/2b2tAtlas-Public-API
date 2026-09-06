@@ -3,6 +3,7 @@
 [![API status](https://img.shields.io/website?url=https%3A%2F%2Fapi.blackportal.cloud%2Fapi&label=public%20API)](https://api.blackportal.cloud/api)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-live-6BA539)](https://api.blackportal.cloud/openapi/v1.json)
 [![MCP](https://img.shields.io/badge/MCP-Streamable_HTTP-8b5cf6)](https://2b2tatlas.com/mcp/)
+[![Official MCP Registry](https://img.shields.io/badge/MCP_Registry-io.github.bobymicjohn%2F2b2t--atlas-5b5fc7)](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas)
 [![Data provided by 2b2tAtlas](https://img.shields.io/badge/data-2b2tAtlas-b45309)](https://2b2tatlas.com)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
@@ -16,6 +17,7 @@ This is a documentation and examples repository. It does **not** contain the pri
 - Interactive Atlas: [`https://2b2tatlas.com`](https://2b2tatlas.com)
 - Live OpenAPI contract: [`/openapi/v1.json`](https://api.blackportal.cloud/openapi/v1.json)
 - MCP endpoint: [`https://api.blackportal.cloud/mcp`](https://2b2tatlas.com/mcp/)
+- Official MCP Registry name: [`io.github.bobymicjohn/2b2t-atlas`](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas)
 - Authentication: none for the public `GET` routes documented here
 - Format: JSON over HTTPS; public reads allow browser CORS
 
@@ -61,6 +63,8 @@ The complete, runnable version is in [`examples/csharp`](examples/csharp). Depen
 ```
 
 The server offers 15 bounded tools for locations, nearby and historical searches, groups and their builds, highways, Archive warps, render provenance, WDL metadata, preserved builds, and dataset statistics. It also exposes stable resources such as `2b2tatlas://location/{id}`. See the complete [MCP client and tool guide](docs/MCP.md).
+
+The canonical discovery record is published as [`io.github.bobymicjohn/2b2t-atlas`](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas) in the official MCP Registry. Its checked-in [`server.json`](server.json) and [OIDC publishing workflow](.github/workflows/publish-mcp-registry.yml) make the remote endpoint independently discoverable and every registry release reproducible.
 
 MCP is an agent interface over the same reviewed Atlas records, not a second AI-generated database. It returns metadata and public HTTPS links rather than putting WDL ZIPs or render images into model context.
 
@@ -129,6 +133,7 @@ For crawlers, archives, bulk research, and language-model tools, 2b2tAtlas also 
 - [`world-downloads.jsonl`](https://2b2tatlas.com/entities/world-downloads.jsonl)
 - [crawlable world-download catalog](https://2b2tatlas.com/entities/world-downloads/)
 - [MCP server guide](https://2b2tatlas.com/mcp/) and remote endpoint at `https://api.blackportal.cloud/mcp`
+- [official MCP Registry record](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas) under `io.github.bobymicjohn/2b2t-atlas`
 - canonical HTML/JSON-LD pages under `/entities/locations/{id}/` and `/entities/groups/{id}/`
 
 Use the live API for interactive applications and the static feeds for deliberate bulk ingestion. The WDL feed identifies every available ZIP as a partial Java save and links it to its canonical location and render, plus its exact Archive warp when one exists. `sourceType` and `scope` distinguish collector-bounded snapshots from verified preserved sources behind older/community renders. See [LLM and bulk-data guidance](docs/2B2T-IDEAS.md#llm-search-and-research-tools).

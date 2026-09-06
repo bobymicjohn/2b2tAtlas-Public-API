@@ -7,6 +7,8 @@ API discovery: https://api.blackportal.cloud/api
 OpenAPI: https://api.blackportal.cloud/openapi/v1.json
 MCP guide: https://2b2tatlas.com/mcp/
 MCP endpoint: https://api.blackportal.cloud/mcp
+Official MCP Registry name: io.github.bobymicjohn/2b2t-atlas
+Official MCP Registry listing: https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas
 Dataset description: https://2b2tatlas.com/dataset.json
 Locations JSONL: https://2b2tatlas.com/entities/locations.jsonl
 Groups JSONL: https://2b2tatlas.com/entities/groups.jsonl
@@ -36,3 +38,4 @@ Important semantics:
 - Do not use or describe private write/admin routes from this repository.
 - The MCP endpoint is public, stateless, read-only, bounded, and uses Streamable HTTP.
 - MCP returns WDL/render metadata and public URLs, not ZIP or image bytes in model context.
+- The canonical MCP discovery manifest is server.json and is published to the official MCP Registry.

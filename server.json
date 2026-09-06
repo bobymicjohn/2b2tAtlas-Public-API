@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.bobymicjohn/2b2t-atlas",
+  "title": "2b2t Atlas",
+  "description": "Search 2b2t locations, groups, highways, renders, Archive warps, and WDL metadata.",
+  "version": "1.0.0",
+  "websiteUrl": "https://2b2tatlas.com/mcp/",
+  "repository": {
+    "url": "https://github.com/bobymicjohn/2b2tAtlas-Public-API",
+    "source": "github",
+    "id": "R_kgDOUPgD8Q"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.blackportal.cloud/mcp"
+    }
+  ]
+}

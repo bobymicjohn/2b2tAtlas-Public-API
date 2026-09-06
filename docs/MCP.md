@@ -8,6 +8,10 @@ The public 2b2tAtlas Model Context Protocol server lets compatible AI assistants
 - Authentication: none for public reads
 - Mutations: none
 - Human guide: `https://2b2tatlas.com/mcp/`
+- Official registry name: `io.github.bobymicjohn/2b2t-atlas`
+- Registry listing: `https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas`
+
+The canonical [`server.json`](../server.json) describes this hosted server to MCP registries and clients. It is published from this repository with GitHub OIDC, so registry ownership is tied to the `bobymicjohn` GitHub namespace and no long-lived publishing secret is stored.
 
 ## Client configuration
 
