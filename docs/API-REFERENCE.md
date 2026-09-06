@@ -132,7 +132,7 @@ The metadata `fileName` and ZIP response `Content-Disposition` use a descriptive
 `2b2tAtlas-La-Rosa-warp-123.zip`. Preserve the server-provided filename when possible: the
 location slug is useful to people, while the warp ID keeps downloads unambiguous.
 
-For bulk discovery without paging through the live API, use the crawlable [world-download catalog](https://2b2tatlas.com/entities/world-downloads/) or [world-download JSONL](https://2b2tatlas.com/entities/world-downloads.jsonl). Each JSONL record carries the exact warp and owning-location relationship, capture date, dimension/coordinates, related render IDs, ZIP and metadata URLs, SHA-256, and explicit bounded/partial-world semantics. The live metadata endpoint remains authoritative for current byte length, bounds, and availability.
+For bulk discovery without paging through the live API, use the crawlable [world-download catalog](https://2b2tatlas.com/entities/world-downloads/) or [world-download JSONL](https://2b2tatlas.com/entities/world-downloads.jsonl). Each JSONL record carries its owning-location and render relationships, optional exact Archive warp, capture date, dimension/coordinates, ZIP and metadata URLs, SHA-256, source type, scope, and explicit partial-world semantics. The live metadata endpoint remains authoritative for current byte length, bounds, and availability.
 
 Resume an interrupted download and then verify it:
 
@@ -169,6 +169,9 @@ A render can expose:
 - `locationId`, `locationName`, and location links;
 - `archiveWarpId`, `archiveWarpName`, and warp API link;
 - `worldDownloadDate`, `source`, and description;
+- direct `worldDownloadUrl`, `worldDownloadMetadataUrl`, `worldDownloadScope`,
+  `worldDownloadSha256`, and `worldDownloadSource` when Atlas has a verified
+  pre-Archive/community source but no Archive warp;
 - exact `minX`, `minZ`, `maxXExclusive`, `maxZExclusive` footprint;
 - `tileUrlTemplate`, `hasDayNight`, `maxNativeZoom`, and `coordinateScheme`.
 
@@ -178,6 +181,34 @@ A render can expose:
 GET /api/renders/38
 GET /api/locations/5/renders
 ```
+
+### Download a verified legacy render source
+
+Some Atlas renders predate automated Archive collection. When their original source ZIP
+survives in the Atlas content-addressed archive and a completed ingestion record proves
+the relationship, the render exposes these routes directly:
+
+```http
+GET /api/renders/38/world-download
+GET /api/renders/38/world-download.zip
+```
+
+The metadata response uses `scope: "preserved-render-source"` and identifies the render,
+canonical location, source/date provenance, digest, byte length, and known bounds/chunks.
+The ZIP supports HTTP ranges and an immutable digest ETag, just like an Archive-warp
+download. Its filename uses the location and render identity, for example
+`2b2tAtlas-Mu-Megabase-render-38.zip`.
+
+This route intentionally does not create a fake Archive warp. The original source may be
+larger than the published render footprint, but it is still a partial historical Java
+save rather than a complete 2b2t world. `404` means no independently verified source
+relationship is available; `503` means the verified object is temporarily unavailable.
+
+The static world-download JSONL schema v2 combines both relationships. `sourceType` is
+`archive-warp` or `render`; `scope` is `bounded-footprint` or
+`preserved-render-source`; `warpId` is nullable; and every record has a direct render
+relationship. This lets bulk consumers mirror both collections without conflating their
+provenance.
 
 Read [coordinates and render tiles](COORDINATES-AND-RENDERS.md) before implementing an overlay.
 

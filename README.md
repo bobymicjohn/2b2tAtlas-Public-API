@@ -76,8 +76,9 @@ Built something with the API? Open an [integration showcase](https://github.com/
 | --- | --- | --- |
 | Locations | `GET /api/locations`, `GET /api/locations/{id}` | warps, attachments, renders, builder groups |
 | Archive warps | `GET /api/warps`, `GET /api/warps/{id}` | owning location, WDL date/SHA and bounded-world links when available |
-| Bounded world ZIPs | `GET /api/warps/{id}/world-download`, `GET /api/warps/{id}/world-download.zip` | size, digest, bounds, resumable immutable Java-save download |
-| WDL renders | `GET /api/renders`, `GET /api/renders/{id}`, `GET /api/locations/{id}/renders` | location, Archive warp, tile template, footprint |
+| Archive world ZIPs | `GET /api/warps/{id}/world-download`, `GET /api/warps/{id}/world-download.zip` | size, digest, bounds, resumable immutable Java-save download |
+| WDL renders | `GET /api/renders`, `GET /api/renders/{id}`, `GET /api/locations/{id}/renders` | location, Archive warp or preserved source, tile template, footprint |
+| Legacy render-source ZIPs | `GET /api/renders/{id}/world-download`, `GET /api/renders/{id}/world-download.zip` | verified pre-Archive/community source, digest, provenance, resumable download |
 | Historical media | `GET /api/attachments`, `GET /api/attachments/{id}` | location, source, caption, attribution |
 | Groups | `GET /api/groups`, `GET /api/groups/{id}` | aliases, attributed builds and highways |
 | Highways | `GET /api/highways`, `GET /api/highways/{id}` | geometry and reviewed group roles |
@@ -107,7 +108,7 @@ For crawlers, archives, bulk research, and language-model tools, 2b2tAtlas also 
 - [crawlable world-download catalog](https://2b2tatlas.com/entities/world-downloads/)
 - canonical HTML/JSON-LD pages under `/entities/locations/{id}/` and `/entities/groups/{id}/`
 
-Use the live API for interactive applications and the static feeds for deliberate bulk ingestion. The WDL feed identifies each available ZIP as a bounded, partial Java save and links it to the exact Archive warp, canonical location, dimension/coordinates, capture date, related render IDs, metadata endpoint, and SHA-256 digest. See [LLM and bulk-data guidance](docs/2B2T-IDEAS.md#llm-search-and-research-tools).
+Use the live API for interactive applications and the static feeds for deliberate bulk ingestion. The WDL feed identifies every available ZIP as a partial Java save and links it to its canonical location and render, plus its exact Archive warp when one exists. `sourceType` and `scope` distinguish collector-bounded snapshots from verified preserved sources behind older/community renders. See [LLM and bulk-data guidance](docs/2B2T-IDEAS.md#llm-search-and-research-tools).
 
 ## Credit the data
 

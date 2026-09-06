@@ -96,6 +96,25 @@ RENDER = {
     "maxNativeZoom": 9,
     "coordinateScheme": "atlas-sparse-v1",
     "apiUrl": "https://api.blackportal.cloud/api/renders/38",
+    "worldDownloadUrl": "https://api.blackportal.cloud/api/renders/38/world-download.zip?filename=2b2tAtlas-Mu-Megabase-render-38.zip",
+    "worldDownloadMetadataUrl": "https://api.blackportal.cloud/api/renders/38/world-download",
+    "worldDownloadScope": "preserved-render-source",
+    "worldDownloadSha256": "d65772796528bbccdbc6dc9afc41472c99cc4f5b50121754f4960cb5b5aee121",
+    "worldDownloadSource": "Fixture community source",
+}
+
+RENDER_WORLD_DOWNLOAD = {
+    "warpId": None,
+    "renderId": 38,
+    "renderName": "Mu Megabase",
+    "locationId": 5,
+    "locationName": "Mu Megabase",
+    "captureType": "preserved-render-source",
+    "isCompleteWorld": False,
+    "playability": "partial-java-save",
+    "sha256": RENDER["worldDownloadSha256"],
+    "fileName": "2b2tAtlas-Mu-Megabase-render-38.zip",
+    "downloadUrl": RENDER["worldDownloadUrl"],
 }
 
 HIGHWAY = {
@@ -138,6 +157,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/renders/38":
                 return self.send_json(RENDER)
             return self.send_json(rows)
+        if path == "/api/renders/38/world-download":
+            return self.send_json(RENDER_WORLD_DOWNLOAD)
         if path == "/api/attachments" or path == "/api/attachments/1":
             attachment = {
                 "id": 1,

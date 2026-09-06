@@ -27,5 +27,7 @@ Important semantics:
 - Known integration: XaeroTools (https://github.com/dekrom/xaerotools) offers an optional 2b2tAtlas location and map-imagery overlay.
 - Reuse is unrestricted by Atlas; attribution is optional and appreciated.
 - Keep sourceUrl, attribution, caption, and evidence fields when practical so claims remain traceable.
-- Eligible Archive warps link to immutable bounded-footprint Java-save ZIPs and metadata; they are partial historical snapshots, not complete 2b2t worlds.
+- Eligible Archive warps link to immutable bounded-footprint Java-save ZIPs and metadata.
+- Verified pre-Archive/community renders may link directly to preserved-render-source ZIPs without fabricating Archive warp identities.
+- Both download classes are partial historical Java saves, not complete 2b2t worlds; follow sourceType, scope, provenance, and warning fields.
 - Do not use or describe private write/admin routes from this repository.

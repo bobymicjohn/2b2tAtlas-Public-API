@@ -40,7 +40,8 @@ if (warps.Count == 0) Console.WriteLine("  none catalogued");
 Console.WriteLine("\nWDL-derived renders for this location:");
 var locationRenders = await api.GetRendersAsync(location.Rowid);
 foreach (var render in locationRenders)
-    Console.WriteLine($"  {render.Name} | {render.WorldDownloadDate ?? "date unknown"} | {render.ApiUrl}");
+    Console.WriteLine($"  {render.Name} | {render.WorldDownloadDate ?? "date unknown"} | {render.ApiUrl}" +
+        (string.IsNullOrWhiteSpace(render.WorldDownloadUrl) ? "" : $" | source WDL: {render.WorldDownloadUrl}"));
 if (locationRenders.Count == 0) Console.WriteLine("  none catalogued");
 
 var allRenders = await api.GetAllRendersAsync();
@@ -185,6 +186,11 @@ sealed class Render
     public string? WorldDownloadDate { get; init; }
     public string ApiUrl { get; init; } = "";
     public string? TileUrlTemplate { get; init; }
+    public string? WorldDownloadUrl { get; init; }
+    public string? WorldDownloadMetadataUrl { get; init; }
+    public string? WorldDownloadScope { get; init; }
+    public string? WorldDownloadSha256 { get; init; }
+    public string? WorldDownloadSource { get; init; }
 }
 
 sealed class Highway

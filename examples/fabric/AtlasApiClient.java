@@ -154,7 +154,9 @@ public final class AtlasApiClient {
     public record Render(
         int renderId, int locationId, String name, int dimension, String worldDownloadDate,
         String tileUrlTemplate, Long minX, Long minZ, Long maxXExclusive, Long maxZExclusive,
-        Integer maxNativeZoom, String coordinateScheme, String apiUrl
+        Integer maxNativeZoom, String coordinateScheme, String apiUrl,
+        String worldDownloadUrl, String worldDownloadMetadataUrl, String worldDownloadScope,
+        String worldDownloadSha256, String worldDownloadSource
     ) {}
 
     public record Attachment(

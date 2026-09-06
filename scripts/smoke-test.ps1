@@ -11,6 +11,7 @@ $routes = @(
     '/api/groups/7',
     '/api/warps?locationId=5&limit=1',
     '/api/renders?locationId=5&limit=1',
+    '/api/renders/38/world-download',
     '/api/attachments?limit=1',
     '/api/highways/1',
     '/api/maprenders/catalog'

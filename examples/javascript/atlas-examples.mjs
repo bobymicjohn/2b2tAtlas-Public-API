@@ -52,7 +52,11 @@ async function main() {
     get(`/api/renders?locationId=${location.rowid}&limit=1000`),
   ]);
   console.log("warps:", warps.map(item => `/warp ${item.name}`));
-  console.log("renders:", renders.map(item => ({ date: item.worldDownloadDate, apiUrl: item.apiUrl })));
+  console.log("renders:", renders.map(item => ({
+    date: item.worldDownloadDate,
+    apiUrl: item.apiUrl,
+    sourceWdl: item.worldDownloadUrl || (item.archiveWarp && item.archiveWarp.worldDownloadUrl) || null,
+  })));
 
   if (location.groups && location.groups.length) {
     const group = await get(`/api/groups/${location.groups[0].groupId}`);

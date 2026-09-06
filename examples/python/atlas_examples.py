@@ -49,7 +49,14 @@ def main() -> int:
     warps = get("/api/warps", {"locationId": location_id, "limit": 1000})
     renders = get("/api/renders", {"locationId": location_id, "limit": 1000})
     print("warps:", [f'/warp {item["name"]}' for item in warps])
-    print("renders:", [(item.get("worldDownloadDate"), item["apiUrl"]) for item in renders])
+    print("renders:", [
+        (
+            item.get("worldDownloadDate"),
+            item["apiUrl"],
+            item.get("worldDownloadUrl") or (item.get("archiveWarp") or {}).get("worldDownloadUrl"),
+        )
+        for item in renders
+    ])
 
     if location.get("groups"):
         group = get(f'/api/groups/{location["groups"][0]["groupId"]}')
