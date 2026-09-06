@@ -4,6 +4,8 @@ Base URL: `https://api.blackportal.cloud`
 
 The routes in this document are anonymous, read-only, JSON endpoints. The live [API discovery document](https://api.blackportal.cloud/api) and [OpenAPI contract](https://api.blackportal.cloud/openapi/v1.json) are authoritative.
 
+AI assistants and research agents can query the same public graph through the read-only [2b2tAtlas MCP server](MCP.md) at `https://api.blackportal.cloud/mcp`.
+
 ## Common behavior
 
 - Send `Accept: application/json`.

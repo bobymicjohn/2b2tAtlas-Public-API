@@ -2,6 +2,7 @@
 
 [![API status](https://img.shields.io/website?url=https%3A%2F%2Fapi.blackportal.cloud%2Fapi&label=public%20API)](https://api.blackportal.cloud/api)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-live-6BA539)](https://api.blackportal.cloud/openapi/v1.json)
+[![MCP](https://img.shields.io/badge/MCP-Streamable_HTTP-8b5cf6)](https://2b2tatlas.com/mcp/)
 [![Data provided by 2b2tAtlas](https://img.shields.io/badge/data-2b2tAtlas-b45309)](https://2b2tatlas.com)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
@@ -14,6 +15,7 @@ This is a documentation and examples repository. It does **not** contain the pri
 - API base: [`https://api.blackportal.cloud`](https://api.blackportal.cloud/api)
 - Interactive Atlas: [`https://2b2tatlas.com`](https://2b2tatlas.com)
 - Live OpenAPI contract: [`/openapi/v1.json`](https://api.blackportal.cloud/openapi/v1.json)
+- MCP endpoint: [`https://api.blackportal.cloud/mcp`](https://2b2tatlas.com/mcp/)
 - Authentication: none for the public `GET` routes documented here
 - Format: JSON over HTTPS; public reads allow browser CORS
 
@@ -43,6 +45,25 @@ var highways = await http.GetFromJsonAsync<List<Highway>>("api/highways");
 
 The complete, runnable version is in [`examples/csharp`](examples/csharp). Dependency-free [JavaScript](examples/javascript), [Python](examples/python), and a [Fabric-oriented Java pattern](examples/fabric) are included too.
 
+## Connect an AI assistant with MCP
+
+2b2tAtlas exposes a public, stateless, read-only Model Context Protocol server. MCP clients can search and traverse the Atlas knowledge graph without downloading the entire catalog or teaching a model every REST relationship.
+
+```json
+{
+  "mcpServers": {
+    "2b2t-atlas": {
+      "type": "http",
+      "url": "https://api.blackportal.cloud/mcp"
+    }
+  }
+}
+```
+
+The server offers 15 bounded tools for locations, nearby and historical searches, groups and their builds, highways, Archive warps, render provenance, WDL metadata, preserved builds, and dataset statistics. It also exposes stable resources such as `2b2tatlas://location/{id}`. See the complete [MCP client and tool guide](docs/MCP.md).
+
+MCP is an agent interface over the same reviewed Atlas records, not a second AI-generated database. It returns metadata and public HTTPS links rather than putting WDL ZIPs or render images into model context.
+
 All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point them at a mock or development server; the repository's CI uses this seam to test every example without generating bursts against the public service.
 
 ## What can I build?
@@ -60,6 +81,7 @@ All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point t
 | WDL coverage dashboard | locations with renders, render dates, footprints, warp provenance |
 | Offline archaeology / block analysis | immutable bounded-world ZIP, SHA-256, chunk count, exact bounds |
 | LLM/RAG history corpus | static JSONL entity feeds, canonical pages, cited media records |
+| MCP research assistant | bounded semantic tools, canonical resource URIs, reciprocal entity relationships |
 | World-download browser or mirroring tool | WDL JSONL catalog, resumable ZIP links, checksums, scope warnings |
 
 See [2b2t-specific project ideas](docs/2B2T-IDEAS.md) for more—including safe client-thread patterns, route overlays, pilgrimage lists, historical diffing, and source-aware research tools.
@@ -106,6 +128,7 @@ For crawlers, archives, bulk research, and language-model tools, 2b2tAtlas also 
 - [`media.jsonl`](https://2b2tatlas.com/entities/media.jsonl)
 - [`world-downloads.jsonl`](https://2b2tatlas.com/entities/world-downloads.jsonl)
 - [crawlable world-download catalog](https://2b2tatlas.com/entities/world-downloads/)
+- [MCP server guide](https://2b2tatlas.com/mcp/) and remote endpoint at `https://api.blackportal.cloud/mcp`
 - canonical HTML/JSON-LD pages under `/entities/locations/{id}/` and `/entities/groups/{id}/`
 
 Use the live API for interactive applications and the static feeds for deliberate bulk ingestion. The WDL feed identifies every available ZIP as a partial Java save and links it to its canonical location and render, plus its exact Archive warp when one exists. `sourceType` and `scope` distinguish collector-bounded snapshots from verified preserved sources behind older/community renders. See [LLM and bulk-data guidance](docs/2B2T-IDEAS.md#llm-search-and-research-tools).
@@ -131,6 +154,7 @@ examples/
   requests.http copy-ready REST Client requests
 docs/
   API-REFERENCE.md
+  MCP.md
   COORDINATES-AND-RENDERS.md
   2B2T-IDEAS.md
 ```
