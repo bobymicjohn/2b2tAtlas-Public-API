@@ -2,6 +2,8 @@
 
 ## Since 1.1.0 — 2026-09-08
 
+Use the documented August 15–17, 2019 capture dates in the 43k Nether layer name.
+
 Document the restored 43k Nether primary layer and its original coordinate
 contract, including the reprojection needed on the current Nether map grid.
 Withdraw the 5k layer from the catalog because its world transform is unverified.

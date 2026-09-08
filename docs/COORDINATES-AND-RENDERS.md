@@ -61,6 +61,9 @@ location or capture; use the relationships supplied by the API.
 ## Historical Nether primary layers
 
 `GET /api/maprenders/catalog` includes the original 43k Nether map.
+Its display name is **43k Nether (Aug 15–17, 2019)**, using the capture dates
+credited to l_amp in the [original release](https://www.reddit.com/r/2b2t/comments/dzvq67/)
+and its bundled README. The End capture is dated August–September 2019.
 Its `coordinateScheme` is `atlas-nether-legacy-v1`, with 256px PNGs, offset
 `21503.36`, scale factor `3.3599`, and no URL zoom offset. At native URL zoom `q`,
 blocks per pixel are `64 * 3.3599 / 2^q`. Tile `(tx, ty)` starts at block
