@@ -134,6 +134,23 @@ HIGHWAY = {
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
+        # Tiny synthetic buckets for examples, not a copy of the historical data.
+        parsed = urlparse(self.path)
+        if parsed.path == '/api/nocom':
+            return self.send_json({'name': 'Nocom offline fixture', 'observations': 300})
+        if parsed.path in ('/api/nocom/periods', '/api/nocom/highways'):
+            query = parse_qs(parsed.query)
+            dimension = query.get('dimension', ['nether'])[0]
+            if parsed.path.endswith('/highways') and dimension == 'end':
+                return self.send_json([])
+            row = dict(dimension=dimension, atlasDimension={'overworld': 0, 'nether': 1, 'end': 2}[dimension],
+                       periodStartUtc='2020-03-09T00:00:00+00:00',
+                       periodEndExclusiveUtc='2020-04-08T00:00:00+00:00', observations=100)
+            if parsed.path.endswith('/highways'):
+                row['direction'] = query.get('direction', ['northeast'])[0]
+            else:
+                row['sourceDimension'] = {'overworld': 0, 'nether': -1, 'end': 1}[dimension]
+            return self.send_json([row])
         request = urlparse(self.path)
         query = parse_qs(request.query)
         path = request.path.rstrip("/") or "/"

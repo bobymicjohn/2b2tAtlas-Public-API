@@ -14,6 +14,9 @@ routes=(
   "/api/attachments?limit=1"
   "/api/highways/1"
   "/api/maprenders/catalog"
+  "/api/nocom"
+  "/api/nocom/periods?dimension=nether"
+  "/api/nocom/highways?dimension=nether&direction=northeast"
 )
 
 for route in "${routes[@]}"; do

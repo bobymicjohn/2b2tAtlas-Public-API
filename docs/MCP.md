@@ -49,6 +49,9 @@ The endpoint negotiates the MCP protocol itself. Do not append `/api`, and do no
 | `get_world_downloads` | List publicly downloadable, provenance-validated partial WDLs for a location |
 | `get_render_metadata` | List public render footprints, dates, tile/preview URLs, validated BlueMap 3D URL/profile, and provenance |
 | `get_dataset_stats` | Return synchronized catalog and relationship counts |
+| `get_nocom_dataset` | Historical observation provenance, coverage, caveats and tile discovery |
+| `get_nocom_periods` | Up to 39 fixed 30-day dimension/period aggregates; overlapping date filters |
+| `get_nocom_highway_activity` | Released compass-direction highway observations; at most 136 rows per dimension |
 
 Tool inputs are server-bounded. Search result limits cannot be raised above 100, and nearby searches cannot exceed the server's coordinate-radius ceiling. Clients should make focused calls instead of attempting to reproduce a bulk export through repeated MCP requests.
 

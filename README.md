@@ -9,6 +9,15 @@
 
 Build Minecraft mods, map overlays, Discord bots, history tools, waypoint exporters, and research projects with the public [2b2tAtlas](https://2b2tatlas.com) data API.
 
+If you have ever had three spellings of the same base, an undated screenshot and
+a coordinates file called `final_final2.txt`, this is the less painful starting
+point. Query a location, follow its dated renders and source saves, and keep the
+provenance with whatever you build. The map is a view of the archive; the archive
+is the useful bit.
+
+[v1.1.0](CHANGELOG.md) adds the released Nocom observation aggregates and MCP
+queries, plus a runnable [historical activity example](examples/python/nocom_activity.py).
+
 This is a documentation and examples repository. It does **not** contain the private Atlas application, collector, credentials, moderation tools, or server infrastructure.
 
 ## Start here
@@ -63,7 +72,7 @@ The complete, runnable version is in [`examples/csharp`](examples/csharp). Depen
 }
 ```
 
-The server offers 15 bounded tools for locations, nearby and historical searches, groups and their builds, highways, Archive warps, render provenance, WDL metadata, preserved builds, and dataset statistics. It also exposes stable resources such as `2b2tatlas://location/{id}`. See the complete [MCP client and tool guide](docs/MCP.md).
+The server offers 18 bounded tools for locations, nearby and historical searches, groups and their builds, highways, Archive warps, render provenance, WDL metadata, preserved builds, dataset statistics, and historical Nocom observations. It also exposes stable resources such as `2b2tatlas://location/{id}`. See the [MCP client and tool guide](docs/MCP.md) and [Nocom data guide](docs/NOCOM.md).
 
 The canonical discovery record is published as [`io.github.bobymicjohn/2b2t-atlas`](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas) in the official MCP Registry. Its checked-in [`server.json`](server.json) and [OIDC publishing workflow](.github/workflows/publish-mcp-registry.yml) make the remote endpoint independently discoverable and every registry release reproducible.
 
@@ -89,6 +98,7 @@ All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point t
 | LLM/RAG history corpus | static JSONL entity feeds, canonical pages, cited media records |
 | MCP research assistant | bounded semantic tools, canonical resource URIs, reciprocal entity relationships |
 | World-download browser or mirroring tool | WDL JSONL catalog, resumable ZIP links, checksums, scope warnings |
+| Historical highway activity comparison | released Nocom dimension/period/direction aggregates, with observations kept distinct from players |
 
 See [2b2t-specific project ideas](docs/2B2T-IDEAS.md) for more—including safe client-thread patterns, route overlays, pilgrimage lists, historical diffing, and source-aware research tools.
 
@@ -111,6 +121,7 @@ Built something with the API? Open an [integration showcase](https://github.com/
 | Groups | `GET /api/groups`, `GET /api/groups/{id}` | aliases, attributed builds and highways |
 | Highways | `GET /api/highways`, `GET /api/highways/{id}` | geometry and reviewed group roles |
 | Map layers | `GET /api/maprenders`, `GET /api/maprenders/catalog` | primary layers plus per-location renders |
+| Nocom observations | `GET /api/nocom`, `/api/nocom/periods`, `/api/nocom/highways` | released historical aggregates, provenance and sparse tile templates |
 
 The [API reference](docs/API-REFERENCE.md) explains filters, paging, dimensions, stable links, errors, and caching. See the [BlueMap 3D guide](docs/BLUEMAP-3D.md) before embedding historical 3D viewers. The live OpenAPI document is the machine-readable source of truth.
 

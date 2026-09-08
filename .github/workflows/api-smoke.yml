@@ -39,4 +39,6 @@ jobs:
           dotnet run --project examples/csharp -- "Mu Megabase"
           node examples/javascript/atlas-examples.mjs "Mu Megabase"
           python examples/python/atlas_examples.py "Mu Megabase"
+          python examples/python/nocom_activity.py --dimension nether --direction northeast
+          python examples/python/nocom_activity.py --dimension end
           bash scripts/smoke-test.sh
