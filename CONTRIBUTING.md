@@ -33,6 +33,7 @@ node examples/javascript/atlas-examples.mjs "Mu Megabase"
 python examples/python/atlas_examples.py "Mu Megabase"
 python examples/python/nocom_activity.py --dimension nether --direction northeast
 python examples/python/nocom_activity.py --dimension end
+python examples/python/location_media.py 5
 ```
 
 CI runs these examples and `scripts/smoke-test.sh` against the fixture.

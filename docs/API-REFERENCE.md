@@ -247,9 +247,26 @@ GET /api/attachments?mediaType=Image&limit=100
 GET /api/attachments/1
 ```
 
-`mediaType` values currently used by the catalog include `Image`, `Video`, `Wiki`, and `Link`. Treat the vocabulary as extensible.
+`mediaType` values include `Image`, `Video`, `Wiki`, `Link`, `Timeline`, and
+`Article`. Older rows may return null. Treat the vocabulary as extensible.
 
-Useful fields include `path`, `thumbnailPath`, `sourceUrl`, `caption`, and `attribution`. A self-hosted path is a convenience copy; the original-source fields make optional credit and verification straightforward when presenting or redistributing it.
+Use `path` as the item link, `sourceUrl` for its source context, and preserve
+`caption` and `attribution`. A timeline's path can point to one event while its
+sourceUrl identifies the full chronology. A mention in a chronology is an
+attributed historical reference, not independent proof of an event date.
+
+`thumbnailPath` is optional. Article/timeline links need not have an image.
+YouTube paths can include chapter timestamps; keep the returned URL. Video IDs
+are case-sensitive, and multiple locations can legitimately link the same tour.
+The website's bundled creator avatars are presentation assets, not API fields.
+
+```http
+GET /api/attachments?mediaType=Timeline&limit=100&offset=0
+GET /api/attachments?mediaType=Article&limit=100&offset=0
+```
+
+The [Python media example](../examples/python/location_media.py) prints a
+location's sources and credits without downloading media. It follows pagination.
 
 ## Highways and canals
 

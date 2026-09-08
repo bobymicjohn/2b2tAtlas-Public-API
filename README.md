@@ -37,6 +37,7 @@ dotnet run --project examples/csharp -- "Mu Megabase"
 node examples/javascript/atlas-examples.mjs "Mu Megabase"
 python examples/python/atlas_examples.py "Mu Megabase"
 python examples/python/nocom_activity.py --dimension nether --direction northeast
+python examples/python/location_media.py 1254
 ```
 
 The C# example uses .NET 8. The JavaScript and Python examples use their standard

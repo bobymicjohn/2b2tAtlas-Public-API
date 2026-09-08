@@ -41,4 +41,5 @@ jobs:
           python examples/python/atlas_examples.py "Mu Megabase"
           python examples/python/nocom_activity.py --dimension nether --direction northeast
           python examples/python/nocom_activity.py --dimension end
+          python examples/python/location_media.py 5
           bash scripts/smoke-test.sh

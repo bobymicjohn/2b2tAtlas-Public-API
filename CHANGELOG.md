@@ -1,5 +1,13 @@
 # Changes
 
+## Since 1.1.0 — 2026-09-08
+
+Document Timeline and Article attachments, nullable legacy media types, event
+versus chronology links, and timestamped YouTube references. Add a paginated
+Python example that prints a location's media links and source credits. The
+Atlas research runner and contributor workflow live in the main source repo;
+this repository remains the public read-only API reference.
+
 ## 1.1.0 — 2026-09-07
 
 Documents the historical aggregates Atlas serves from the public Nerds Inc release: fixed
