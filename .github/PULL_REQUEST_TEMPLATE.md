@@ -1,12 +1,7 @@
-## What player/developer workflow does this improve?
+## Changes
 
-Describe the practical integration use case.
+Describe the problem and what changed.
 
 ## Verification
 
-- [ ] I ran every example I changed.
-- [ ] I checked the live OpenAPI contract.
-- [ ] The change uses only public read routes.
-- [ ] No credentials, sessions, private coordinates, or operational details are included.
-- [ ] Examples cache responsibly and do not block a Minecraft render/client thread.
-- [ ] Source/attribution fields are preserved where relevant.
+List the examples or checks you ran.

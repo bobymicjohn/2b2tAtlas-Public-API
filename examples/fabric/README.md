@@ -2,7 +2,7 @@
 
 This folder is a focused pattern, not a complete mod. [`AtlasApiClient.java`](AtlasApiClient.java) uses Java's standard asynchronous HTTP client plus Gson, which is common in Fabric projects.
 
-## The important threading rule
+## Threading
 
 Never wait for Atlas HTTP on Minecraft's client/render thread.
 
@@ -27,20 +27,6 @@ The example client:
 - exposes each render's nullable BlueMap URL/profile so a user-initiated 3D action can retain a 2D fallback;
 - returns `CompletableFuture` so the caller chooses the correct game-thread handoff;
 - models unknown/additive JSON fields safely through Gson.
-
-## Recommended mod architecture
-
-```text
-AtlasApiClient       HTTP + JSON only
-AtlasRepository      TTL/disk cache and background refresh
-AtlasSpatialIndex    dimension-aware nearest/bounds queries
-AtlasOverlayModel    map-neutral markers and render footprints
-JourneyMapAdapter    optional integration
-XaeroAdapter         optional integration
-AtlasScreen          search/history/source UI
-```
-
-Keep map mods optional: isolate their APIs behind adapters and load them only when present. Your domain model should remain usable for a HUD, command, or another map implementation.
 
 ## Cache lifecycle
 

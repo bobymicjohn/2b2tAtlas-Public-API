@@ -1,10 +1,5 @@
 # Nocom historical observations
 
-The heatmap is the overview. The released aggregates are what you want when
-comparing periods or asking which highway direction had more positive observations.
-Keep the bucket dates and measurement alongside the number; otherwise it is very
-easy to turn a useful historical dataset into a bad player-count graph.
-
 Atlas exposes the published Nocom aggregates through anonymous, read-only JSON
 and MCP. These are historical loaded-chunk observations, not exact player
 positions, unique visitors, trips, current activity, or proof of base ownership.

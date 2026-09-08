@@ -19,7 +19,8 @@ static (long X, long Z) OverworldToNether(long x, long z) =>
     ((long)Math.Floor(x / 8d), (long)Math.Floor(z / 8d));
 ```
 
-This is planning math, not a promise that a portal exists, links cleanly, or is safe. Portal search/linking, border clamping, terrain, obstructions, and the server's current world state still matter.
+This estimates coordinates only. Portal placement and linking depend on terrain,
+existing portals, border limits, and the current server state.
 
 ## Tile URL templates
 
@@ -39,7 +40,7 @@ Important distinctions:
 
 For a new map integration, use the footprint to cull off-screen renders, honor `maxNativeZoom`, and fetch only visible tiles. Never enumerate every possible tile URL.
 
-## A responsive overlay strategy
+## Loading tiles
 
 1. Fetch the render catalog outside the render thread.
 2. Index footprints by dimension and bounding box.
@@ -50,19 +51,12 @@ For a new map integration, use the footprint to cull off-screen renders, honor `
 7. Keep day/night variants in the same cache key.
 8. Link an overlay or tooltip back to the render's `apiUrl` and location's canonical page.
 
-This preserves close-up historical detail without turning hundreds of base renders into a permanent GPU, memory, or network cost.
-
 ## Multiple historical renders
 
-One location can have multiple WDL snapshots. Useful UI patterns include:
-
-- default to the newest dated render;
-- allow the player to select or combine snapshots;
-- label every snapshot with `worldDownloadDate` and Archive warp identity;
-- provide a compare slider or blink/difference mode;
-- do not merge footprints merely because they overlap.
-
-Overlap is geographic evidence, not identity. Use the owning location and Archive warp relationships supplied by the API.
+One location can have multiple WDL snapshots. Keep each render's ID,
+`worldDownloadDate`, dimension, and Archive warp or preserved-source relationship.
+Overlapping footprints do not establish that two renders belong to the same
+location or capture; use the relationships supplied by the API.
 
 ## BlueMap 3D derivatives
 

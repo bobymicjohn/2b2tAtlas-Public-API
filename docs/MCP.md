@@ -1,6 +1,6 @@
 # 2b2tAtlas MCP server
 
-The public 2b2tAtlas Model Context Protocol server lets compatible AI assistants, research agents, IDEs, bots, and automation tools query the Atlas as a connected historical graph.
+The 2b2tAtlas Model Context Protocol server provides tools for querying public Atlas records.
 
 - Endpoint: `https://api.blackportal.cloud/mcp`
 - Transport: Streamable HTTP
@@ -66,24 +66,7 @@ Stable resources provide direct retrieval when an entity ID is already known:
 
 These are MCP resource URIs, not browser URLs. Returned records also include canonical `https://2b2tatlas.com/entities/...` pages and live `https://api.blackportal.cloud/api/...` URLs.
 
-## Useful 2b2t prompts
-
-Once the server is connected, an agent can handle requests such as:
-
-- “Find preserved DonFuer builds with downloadable WDLs, then cite each canonical Atlas page.”
-- “What documented Overworld locations are within 25,000 blocks of X -50,000, Z 56,000?”
-- “Research Mu Megabase, distinguish its historical renders, and list related groups and nearby sites.”
-- “Compare the known builds and highways attributed to the Highway Workers Union.”
-- “Find locations with render or warp evidence between 2016 and 2018.”
-- “List downloadable partial worlds for this location and include their checksums and scope warnings.”
-
-An agent can also ask which dated renders for a location currently have a
-BlueMap 3D view. The result should keep each date/dimension distinct and cite
-the canonical location rather than treating the viewer as a new entity.
-
-MCP tool results are deterministic projections of current Atlas records. The calling model may summarize or infer from those records, so important claims should still cite the returned canonical entity page and preserve any original evidence/source links.
-
-## WDL and media safety
+## WDL and media responses
 
 The MCP server never returns ZIP, image, or BlueMap model bytes. It returns metadata and HTTPS URLs for resources that Atlas already exposes publicly. Downloadable worlds are partial historical Minecraft Java saves, either an exact retained Archive collector footprint or a verified preserved render source; they are not complete copies of 2b2t. A BlueMap URL belongs to one exact render/date/dimension and should be opened by the user rather than expanded into model context.
 
@@ -91,4 +74,6 @@ For bulk analysis, use the static [JSONL catalogs](https://2b2tatlas.com/llms.tx
 
 ## Attribution and reuse
 
-Use Atlas-authored factual records and these examples however you want. Attribution is optional, but linking the canonical entity page helps other players inspect the same historical record. When practical, retain original media/evidence provenance too.
+Attribution is optional. Returned canonical URLs identify the Atlas record;
+source and evidence URLs identify the original material. See [NOTICE.md](../NOTICE.md)
+for third-party media terms.

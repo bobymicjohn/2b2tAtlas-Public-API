@@ -2,8 +2,7 @@
 
 ## 1.1.0 — 2026-09-07
 
-Nocom is useful for more than a heatmap screenshot. This release documents the
-historical aggregates Atlas serves from the public Nerds Inc release: fixed
+Documents the historical aggregates Atlas serves from the public Nerds Inc release: fixed
 30-day buckets, dimension totals and compass-direction highway series.
 
 - Document `/api/nocom`, `/api/nocom/periods` and `/api/nocom/highways`, including
@@ -17,7 +16,7 @@ historical aggregates Atlas serves from the public Nerds Inc release: fixed
 
 Positive loaded-chunk observations are not unique players, exact positions or a
 live radar. The last bucket boundary also does not mean the exploit worked until
-that date. Those distinctions travel with the data.
+that date.
 
 API/MCP data is live independently of the static site's deployment. The Nocom
 HTML/JSONL exports are included in the pending frontend package. This repository

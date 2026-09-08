@@ -1,202 +1,129 @@
 # 2b2tAtlas Public API
 
-[![API status](https://img.shields.io/website?url=https%3A%2F%2Fapi.blackportal.cloud%2Fapi&label=public%20API)](https://api.blackportal.cloud/api)
-[![OpenAPI](https://img.shields.io/badge/OpenAPI-live-6BA539)](https://api.blackportal.cloud/openapi/v1.json)
-[![MCP](https://img.shields.io/badge/MCP-Streamable_HTTP-8b5cf6)](https://2b2tatlas.com/mcp/)
-[![Official MCP Registry](https://img.shields.io/badge/MCP_Registry-io.github.bobymicjohn%2F2b2t--atlas-5b5fc7)](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas)
-[![Data provided by 2b2tAtlas](https://img.shields.io/badge/data-2b2tAtlas-b45309)](https://2b2tatlas.com)
-[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
+Documentation and examples for the [2b2tAtlas](https://2b2tatlas.com) public API:
+historical locations, groups, highways, Archive warps, world downloads, map renders,
+and Nocom observation aggregates.
 
-Build Minecraft mods, map overlays, Discord bots, history tools, waypoint exporters, and research projects with the public [2b2tAtlas](https://2b2tatlas.com) data API.
+**Base URL:** `https://api.blackportal.cloud`. Public reads require no API key.
+JSON responses support browser CORS.
 
-If you have ever had three spellings of the same base, an undated screenshot and
-a coordinates file called `final_final2.txt`, this is the less painful starting
-point. Query a location, follow its dated renders and source saves, and keep the
-provenance with whatever you build. The map is a view of the archive; the archive
-is the useful bit.
+- [API reference](docs/API-REFERENCE.md)
+- [Live OpenAPI schema](https://api.blackportal.cloud/openapi/v1.json)
+- [Coordinates and render tiles](docs/COORDINATES-AND-RENDERS.md)
+- [BlueMap 3D views](docs/BLUEMAP-3D.md)
+- [Nocom data](docs/NOCOM.md)
+- [MCP setup and tools](docs/MCP.md)
+- [Changelog](CHANGELOG.md)
 
-[v1.1.0](CHANGELOG.md) adds the released Nocom observation aggregates and MCP
-queries, plus a runnable [historical activity example](examples/python/nocom_activity.py).
+## Requests
 
-This is a documentation and examples repository. It does **not** contain the private Atlas application, collector, credentials, moderation tools, or server infrastructure.
-
-## Start here
-
-- API base: [`https://api.blackportal.cloud`](https://api.blackportal.cloud/api)
-- Interactive Atlas: [`https://2b2tatlas.com`](https://2b2tatlas.com)
-- Live OpenAPI contract: [`/openapi/v1.json`](https://api.blackportal.cloud/openapi/v1.json)
-- MCP endpoint: [`https://api.blackportal.cloud/mcp`](https://2b2tatlas.com/mcp/)
-- Official MCP Registry name: [`io.github.bobymicjohn/2b2t-atlas`](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas)
-- Authentication: none for the public `GET` routes documented here
-- Format: JSON over HTTPS; public reads allow browser CORS
-
-```csharp
-// Find a location
-var locations = await http.GetFromJsonAsync<List<Location>>("api/locations");
-var mu = locations!.First(x => x.Name.Equals("Mu Megabase", StringComparison.OrdinalIgnoreCase));
-
-// Find bases by group
-var groups = await http.GetFromJsonAsync<List<Group>>("api/groups");
-var group = groups!.First(x => x.Name.Contains("DonFuer", StringComparison.OrdinalIgnoreCase));
-var groupWithBuilds = await http.GetFromJsonAsync<Group>($"api/groups/{group.Id}");
-
-// Query Archive warps for a location
-var warps = await http.GetFromJsonAsync<List<Warp>>($"api/warps?locationId={mu.Rowid}&limit=100");
-
-// Follow an eligible warp's worldDownloadMetadataUrl or worldDownloadUrl.
-// These are bounded historical Java saves, not complete copies of 2b2t.
-
-// Find locations with WDL-derived map renders
-var renders = await http.GetFromJsonAsync<List<Render>>("api/renders?limit=1000");
-var renderedLocationIds = renders!.Select(x => x.LocationId).Distinct().ToHashSet();
-var threeDimensional = renders.Where(x => x.BlueMapUrl is not null).ToList();
-
-// Query public, reviewed highways and canals
-var highways = await http.GetFromJsonAsync<List<Highway>>("api/highways");
+```sh
+curl --fail "https://api.blackportal.cloud/api/locations"
+curl --fail "https://api.blackportal.cloud/api/groups"
+curl --fail "https://api.blackportal.cloud/api/renders?limit=10"
+curl --fail "https://api.blackportal.cloud/api/nocom/highways?dimension=nether&direction=northeast"
 ```
 
-The complete, runnable version is in [`examples/csharp`](examples/csharp). Dependency-free [JavaScript](examples/javascript), [Python](examples/python), and a [Fabric-oriented Java pattern](examples/fabric) are included too.
+List responses are JSON arrays. Warps, renders, and attachments accept `limit`
+and `offset`; the default limit is 500 and the maximum is 1,000. Locations return
+the complete catalog.
 
-## Connect an AI assistant with MCP
+## Examples
 
-2b2tAtlas exposes a public, stateless, read-only Model Context Protocol server. MCP clients can search and traverse the Atlas knowledge graph without downloading the entire catalog or teaching a model every REST relationship.
+Run from the repository root:
 
-```json
-{
-  "mcpServers": {
-    "2b2t-atlas": {
-      "type": "http",
-      "url": "https://api.blackportal.cloud/mcp"
-    }
-  }
-}
+```sh
+dotnet run --project examples/csharp -- "Mu Megabase"
+node examples/javascript/atlas-examples.mjs "Mu Megabase"
+python examples/python/atlas_examples.py "Mu Megabase"
+python examples/python/nocom_activity.py --dimension nether --direction northeast
 ```
 
-The server offers 18 bounded tools for locations, nearby and historical searches, groups and their builds, highways, Archive warps, render provenance, WDL metadata, preserved builds, dataset statistics, and historical Nocom observations. It also exposes stable resources such as `2b2tatlas://location/{id}`. See the [MCP client and tool guide](docs/MCP.md) and [Nocom data guide](docs/NOCOM.md).
+The C# example uses .NET 8. The JavaScript and Python examples use their standard
+libraries. Each defaults to the public API; set `ATLAS_API_BASE_URL` to use a
+local fixture or development server.
 
-The canonical discovery record is published as [`io.github.bobymicjohn/2b2t-atlas`](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas) in the official MCP Registry. Its checked-in [`server.json`](server.json) and [OIDC publishing workflow](.github/workflows/publish-mcp-registry.yml) make the remote endpoint independently discoverable and every registry release reproducible.
+[examples/requests.http](examples/requests.http) contains REST Client requests.
+[examples/fabric](examples/fabric) contains an asynchronous Java HTTP client and
+Minecraft client-thread handoff example; it is not a complete mod.
 
-MCP is an agent interface over the same reviewed Atlas records, not a second AI-generated database. It returns metadata and public HTTPS links rather than putting WDL ZIPs or render images into model context.
+## Endpoints
 
-All runnable examples default to production. Set `ATLAS_API_BASE_URL` to point them at a mock or development server; the repository's CI uses this seam to test every example without generating bursts against the public service.
+All routes below use `GET`. See the [reference](docs/API-REFERENCE.md) for response
+fields, filters, caching, and errors.
 
-## What can I build?
-
-| Project idea | Atlas data to use |
+| Resource | Routes |
 | --- | --- |
-| JourneyMap/Xaero-style landmark layer | locations, dimensions, coordinates, canonical URLs |
-| Historical base time machine | render footprints, dates, day/night tile templates, optional BlueMap 3D viewers |
-| In-mod 3D history browser | render-scoped `blueMapUrl` links with 2D fallback and exact date/dimension labels |
-| Highway and canal route planner | reviewed geometry, dimensions, widths, builder groups |
-| Nether portal travel helper | Overworld/Nether coordinates plus local 8:1 conversion |
-| `/whereis`, `/history`, or `/group` Discord bot | locations, warps, groups, builds, source links |
-| Archive warp resolver | exact Archive warp identities and owning locations |
-| Group lineage/build explorer | reciprocal group-to-build and group-to-highway records |
-| Offline nearest-landmark search | cache `/api/locations` and build a local spatial index |
-| WDL coverage dashboard | locations with renders, render dates, footprints, warp provenance |
-| Offline archaeology / block analysis | immutable bounded-world ZIP, SHA-256, chunk count, exact bounds |
-| LLM/RAG history corpus | static JSONL entity feeds, canonical pages, cited media records |
-| MCP research assistant | bounded semantic tools, canonical resource URIs, reciprocal entity relationships |
-| World-download browser or mirroring tool | WDL JSONL catalog, resumable ZIP links, checksums, scope warnings |
-| Historical highway activity comparison | released Nocom dimension/period/direction aggregates, with observations kept distinct from players |
+| Locations | `/api/locations`, `/api/locations/{id}` |
+| Groups | `/api/groups`, `/api/groups/{id}` |
+| Highways | `/api/highways`, `/api/highways/{id}` |
+| Archive warps | `/api/warps`, `/api/warps/{id}` |
+| Warp WDL metadata and ZIP | `/api/warps/{id}/world-download`, `/api/warps/{id}/world-download.zip` |
+| Renders | `/api/renders`, `/api/renders/{id}`, `/api/locations/{id}/renders` |
+| Preserved render-source WDL metadata and ZIP | `/api/renders/{id}/world-download`, `/api/renders/{id}/world-download.zip` |
+| Historical media | `/api/attachments`, `/api/attachments/{id}` |
+| Map layers | `/api/maprenders`, `/api/maprenders/catalog` |
+| Nocom | `/api/nocom`, `/api/nocom/periods`, `/api/nocom/highways` |
 
-See [2b2t-specific project ideas](docs/2B2T-IDEAS.md) for more—including safe client-thread patterns, route overlays, pilgrimage lists, historical diffing, and source-aware research tools.
+## Client behavior
 
-## Projects using 2b2tAtlas
+- Cache catalog responses and honor HTTP cache headers. In Minecraft clients,
+  perform HTTP requests and image decoding outside the render/tick thread.
+- Follow returned links such as `apiUrl`, `canonicalUrl`, `worldDownloadUrl`,
+  and `blueMapUrl`. BlueMap links are optional and belong to a specific render.
+- Handle null fields and ignore unknown JSON properties.
+- Coordinates use the record's native dimension: `0` Overworld, `1` Nether,
+  `2` End. Tile-template `{y}` is a tile row, not Minecraft elevation.
+- WDLs are partial historical Java saves. Their metadata includes scope,
+  provenance, size, and SHA-256; ZIP downloads support HTTP ranges.
+- Historical coordinates and renders do not describe the current server state.
+  Nocom observation counts are not unique-player counts.
+- Retain source URLs, captions, attribution, and evidence fields when copying
+  records so the original material can be checked.
 
-- [XaeroTools](https://github.com/dekrom/xaerotools) is an open-source browser, merger, backup, and live-sharing toolkit for Xaero's World Map and XaeroPlus data. Its optional 2b2tAtlas overlay loads community-documented locations with Atlas source links, and it can mirror Atlas map imagery for local use.
+## MCP
 
-Built something with the API? Open an [integration showcase](https://github.com/bobymicjohn/2b2tAtlas-Public-API/issues/new?template=integration-showcase.yml) so other players and tool authors can find it.
+Endpoint: `https://api.blackportal.cloud/mcp`. Transport: Streamable HTTP.
+The server is stateless and read-only, with no authentication required.
 
-## Public endpoints
+The [MCP guide](docs/MCP.md) includes client configuration, the 18 tools, and
+resource URIs. The registry name is
+[`io.github.bobymicjohn/2b2t-atlas`](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas);
+its manifest is [server.json](server.json).
 
-| Resource | Routes | Useful relationships |
-| --- | --- | --- |
-| Locations | `GET /api/locations`, `GET /api/locations/{id}` | warps, attachments, renders, builder groups |
-| Archive warps | `GET /api/warps`, `GET /api/warps/{id}` | owning location, WDL date/SHA and bounded-world links when available |
-| Archive world ZIPs | `GET /api/warps/{id}/world-download`, `GET /api/warps/{id}/world-download.zip` | size, digest, bounds, resumable immutable Java-save download |
-| WDL renders | `GET /api/renders`, `GET /api/renders/{id}`, `GET /api/locations/{id}/renders` | location, Archive warp or preserved source, tile template, footprint, optional BlueMap 3D URL/profile |
-| Legacy render-source ZIPs | `GET /api/renders/{id}/world-download`, `GET /api/renders/{id}/world-download.zip` | verified pre-Archive/community source, digest, provenance, resumable download |
-| Historical media | `GET /api/attachments`, `GET /api/attachments/{id}` | location, source, caption, attribution |
-| Groups | `GET /api/groups`, `GET /api/groups/{id}` | aliases, attributed builds and highways |
-| Highways | `GET /api/highways`, `GET /api/highways/{id}` | geometry and reviewed group roles |
-| Map layers | `GET /api/maprenders`, `GET /api/maprenders/catalog` | primary layers plus per-location renders |
-| Nocom observations | `GET /api/nocom`, `/api/nocom/periods`, `/api/nocom/highways` | released historical aggregates, provenance and sparse tile templates |
+## Bulk data
 
-The [API reference](docs/API-REFERENCE.md) explains filters, paging, dimensions, stable links, errors, and caching. See the [BlueMap 3D guide](docs/BLUEMAP-3D.md) before embedding historical 3D viewers. The live OpenAPI document is the machine-readable source of truth.
+Static exports are hosted on `2b2tatlas.com`:
 
-## 2b2t-aware client guidance
+| File | Content |
+| --- | --- |
+| [dataset.json](https://2b2tatlas.com/dataset.json) | Dataset metadata and catalog links |
+| [locations.jsonl](https://2b2tatlas.com/entities/locations.jsonl) | Location records |
+| [groups.jsonl](https://2b2tatlas.com/entities/groups.jsonl) | Groups and relationships |
+| [media.jsonl](https://2b2tatlas.com/entities/media.jsonl) | Historical media records |
+| [world-downloads.jsonl](https://2b2tatlas.com/entities/world-downloads.jsonl) | Available partial WDLs, checksums, and source links |
+| [llms.txt](https://2b2tatlas.com/llms.txt) | Data and documentation index |
 
-1. Fetch in a background thread. Never block Minecraft's render or client tick thread on HTTP.
-2. Cache responses. Location/group/highway reads are cacheable for at least 60 seconds; a mod should usually cache much longer or keep an offline snapshot.
-3. Follow `apiUrl`, `canonicalUrl`, `interactiveUrl`, `locationApiUrl`, and similar link fields instead of rebuilding URLs.
-4. Treat coordinates as historical public records—not proof that a base is active, intact, safe, or loaded on the live server.
-5. When practical, keep `sourceUrl`, `attribution`, and evidence fields with redistributed media or historical claims so their history remains traceable.
-6. Tolerate additive JSON fields. Public `GET` contracts are stable, but the catalog continues to grow.
+Use these exports for bulk imports. Keep entity IDs and canonical URLs with
+imported records. The [WDL catalog](https://2b2tatlas.com/entities/world-downloads/)
+also has an HTML view.
 
-## Static and agent-friendly data
+## Existing integration
 
-For crawlers, archives, bulk research, and language-model tools, 2b2tAtlas also publishes:
+[XaeroTools](https://github.com/dekrom/xaerotools) supports an optional Atlas
+location overlay with source links and local copies of Atlas map imagery.
 
-- [`llms.txt`](https://2b2tatlas.com/llms.txt)
-- [`dataset.json`](https://2b2tatlas.com/dataset.json)
-- [`locations.jsonl`](https://2b2tatlas.com/entities/locations.jsonl)
-- [`groups.jsonl`](https://2b2tatlas.com/entities/groups.jsonl)
-- [`media.jsonl`](https://2b2tatlas.com/entities/media.jsonl)
-- [`world-downloads.jsonl`](https://2b2tatlas.com/entities/world-downloads.jsonl)
-- [crawlable world-download catalog](https://2b2tatlas.com/entities/world-downloads/)
-- [MCP server guide](https://2b2tatlas.com/mcp/) and remote endpoint at `https://api.blackportal.cloud/mcp`
-- [official MCP Registry record](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas) under `io.github.bobymicjohn/2b2t-atlas`
-- canonical HTML/JSON-LD pages under `/entities/locations/{id}/` and `/entities/groups/{id}/`
+## Contributing
 
-Use the live API for interactive applications and the static feeds for deliberate bulk ingestion. The WDL feed identifies every available ZIP as a partial Java save and links it to its canonical location and render, plus its exact Archive warp when one exists. `sourceType` and `scope` distinguish collector-bounded snapshots from verified preserved sources behind older/community renders. See [LLM and bulk-data guidance](docs/2B2T-IDEAS.md#llm-search-and-research-tools).
-
-## Credit the data
-
-Use Atlas data however you want. No Atlas credit or permission is required. If Atlas data is visible or materially powers your project, this simple optional credit helps players find the historical source:
-
-```markdown
-Data provided by [2b2tAtlas](https://2b2tatlas.com).
-```
-
-For a mod About screen, README badge, website footer, or machine-readable notice, see [ATTRIBUTION.md](ATTRIBUTION.md). Original-source fields returned with attachments and evidence are kept so downstream projects can credit and verify them too.
-
-## Repository map
-
-```text
-examples/
-  csharp/       complete .NET console example
-  fabric/       async Java/Fabric integration pattern
-  javascript/   dependency-free Node example
-  python/       dependency-free Python example
-  requests.http copy-ready REST Client requests
-docs/
-  API-REFERENCE.md
-  BLUEMAP-3D.md
-  MCP.md
-  COORDINATES-AND-RENDERS.md
-  2B2T-IDEAS.md
-```
-
-## Contributing and integrations
-
-- Open an [integration showcase](https://github.com/bobymicjohn/2b2tAtlas-Public-API/issues/new?template=integration-showcase.yml) when your tool uses the API.
-- Report unclear or stale documentation through the issue templates.
-- Add examples in another language or a small integration recipe through a pull request.
-- Ask for a new **public read** projection by describing the player/developer use case; never post credentials or non-public coordinates.
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting code. Questions and project demos are welcome in GitHub Discussions.
-
-## Stability and affiliation
-
-Public read models may gain fields as the historical graph grows. Clients should ignore unknown JSON properties and use nullable handling for incomplete historical metadata. Write/admin endpoints are intentionally outside this repository.
-
-2b2tAtlas is a community historical project and is not affiliated with Mojang Studios, Microsoft, or the operators of 2b2t. Minecraft names and assets belong to their respective owners.
-
-## Design references
-
-The repository's task-first examples and integration guidance borrow useful documentation patterns from [HypixelDev/PublicAPI](https://github.com/HypixelDev/PublicAPI), [GTNewHorizons/Navigator](https://github.com/GTNewHorizons/Navigator), and [odds-api/odds-api](https://github.com/odds-api/odds-api), adapted to the very different needs of a historical 2b2t map and entity graph.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for example checks and pull requests.
+Report documentation errors and broken examples through
+[issues](https://github.com/bobymicjohn/2b2tAtlas-Public-API/issues).
 
 ## License
 
-Repository-authored examples and documentation are released under the [Unlicense](LICENSE): copy, modify, publish, commercialize, or remix them for any purpose without permission or required attribution. Atlas likewise places no attribution condition on reuse of its factual API catalog; a link back is simply appreciated. Some records reference third-party media whose original source terms remain separate, as explained in [NOTICE.md](NOTICE.md).
+Examples and documentation are released under the [Unlicense](LICENSE).
+Atlas does not require attribution for its factual API catalog.
+[ATTRIBUTION.md](ATTRIBUTION.md) has optional credit formats;
+[NOTICE.md](NOTICE.md) covers third-party media and source terms.
+
+2b2tAtlas is not affiliated with Mojang Studios, Microsoft, or the operators of 2b2t.

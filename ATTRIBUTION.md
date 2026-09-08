@@ -1,6 +1,7 @@
 # Attribution guide
 
-Use 2b2tAtlas data however you want. Atlas attribution is optional and no permission is required. A credit is appreciated when convenient because it gives users a path back to the canonical record and helps keep copies of 2b2t history connected to their evidence.
+Atlas attribution is optional and no permission is required. The formats below
+link to Atlas; individual records also include canonical and original-source URLs.
 
 ## Recommended wording
 

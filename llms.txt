@@ -23,10 +23,9 @@ Primary docs:
 - docs/NOCOM.md
 - docs/BLUEMAP-3D.md
 - docs/COORDINATES-AND-RENDERS.md
-- docs/2B2T-IDEAS.md
 - ATTRIBUTION.md
 
-Important semantics:
+Data conventions:
 - Dimension 0 is Overworld, 1 is Nether, and 2 is End.
 - Atlas records are historical public records, not live safety or activity claims.
 - Prefer returned apiUrl/canonicalUrl/interactiveUrl link fields over constructing URLs.
@@ -43,4 +42,3 @@ Important semantics:
 - The canonical MCP discovery manifest is server.json and is published to the official MCP Registry.
 - Nocom: /api/nocom, /api/nocom/periods and /api/nocom/highways expose released historical observation aggregates; MCP has three matching tools and 18 tools total.
 - Nocom positive observations are not unique players, exact player positions, base ownership or current activity. Date filters select whole overlapping buckets.
-- This consumer repository does not document or grant access to private mutation/admin APIs.
