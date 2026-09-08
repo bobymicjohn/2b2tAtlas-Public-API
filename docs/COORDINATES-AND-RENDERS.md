@@ -60,12 +60,13 @@ location or capture; use the relationships supplied by the API.
 
 ## Historical Nether primary layers
 
-`GET /api/maprenders/catalog` includes the original 43k and 5k Nether maps.
-Their `coordinateScheme` is `atlas-nether-legacy-v1`, with 256px PNGs, offset
+`GET /api/maprenders/catalog` includes the original 43k Nether map.
+Its `coordinateScheme` is `atlas-nether-legacy-v1`, with 256px PNGs, offset
 `21503.36`, scale factor `3.3599`, and no URL zoom offset. At native URL zoom `q`,
 blocks per pixel are `64 * 3.3599 / 2^q`. Tile `(tx, ty)` starts at block
 `(tx * 256 * bpp - 21503.36, ty * 256 * bpp - 21503.36)`.
-Native maximum zoom is 9 for 43k and 6 for 5k.
+Native maximum zoom is 9. The archived 5k map is excluded: its world transform
+is unverified and must not be inferred from the 43k map's transform.
 
 The current Atlas Nether grid uses offset `21504` and scale factor `4`. Reproject
 the old images when combining them with that grid; assigning the original PNGs

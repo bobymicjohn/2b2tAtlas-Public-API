@@ -2,8 +2,9 @@
 
 ## Since 1.1.0 — 2026-09-08
 
-Document the restored 43k/5k Nether primary layers and their original coordinate
+Document the restored 43k Nether primary layer and its original coordinate
 contract, including the reprojection needed on the current Nether map grid.
+Withdraw the 5k layer from the catalog because its world transform is unverified.
 
 Document Timeline and Article attachments, nullable legacy media types, event
 versus chronology links, and timestamped YouTube references. Add a paginated
