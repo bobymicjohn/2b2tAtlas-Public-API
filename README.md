@@ -45,7 +45,7 @@ python examples/python/nocom_activity.py --dimension nether --direction northeas
 python examples/python/location_media.py 1254
 ```
 
-The C# example uses .NET 8. The JavaScript and Python examples use their standard
+The C# example uses .NET 10. The JavaScript and Python examples use their standard
 libraries. Each defaults to the public API; set `ATLAS_API_BASE_URL` to use a
 local fixture or development server.
 
