@@ -4,6 +4,9 @@ Build and test from this folder; the surrounding repository also has standalone 
 examples with their own dependencies. Keep changes to this source snapshot in this
 folder unless they also affect the shared documentation.
 
+Contribute original changes under the [Unlicense](LICENSE). Preserve any separate
+third-party notices and source context; Atlas credit itself is optional.
+
 Run the .NET suite and relevant collector/map fixtures, then stage changes and run
 `python scripts/check-public-export.py`. Never stage `.local`, credentials, databases,
 WDLs, game profiles, downloaded tools, private records or generated tiles. Use synthetic

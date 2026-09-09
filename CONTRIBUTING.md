@@ -4,6 +4,9 @@ This repository contains public API documentation, small API clients, and the
 [self-hosted Atlas stack](examples/atlas-stack/README.md). Pull requests can improve
 any of these. For application changes, follow the stack's own contribution guide.
 
+Contribute original changes under the [Unlicense](LICENSE), and keep existing
+third-party notices intact. Source links are useful even when Atlas credit is optional.
+
 ## Ground rules
 
 1. Keep API consumer examples read-only against the public service. Test stack administration, ingestion and other mutations only against your own disposable instance; never against the live Atlas.

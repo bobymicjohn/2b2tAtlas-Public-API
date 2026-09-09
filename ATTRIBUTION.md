@@ -1,6 +1,8 @@
 # Attribution guide
 
-Atlas attribution is optional and no permission is required. The formats below
+Atlas attribution is optional and no permission is required, including for Atlas-authored
+code in the full-stack example. A credit is a nice way to help people find the project.
+The formats below
 link to Atlas; individual records also include canonical and original-source URLs.
 
 ## Recommended wording

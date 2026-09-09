@@ -32,7 +32,7 @@ the complete catalog.
 ## Examples
 
 To run your own Atlas, see [examples/atlas-stack](examples/atlas-stack/README.md).
-That folder is a separate MIT-licensed application snapshot. The smaller API clients below
+That folder is an Unlicense application snapshot. The smaller API clients below
 remain standalone examples for consuming the public service.
 
 Run from the repository root:
@@ -127,10 +127,9 @@ Report documentation errors and broken examples through
 
 ## License
 
-The original API examples and documentation are released under the [Unlicense](LICENSE).
-The [full-stack application](examples/atlas-stack/README.md) retains its separate
-[MIT license](examples/atlas-stack/LICENSE).
-Atlas does not require attribution for its factual API catalog.
+Atlas-authored code, documentation and the [full stack](examples/atlas-stack/README.md)
+are released under the [Unlicense](LICENSE). Use, modify and share them however you like;
+no permission or Atlas attribution is required. The same goes for Atlas's factual catalog.
 [ATTRIBUTION.md](ATTRIBUTION.md) has optional credit formats;
 [NOTICE.md](NOTICE.md) covers third-party media and source terms.
 

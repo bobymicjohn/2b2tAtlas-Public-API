@@ -2,7 +2,7 @@
 
 Purpose: public read-only API documentation and clients, plus a separate self-hosted application source example.
 Full stack source: https://github.com/bobymicjohn/2b2tAtlas-Public-API/tree/main/examples/atlas-stack
-Stack setup: examples/atlas-stack/README.md (MIT-licensed UI, backend, WDL ingestion, collectors and rendering; bring your own data and credentials).
+Stack setup: examples/atlas-stack/README.md (Unlicense UI, backend, WDL ingestion, collectors and rendering; bring your own data and credentials).
 
 Canonical Atlas: https://2b2tatlas.com
 API discovery: https://api.blackportal.cloud/api
@@ -39,7 +39,8 @@ Data conventions:
 - Verified pre-Archive/community renders may link directly to preserved-render-source ZIPs without fabricating Archive warp identities.
 - Both download classes are partial historical Java saves, not complete 2b2t worlds; follow sourceType, scope, provenance, and warning fields.
 - The live Atlas API examples document anonymous reads. Never attempt private writes against the live service.
-- /examples/atlas-stack contains the separately MIT-licensed application, backend, ingestion and collector source for a self-hosted instance. Its authenticated admin routes operate on that instance's own data and credentials; see examples/atlas-stack/README.md.
+- /examples/atlas-stack contains the Unlicense application, backend, ingestion and collector source for a self-hosted instance. Its authenticated admin routes operate on that instance's own data and credentials; see examples/atlas-stack/README.md.
+- Respect third-party source terms and hosting: cache requests and prefer provided caching proxies. These courtesies add no conditions to Atlas-authored code or factual catalog reuse.
 - The MCP endpoint is public, stateless, read-only, bounded, and uses Streamable HTTP.
 - MCP returns WDL/render metadata and public URLs, not ZIP or image bytes in model context.
 - The canonical MCP discovery manifest is server.json and is published to the official MCP Registry.

@@ -5,7 +5,7 @@
   "name": "Atlas Archive Coverage",
   "description": "Headless, void-bounded coverage controller for permitted 2b2t Atlas Archive captures.",
   "authors": ["2b2t Atlas"],
-  "license": "ARR",
+  "license": "Unlicense",
   "environment": "client",
   "entrypoints": {
     "client": [

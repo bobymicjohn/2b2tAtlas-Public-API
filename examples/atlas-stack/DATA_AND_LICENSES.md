@@ -1,9 +1,14 @@
 # Source, data and dependencies
 
 This folder derives from the 2b2tAtlas application by bobymicjohn and its contributors.
-Its application source retains the [MIT license](LICENSE). The surrounding repository's
-Unlicense applies to its original API examples and documentation; it does not replace
-the license on this imported application or third-party components.
+Atlas-authored application source and documentation use the [Unlicense](LICENSE),
+as do the surrounding API examples. Use, modify, share or build on them without
+asking. Credit is appreciated, not required by Atlas.
+
+Third-party components, media and datasets retain their own notices and terms.
+Keep useful source links and be considerate of the people providing data and hosting.
+Cache requests and use a provided caching proxy when possible. These are courtesies,
+not extra conditions on Atlas-authored work.
 
 No production SQLite database, user records, password hashes, Minecraft session state,
 WDLs, rendered tile trees or backup archives are included. Empty media manifests preserve

@@ -1,5 +1,12 @@
 # Changes
 
+## Reuse policy — 2026-09-08
+
+Atlas-authored stack code now uses the Unlicense alongside the API examples.
+Aligned the application license, coverage-mod metadata and contributor guidance.
+Credit remains optional; source and hosting courtesies are requests, not added
+license conditions. Third-party notices and terms remain in place.
+
 ## Full-stack source example — 2026-09-08
 
 Added `examples/atlas-stack`: the Blazor frontend, ASP.NET Core API, SQLite models,
