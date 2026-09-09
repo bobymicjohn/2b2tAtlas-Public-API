@@ -62,7 +62,7 @@ operation may leave `.atlas-original-*` evidence; inspect it before cleanup.
 ```powershell
 .\scripts\compact-interrupted-captures.ps1 `
   -InventoryPath C:\AtlasExample\recovery\duplicates.json `
-  -InterruptedRoot D:\AtlasExample\DeferredCaptures\interrupted `
+  -InterruptedRoot D:\AtlasExample\Ingest\DeferredCaptures\interrupted `
   -AuditPath C:\AtlasExample\recovery\compaction.jsonl `
   -Apply
 ```

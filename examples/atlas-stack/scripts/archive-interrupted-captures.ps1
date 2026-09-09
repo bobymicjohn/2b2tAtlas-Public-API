@@ -1,7 +1,7 @@
 # Interrupted working saves are private evidence, never ready/public WDLs.
 function Assert-InterruptedCaptureSnapshot {
     param([string]$Path,[string]$SavesRoot,[string]$CaptureName,
-        [string]$RecoveryRoot='D:\AtlasExample\DeferredCaptures\interrupted')
+        [string]$RecoveryRoot='D:\AtlasExample\Ingest\DeferredCaptures\interrupted')
     $root=[IO.Path]::GetFullPath($RecoveryRoot).TrimEnd('\')+'\'
     $snapshot=[IO.Path]::GetFullPath($Path)
     if (-not $snapshot.StartsWith($root,[StringComparison]::OrdinalIgnoreCase) -or
@@ -32,7 +32,7 @@ function Save-InterruptedCaptureFiles {
         [Parameter(Mandatory=$true)][string]$SavesRoot,
         [Parameter(Mandatory=$true)][string[]]$CaptureNames,
         [Parameter(Mandatory=$true)][string]$WarpName,
-        [string]$RecoveryRoot = 'D:\AtlasExample\DeferredCaptures\interrupted'
+        [string]$RecoveryRoot = 'D:\AtlasExample\Ingest\DeferredCaptures\interrupted'
     )
     $root = [IO.Path]::GetFullPath($SavesRoot).TrimEnd('\') + '\'
     $files = @()
