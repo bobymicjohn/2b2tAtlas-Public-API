@@ -65,6 +65,7 @@ function Wait-InterruptedCaptureFlush {
         $terminalPattern = 'Downloaded\s+'+$currentName+':\s+chunks\s+\d+|Save failed:'
     }
     $index=$script:captureStartIndex
+    $fatalOom=$false
     while ($true) {
         if ($script:process.HasExited) {
             $orphans = @(Get-CimInstance Win32_Process -Filter "Name = 'java.exe' OR Name = 'javaw.exe'" | Where-Object {
@@ -75,7 +76,21 @@ function Wait-InterruptedCaptureFlush {
             # a terminal save acknowledgement, keep that child alive for recovery.
         }
         Pump-CollectorOutput
+        # ExitOnOutOfMemoryError ends the game JVM but HeadlessMC can remain at
+        # its prompt. Require fatal-OOM evidence AND absence of the exact game's
+        # Minecraft process before allowing ordinary disk recovery.
+        if ($fatalOom) {
+            $games = @(Get-CimInstance Win32_Process -Filter "Name = 'java.exe' OR Name = 'javaw.exe'" | Where-Object {
+                $_.CommandLine -and $_.CommandLine.IndexOf($gameRoot,[StringComparison]::OrdinalIgnoreCase) -ge 0 -and
+                $_.CommandLine -match 'net\.fabricmc\.loader\.|net\.minecraft\.client\.main\.Main'
+            })
+            if ($games.Count -eq 0) {
+                Write-Warning 'WDL-OOM-RECOVERY game JVM exited; retaining disk capture and parent checkpoints.'
+                return
+            }
+        }
         for (; $index -lt $script:lines.Count; $index++) {
+            if ($script:lines[$index] -match 'java\.lang\.OutOfMemoryError') { $fatalOom=$true }
             if ($script:lines[$index] -match $terminalPattern) {
                 $script:downloadActive=$false
                 return

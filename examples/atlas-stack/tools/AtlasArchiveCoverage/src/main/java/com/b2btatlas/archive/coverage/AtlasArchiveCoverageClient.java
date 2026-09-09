@@ -722,6 +722,10 @@ public final class AtlasArchiveCoverageClient implements ClientModInitializer {
                 evidence.strongBuild(), waypointIndex, route.size(), adaptiveMode, teleportMode, adaptiveIteration));
         }
 
+        private final WriterBackpressure writerBackpressure = new WriterBackpressure();
+        private long lastWriterWaitNotice;
+        private long lastWriterKeepAlive;
+
         void tick(Minecraft client) {
             if (!running) return;
             LocalPlayer player = client.player;
@@ -732,6 +736,28 @@ public final class AtlasArchiveCoverageClient implements ClientModInitializer {
             }
             if (!player.level().dimension().equals(targetDimension)) {
                 cancel(client, "dimension-changed");
+                return;
+            }
+            long pressureNow = System.currentTimeMillis();
+            if (writerBackpressure.sample(pressureNow)) {
+                releaseKeys(client);
+                if (useBaritone && pathfinderDispatched) {
+                    BaritoneBridge.cancel();
+                    pathfinderDispatched = false;
+                }
+                // No new waypoints, no discarded chunks, and no blocking join:
+                // the downloader and normal network ticks keep draining to disk.
+                waypointStartedMillis = pressureNow;
+                if (pressureNow - lastWriterWaitNotice >= 15_000) {
+                    feedback(client, "writer-wait pending=" + writerBackpressure.pending +
+                        " received=" + receivedChunks.size() +
+                        " probeError=" + writerBackpressure.failure);
+                    lastWriterWaitNotice = pressureNow;
+                }
+                if (pressureNow - lastWriterKeepAlive >= 60_000) {
+                    player.connection.sendCommand("gamemode spectator");
+                    lastWriterKeepAlive = pressureNow;
+                }
                 return;
             }
             if (waypointIndex >= route.size()) {

@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$InstallRoot = 'C:\AtlasExample\Ingest\archive-sync\collector',
     [string]$QueuePath = 'C:\AtlasExample\Ingest\archive-sync\collector-queue.json',
@@ -7,6 +7,8 @@ param(
     [string]$ReadyRoot = 'C:\AtlasExample\Ingest\archive-sync\ready',
     [string]$Server = 'thearchive.world',
     [string]$MinecraftVersion = 'fabric-loader-0.19.5-1.21.11',
+    [ValidateRange(3, 8)]
+    [int]$JavaHeapGiB = 6,
     [string[]]$Warp = @(),
     [ValidateRange(1, 10000)]
     [int]$MaxWarps = 1,
@@ -245,6 +247,9 @@ function Wait-CollectorMatch(
         while ($next -lt $script:lines.Count) {
             $line = $script:lines[$next]
             $next++
+            if ($line -match 'java\.lang\.OutOfMemoryError|Terminating due to java\.lang\.OutOfMemoryError') {
+                throw 'Archive JVM exhausted its heap; retain the capture journal for disk recovery.'
+            }
             foreach ($pattern in $Patterns) {
                 $match = [regex]::Match($line, $pattern, [Text.RegularExpressions.RegexOptions]::IgnoreCase)
                 if ($match.Success) {
@@ -748,7 +753,7 @@ try {
     # Consume that preamble as an empty launcher command before sending real input.
     Send-CollectorCommand ''
     Start-Sleep -Seconds 2
-    Send-CollectorCommand "launch $version -lwjgl --jvm -Xmx3G"
+    Send-CollectorCommand ('launch {0} -lwjgl --jvm "-Xmx{1}G -XX:+ExitOnOutOfMemoryError"' -f $version, $JavaHeapGiB)
     $initialized = Wait-CollectorMatch @('HMC-Specifics initialized!', 'Invalid credentials', 'Failed to log in') 360
 
     # On 1.21.11 HMC-Specifics initializes before Minecraft's first resource
@@ -1076,7 +1081,7 @@ try {
                     'ATLAS_COVER adaptive-complete confidence=(high|medium|low) bounds=(-?\d+),(-?\d+)\.\.(-?\d+),(-?\d+) surveyBounds=(-?\d+),(-?\d+)\.\.(-?\d+),(-?\d+) target=(\d+) missing=(\d+) received=(\d+) nonvoid=(\d+) built=(\d+) strong=(\d+) componentBuild=(\d+) componentStrong=(\d+) orphanBuild=(\d+) artificialBlocks=(\d+) blockEntities=(\d+) iterations=(\d+) waypoints=(\d+) surveyTarget=(\d+) surveyMissing=(\d+) gapChunks=(\d+) marginChunks=(\d+) maxRadiusReached=(true|false) selection=(landing|dominant-fallback|none) components=(\d+) landingBuild=(\d+) landingStrong=(\d+) dominantBuild=(\d+) dominantStrong=(\d+) boundarySkipped=(\d+)',
                     'ATLAS_COVER cancelled reason=([^\s]+)'
                 ) -TimeoutSeconds $AdaptiveTimeoutSeconds -ProgressPatterns @(
-                    'ATLAS_COVER (?:settled waypoint=|coverage-skip waypoint=|adaptive-expand |adaptive-repair-start |teleporting waypoint=|boundary-skip waypoint=)'
+                    'ATLAS_COVER (?:writer-wait |settled waypoint=|coverage-skip waypoint=|adaptive-expand |adaptive-repair-start |teleporting waypoint=|boundary-skip waypoint=)'
                 ) -MaximumSeconds $AdaptiveMaximumRuntimeSeconds -ProgressGuard $adaptiveProgressGuard
                 if ($adaptiveDiscoveryResult.Line -match 'ATLAS_COVER cancelled') {
                     throw "Adaptive discovery failed: $($adaptiveDiscoveryResult.Line)"
@@ -1238,7 +1243,7 @@ try {
                             'ATLAS_COVER teleport-complete exact=(true|false) target=(\d+) missing=(\d+) received=(\d+) waypoints=(\d+) repairPasses=(\d+)',
                             'ATLAS_COVER cancelled reason=([^\s]+)'
                         ) -TimeoutSeconds $AdaptiveTimeoutSeconds -ProgressPatterns @(
-                            'ATLAS_COVER (?:settled waypoint=|teleport-repair-start |teleporting waypoint=|boundary-skip waypoint=)'
+                            'ATLAS_COVER (?:writer-wait |settled waypoint=|teleport-repair-start |teleporting waypoint=|boundary-skip waypoint=)'
                         ) -MaximumSeconds $AdaptiveMaximumRuntimeSeconds
                         if ($adaptiveCaptureResult.Line -match 'ATLAS_COVER cancelled') { throw "Targeted repair failed: $($adaptiveCaptureResult.Line)" }
                         Write-Output $adaptiveCaptureResult.Line

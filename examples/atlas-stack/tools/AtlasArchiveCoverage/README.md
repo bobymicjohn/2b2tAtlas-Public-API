@@ -1,5 +1,10 @@
 # Atlas Archive Coverage
 
+Coverage 0.11.0 adds [writer backpressure and memory recovery](../../docs/COLLECTOR_MEMORY.md).
+It waits for the WDL save queue to drain before requesting more terrain, while
+keeping Minecraft and the downloader responsive. The 0.10.0 coverage and recovery
+behavior below remains in place.
+
 See [disk recovery and sparse repair](../../docs/COLLECTOR_RECOVERY.md)
 for journal ownership, disconnect handling, replay and test results.
 

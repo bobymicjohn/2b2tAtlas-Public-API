@@ -63,3 +63,9 @@ val sparseRepairRegression = tasks.register<JavaExec>("sparseRepairRegression") 
     mainClass.set("com.b2btatlas.archive.coverage.SparseRepairPlanTest")
 }
 tasks.check { dependsOn(sparseRepairRegression) }
+val writerBackpressureRegression = tasks.register<JavaExec>("writerBackpressureRegression") {
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("com.b2btatlas.archive.coverage.WriterBackpressureTest")
+}
+tasks.check { dependsOn(writerBackpressureRegression) }
