@@ -25,6 +25,12 @@ file, then pads the final sector in its output copy. Sector overlap, encoding
 and bounds checks still apply. It never pads a missing chunk payload into
 existence or modifies the source file.
 
+During the potentially long `/atlascover resume` wait, the wrapper reasserts
+spectator mode once per minute to keep the server session active without moving
+away from the verified landing. This does not extend the 900-second resume
+deadline or count as coverage progress. A server disconnect ends the wait
+promptly and retains its network failure reason for the bounded retry path.
+
 ## Old repeated preservation copies
 
 `scripts/compact-interrupted-captures.ps1` is an on-demand Windows maintenance

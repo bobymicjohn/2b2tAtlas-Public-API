@@ -1,9 +1,9 @@
-﻿# Private partial captures are never placed in intake, ready, or public objects.
+# Private partial captures are never placed in intake, ready, or public objects.
 function Get-SurveyHandoffDirectory([string]$ArchiveServer, [string]$WarpName) {
     $sha = [Security.Cryptography.SHA256]::Create()
     try { $key = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($ArchiveServer + "`n" + $WarpName)))).Replace('-','').ToLowerInvariant() }
     finally { $sha.Dispose() }
-    return Join-Path 'D:\AtlasExample\Ingest\DeferredCaptures' $key
+    return Join-Path 'D:\AtlasExample\DeferredCaptures' $key
 }
 
 function Test-SurveyHandoffIdentity($Receipt, [string]$ArchiveServer, [string]$WarpName, [string]$Dimension, [double]$X, [double]$Z, [datetimeoffset]$Now) {
@@ -77,7 +77,9 @@ function Restore-SurveyHandoff([string]$WarpName, [string]$CaptureName) {
         $hintState | Add-Member -NotePropertyName terrainZip -NotePropertyValue $zip -Force
         Save-JsonAtomically $hintState $localHint
         if (Get-Command Set-CaptureJournalSeed -ErrorAction SilentlyContinue) { Set-CaptureJournalSeed @{ZipPath=$zip;Sha256=$r.zipSha256} }
-        $result = Invoke-CollectorCommand 'msg /atlascover resume' @('ATLAS_COVER resume-start planningOnly=false', 'ATLAS_COVER resume-failed ') 900
+        # Re-reading a large saved world can take longer than the server's idle
+        # window. Reassert spectator mode without moving from the verified landing.
+        $result = Invoke-CollectorCommand 'msg /atlascover resume' @('ATLAS_COVER resume-start planningOnly=false', 'ATLAS_COVER resume-failed ') 900 -KeepAliveCommand 'msg /gamemode spectator'
         if ($result.Line -match 'resume-failed') { throw "Saved terrain could not be resumed: $($result.Line)" }
         $restored = [regex]::Match($result.Line, 'restored=(\d+)')
         if (-not $restored.Success -or [int]$restored.Groups[1].Value -lt 1) { throw 'Resume did not confirm restored coverage.' }
@@ -85,9 +87,16 @@ function Restore-SurveyHandoff([string]$WarpName, [string]$CaptureName) {
         Write-Host "SURVEY-HANDOFF-RESUMED $WarpName planningOnly=false; $($result.Line)"
         return $true
     } catch {
-        Write-Warning "Survey handoff retained; resume blocked: $($_.Exception.Message)"
-        Invoke-CollectorCommand 'msg /atlascover cancel' @('ATLAS_COVER cancelled') 30 | Out-Null
-        throw "Resume checkpoint held: $($_.Exception.Message)"
+        $failure=$_.Exception.Message
+        Write-Warning "Survey handoff retained; resume blocked: $failure"
+        if ($failure -like 'Archive disconnected while waiting*') {
+            # Preserve the network failure as retryable; do not wait for an
+            # acknowledgement from a server session that has already closed.
+            throw "Archive disconnected during an active WDL resume: $failure"
+        }
+        try { Invoke-CollectorCommand 'msg /atlascover cancel' @('ATLAS_COVER cancelled') 30 | Out-Null }
+        catch { Write-Warning 'Resume cancellation was not acknowledged; original failure retained.' }
+        throw "Resume checkpoint held: $failure"
     }
 }
 
@@ -96,7 +105,7 @@ function Merge-ResumedWdlCapture($Capture) {
     $seed = $script:resumeCapture
     if ((Get-FileHash -LiteralPath $seed.ZipPath -Algorithm SHA256).Hash -ne $seed.Sha256) { throw 'Resume source changed after validation.' }
     if ((Get-PSDrive D).Free -lt 100GB) { throw 'Resumed capture merge needs 100 GiB free on D.' }
-    $directory = Join-Path 'D:\AtlasExample\Ingest\DeferredCaptures\continuations' ([guid]::NewGuid().ToString('N'))
+    $directory = Join-Path 'D:\AtlasExample\DeferredCaptures\continuations' ([guid]::NewGuid().ToString('N'))
     $destination = Join-Path $directory ($Capture.CaptureName + '.zip')
     $metricsJson = & python (Join-Path $PSScriptRoot 'archive_capture_resume.py') --previous $seed.ZipPath --current $Capture.ZipPath --output $destination --root $Capture.CaptureName
     if ($LASTEXITCODE -ne 0) { throw 'Chunk-level continuation merge failed; both input captures remain intact.' }

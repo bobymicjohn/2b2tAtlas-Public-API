@@ -230,13 +230,16 @@ function Wait-CollectorMatch(
     [int]$StartIndex = -1,
     [string[]]$ProgressPatterns = @(),
     [int]$MaximumSeconds = 0,
-    [scriptblock]$ProgressGuard = $null
+    [scriptblock]$ProgressGuard = $null,
+    [string]$KeepAliveCommand = '',
+    [double]$KeepAliveIntervalSeconds = 60
 ) {
     if ($StartIndex -lt 0) { $StartIndex = $script:lines.Count }
     $startedUtc = [DateTime]::UtcNow
     $idleDeadline = $startedUtc.AddSeconds($TimeoutSeconds)
     $maximumDeadline = if ($MaximumSeconds -gt 0) { $startedUtc.AddSeconds($MaximumSeconds) } else { [DateTime]::MaxValue }
     $next = $StartIndex
+    $nextKeepAliveUtc = $startedUtc.AddSeconds($KeepAliveIntervalSeconds)
     while ([DateTime]::UtcNow -lt $idleDeadline -and [DateTime]::UtcNow -lt $maximumDeadline) {
         Pump-CollectorOutput
         while ($next -lt $script:lines.Count) {
@@ -247,6 +250,9 @@ function Wait-CollectorMatch(
                 if ($match.Success) {
                     return [pscustomobject]@{ Line = $line; Match = $match; NextIndex = $next }
                 }
+            }
+            if ($line -match 'Client disconnected with reason:') {
+                throw "Archive disconnected while waiting for a result: $line"
             }
             foreach ($progressPattern in $ProgressPatterns) {
                 if ([regex]::IsMatch($line, $progressPattern, [Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
@@ -266,6 +272,13 @@ function Wait-CollectorMatch(
         if ($script:process.HasExited) {
             throw "Collector process exited with code $($script:process.ExitCode) while waiting for: $($Patterns -join ' | ')"
         }
+        if ($KeepAliveCommand -and [DateTime]::UtcNow -ge $nextKeepAliveUtc) {
+            Send-CollectorCommand $KeepAliveCommand
+            Write-Host 'COLLECTOR-KEEPALIVE waiting for saved-terrain resume.'
+            $nextKeepAliveUtc = [DateTime]::UtcNow.AddSeconds($KeepAliveIntervalSeconds)
+            # Activity keeps the server session alive, not the wait deadline.
+            # Only the expected completion message can release this wait.
+        }
         Start-Sleep -Milliseconds 100
     }
     if ([DateTime]::UtcNow -ge $maximumDeadline) {
@@ -277,12 +290,13 @@ function Wait-CollectorMatch(
 function Invoke-CollectorCommand(
     [string]$Command,
     [string[]]$Patterns,
-    [int]$TimeoutSeconds
+    [int]$TimeoutSeconds,
+    [string]$KeepAliveCommand = ''
 ) {
     Pump-CollectorOutput
     $start = $script:lines.Count
     Send-CollectorCommand $Command
-    return Wait-CollectorMatch $Patterns $TimeoutSeconds $start
+    return Wait-CollectorMatch $Patterns $TimeoutSeconds $start -KeepAliveCommand $KeepAliveCommand
 }
 
 function Connect-ArchiveServer {
