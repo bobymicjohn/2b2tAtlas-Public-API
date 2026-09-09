@@ -3,7 +3,7 @@ function Get-SurveyHandoffDirectory([string]$ArchiveServer, [string]$WarpName) {
     $sha = [Security.Cryptography.SHA256]::Create()
     try { $key = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($ArchiveServer + "`n" + $WarpName)))).Replace('-','').ToLowerInvariant() }
     finally { $sha.Dispose() }
-    return Join-Path 'D:\AtlasExample\DeferredCaptures' $key
+    return Join-Path 'D:\AtlasExample\Ingest\DeferredCaptures' $key
 }
 
 function Test-SurveyHandoffIdentity($Receipt, [string]$ArchiveServer, [string]$WarpName, [string]$Dimension, [double]$X, [double]$Z, [datetimeoffset]$Now) {
@@ -105,7 +105,7 @@ function Merge-ResumedWdlCapture($Capture) {
     $seed = $script:resumeCapture
     if ((Get-FileHash -LiteralPath $seed.ZipPath -Algorithm SHA256).Hash -ne $seed.Sha256) { throw 'Resume source changed after validation.' }
     if ((Get-PSDrive D).Free -lt 100GB) { throw 'Resumed capture merge needs 100 GiB free on D.' }
-    $directory = Join-Path 'D:\AtlasExample\DeferredCaptures\continuations' ([guid]::NewGuid().ToString('N'))
+    $directory = Join-Path 'D:\AtlasExample\Ingest\DeferredCaptures\continuations' ([guid]::NewGuid().ToString('N'))
     $destination = Join-Path $directory ($Capture.CaptureName + '.zip')
     $metricsJson = & python (Join-Path $PSScriptRoot 'archive_capture_resume.py') --previous $seed.ZipPath --current $Capture.ZipPath --output $destination --root $Capture.CaptureName
     if ($LASTEXITCODE -ne 0) { throw 'Chunk-level continuation merge failed; both input captures remain intact.' }
