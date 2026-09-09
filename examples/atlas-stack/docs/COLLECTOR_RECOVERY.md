@@ -20,6 +20,8 @@ The final missing-chunk repair requests missing terrain, rather than redownloadi
 entire footprint. It still runs the full coverage audit afterward. Preserve unique
 source bytes, active seeds, checkpoints and provenance when reclaiming scratch space.
 Deduplicate only after hashing actual files; receipt-only size estimates are insufficient.
+See [Recovery storage](RECOVERY_STORAGE.md) for the preservation-copy compactor
+and the recovery ZIP storage behavior.
 
 Relevant implementations:
 

@@ -1,10 +1,38 @@
-﻿# Interrupted working saves are private evidence, never ready/public WDLs.
+# Interrupted working saves are private evidence, never ready/public WDLs.
+function Assert-InterruptedCaptureSnapshot {
+    param([string]$Path,[string]$SavesRoot,[string]$CaptureName,
+        [string]$RecoveryRoot='D:\AtlasExample\DeferredCaptures\interrupted')
+    $root=[IO.Path]::GetFullPath($RecoveryRoot).TrimEnd('\')+'\'
+    $snapshot=[IO.Path]::GetFullPath($Path)
+    if (-not $snapshot.StartsWith($root,[StringComparison]::OrdinalIgnoreCase) -or
+        $snapshot.Substring($root.Length) -notmatch '^\d{8}-\d{6}-[a-f0-9]{32}$') { throw 'Invalid interrupted snapshot path.' }
+    $receipt=Read-AtlasJsonWithRetry (Join-Path $snapshot 'receipt.json')
+    if ($receipt.schemaVersion -ne 1 -or $receipt.state -ne 'preserved-partial' -or $receipt.completeWorld -ne $false -or
+        [IO.Path]::GetFullPath($receipt.sourceRoot).TrimEnd('\') -ne [IO.Path]::GetFullPath($SavesRoot).TrimEnd('\') -or
+        @($receipt.files).Count -eq 0) { throw 'Interrupted snapshot identity mismatch.' }
+    foreach ($record in $receipt.files) {
+        if ($record.sha256 -notmatch '^[a-fA-F0-9]{64}$' -or $record.path.Contains('..') -or
+            ($record.path -cne ($CaptureName+'.zip') -and -not $record.path.StartsWith($CaptureName+'\',[StringComparison]::Ordinal))) {
+            throw 'Interrupted snapshot contains an unexpected capture path.'
+        }
+        $file=[IO.Path]::GetFullPath((Join-Path $snapshot $record.path))
+        if (-not $file.StartsWith($snapshot+'\',[StringComparison]::OrdinalIgnoreCase)) { throw 'Interrupted snapshot path escaped.' }
+        $ancestor=$file
+        while ($ancestor) {
+            if ((Get-Item -LiteralPath $ancestor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Interrupted snapshot contains a reparse point.' }
+            $ancestor=Split-Path -Parent $ancestor
+        }
+        if ((Get-Item -LiteralPath $file).Length -ne $record.bytes -or
+            (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $record.sha256) { throw 'Interrupted snapshot hash mismatch.' }
+    }
+}
+
 function Save-InterruptedCaptureFiles {
     param(
         [Parameter(Mandatory=$true)][string]$SavesRoot,
         [Parameter(Mandatory=$true)][string[]]$CaptureNames,
         [Parameter(Mandatory=$true)][string]$WarpName,
-        [string]$RecoveryRoot = 'D:\AtlasExample\Ingest\DeferredCaptures\interrupted'
+        [string]$RecoveryRoot = 'D:\AtlasExample\DeferredCaptures\interrupted'
     )
     $root = [IO.Path]::GetFullPath($SavesRoot).TrimEnd('\') + '\'
     $files = @()

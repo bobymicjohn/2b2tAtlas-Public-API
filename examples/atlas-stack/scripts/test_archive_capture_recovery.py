@@ -5,10 +5,19 @@ import unittest
 import zipfile
 import archive_capture_recovery as recovery
 from test_archive_capture_resume import archive, chunk
-from archive_capture_resume import merge, members, slots
+from archive_capture_resume import merge, members, slots, pack
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_open_region_padding_keeps_payloads_and_rejects_truncation(self):
+        chunks={0:chunk('persisted')}
+        complete=pack(chunks)
+        end=8192+len(chunks[0][0])
+        unpadded=complete[:end]
+        self.assertEqual(recovery.normalize_open_region(unpadded),complete)
+        self.assertEqual(slots(recovery.normalize_open_region(unpadded)),chunks)
+        with self.assertRaises(ValueError): recovery.normalize_open_region(unpadded[:-1])
+        with self.assertRaises(ValueError): recovery.normalize_open_region(unpadded[:8191])
     def test_interrupted_zip_uses_working_save_and_parent_without_losing_overlap(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);name='archive-interrupted'
@@ -22,6 +31,7 @@ class RecoveryTests(unittest.TestCase):
                          dimension='Overworld',seeds=[dict(path=str(old),sha256=recovery.digest(old))])
             result=recovery.recover(request)
             self.assertEqual(result['savedChunks'],3)
+            self.assertFalse((root/'recovered'/'union-0.zip').exists())
             with zipfile.ZipFile(result['zipPath']) as z:
                 _,index=members(z)
                 self.assertEqual(slots(z.read(index['region/r.-1.0.mca'])),{0:chunk('old'),1:chunk('fresh'),2:chunk('new')})
@@ -67,9 +77,51 @@ class RecoveryTests(unittest.TestCase):
             with zipfile.ZipFile(source) as z: z.extractall(root)
             (root/name/'wdl/download.jsonl').unlink()
             result=recovery.recover(dict(preservedRoot=str(root),destination=str(root/'result'),captureName=name,dimension='Overworld'))
+            self.assertFalse((root/'result'/'working-save.zip').exists())
             with zipfile.ZipFile(result['zipPath']) as z:
                 report=json.loads(z.read(name+'/wdl/download.jsonl'))
                 self.assertEqual(report['status'],'interrupted')
+
+    def test_seed_only_recovery_keeps_external_seed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);seed=root/'seed.zip';archive(seed,{0:chunk('a')})
+            before=seed.read_bytes()
+            result=recovery.recover(dict(preservedRoot=str(root),destination=str(root/'result'),
+                captureName='archive-test',dimension='Overworld',seeds=[dict(path=str(seed),sha256=recovery.digest(seed))]))
+            self.assertEqual(seed.read_bytes(),before)
+            self.assertEqual(Path(result['zipPath']).read_bytes(),before)
+
+    def test_regions_before_metadata_flush_resume_then_require_complete_continuation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);name='archive-no-metadata';source=root/'source.zip'
+            archive(source,{0:chunk('persisted')},root=name)
+            with zipfile.ZipFile(source) as z: z.extractall(root)
+            (root/name/'level.dat').unlink();(root/name/'wdl/download.jsonl').unlink()
+            terrain=root/name/'region/r.-1.0.mca';before=terrain.read_bytes()
+            # Simulate a writer stopped before its final sector padding flush.
+            before=before[:8192+len(chunk('persisted')[0])];terrain.write_bytes(before)
+            result=recovery.recover(dict(preservedRoot=str(root),destination=str(root/'result'),
+                captureName=name,dimension='Overworld'))
+            self.assertEqual(result['savedChunks'],1)
+            self.assertEqual(result['normalizedRegions'],1)
+            self.assertEqual(terrain.read_bytes(),before)
+            self.assertFalse((root/name/'level.dat').exists())
+            with zipfile.ZipFile(result['zipPath']) as z:
+                with self.assertRaises(ValueError): members(z)
+                _,index=members(z,allow_partial=True)
+                report=json.loads(z.read(index['wdl/download.jsonl']))
+                self.assertEqual(report['status'],'interrupted');self.assertTrue(report['missingLevelDat'])
+            # Still a private partial if another disconnect happens before metadata.
+            again=recovery.recover(dict(preservedRoot=str(root),destination=str(root/'again'),
+                captureName=name,dimension='Overworld',seeds=[dict(path=result['zipPath'],sha256=result['zipSha256'])]))
+            self.assertEqual(again['savedChunks'],1)
+            continuation=root/'complete.zip';archive(continuation,{1:chunk('new')},root='archive-complete')
+            output=root/'union.zip';merge(result['zipPath'],continuation,output,'archive-complete')
+            with zipfile.ZipFile(output) as z:
+                _,index=members(z)
+                self.assertEqual(slots(z.read(index['region/r.-1.0.mca'])),{0:chunk('persisted'),1:chunk('new')})
+            with self.assertRaises(ValueError):
+                merge(continuation,result['zipPath'],root/'invalid.zip','archive-incomplete')
 
 
 if __name__ == '__main__': unittest.main()

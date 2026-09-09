@@ -17,7 +17,7 @@ import zipfile
 REGION = re.compile(r'^(?:(DIM-1/|DIM1/))?(region|entities|poi)/r\.(-?\d+)\.(-?\d+)\.mca$')
 
 
-def members(archive):
+def members(archive, *, allow_partial=False):
     result, roots = {}, set()
     for entry in archive.infolist():
         if entry.is_dir():
@@ -31,7 +31,7 @@ def members(archive):
         if relative in result:
             raise ValueError('Duplicate capture ZIP member')
         result[relative] = entry
-    if len(roots) != 1 or 'level.dat' not in result or 'wdl/download.jsonl' not in result:
+    if len(roots) != 1 or (not allow_partial and 'level.dat' not in result) or 'wdl/download.jsonl' not in result:
         raise ValueError('Capture ZIP must contain one world and its WDL report')
     return roots.pop(), result
 
@@ -74,7 +74,7 @@ def pack(chunks):
     return result
 
 
-def merge(previous, current, output, root):
+def merge(previous, current, output, root, *, allow_partial_current=False):
     previous, current, output = map(Path, (previous, current, output))
     if output.exists() or output.resolve() in (previous.resolve(), current.resolve()):
         raise ValueError('Output must be new; originals are immutable')
@@ -85,8 +85,10 @@ def merge(previous, current, output, root):
     metrics = dict(retainedChunks=0, newChunks=0, replacedChunks=0, totalChunks=0)
     try:
         with zipfile.ZipFile(previous) as old, zipfile.ZipFile(current) as new:
-            _, older = members(old)
-            _, newer = members(new)
+            # A private recovered parent may predate the downloader's metadata
+            # flush. The completed continuation must provide real metadata.
+            _, older = members(old, allow_partial=True)
+            _, newer = members(new, allow_partial=allow_partial_current)
             chosen_files = {name: (old, entry) for name, entry in older.items()}
             chosen_files.update({name: (new, entry) for name, entry in newer.items()})
             region_names = [name for name in chosen_files if REGION.fullmatch(name)]

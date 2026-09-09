@@ -1,4 +1,4 @@
-﻿# Durable per-worker capture journal. Partial worlds never enter public intake.
+# Durable per-worker capture journal. Partial worlds never enter public intake.
 function Get-CaptureJournalPath { Join-Path (Split-Path -Parent $StatePath) 'active-capture.json' }
 
 function Set-CaptureJournalSeed($Seed) {
@@ -132,7 +132,19 @@ function Recover-CaptureJournal {
             Write-Output "WDL-DISK-RECOVERY-REUSED $($journal.warp) persistedChunks=$($metrics.savedChunks)"
         } else {
             if ((Get-PSDrive D).Free -lt 100GB) { throw 'Resume checkpoint held: recovery requires 100 GiB free on D.' }
-            $preserved = Save-InterruptedCaptureFiles -SavesRoot $savesRoot -CaptureNames @($journal.captureName) -WarpName $journal.warp
+            if ($null -ne $journal.PSObject.Properties['preservedCapturePath']) {
+                $preserved=[string]$journal.preservedCapturePath
+                Assert-InterruptedCaptureSnapshot -Path $preserved -SavesRoot $savesRoot -CaptureName $journal.captureName
+                Write-Output "WDL-PRESERVATION-REUSED $($journal.warp)"
+            } else {
+                $preserved = Save-InterruptedCaptureFiles -SavesRoot $savesRoot -CaptureNames @($journal.captureName) -WarpName $journal.warp
+                if ($preserved) {
+                    # Keep this transaction boundary before packing/union: even
+                    # a failed disk recovery must not recopy the same snapshot.
+                    $journal | Add-Member preservedCapturePath $preserved -Force
+                    Save-JsonAtomically $journal $path
+                }
+            }
             if (-not $preserved) { $preserved = $savesRoot }
             $attempt = Join-Path $root ([datetime]::UtcNow.ToString('yyyyMMdd-HHmmss')+'-'+[guid]::NewGuid().ToString('N'))
             $requestPath = Join-Path (Split-Path -Parent $path) 'capture-recovery-request.json'

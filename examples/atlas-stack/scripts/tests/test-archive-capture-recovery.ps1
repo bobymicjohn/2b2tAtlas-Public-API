@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference='Stop'
+$ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $scripts=Split-Path -Parent $PSScriptRoot
 . (Join-Path $scripts 'archive-json-io.ps1')
@@ -6,10 +6,11 @@ $scripts=Split-Path -Parent $PSScriptRoot
 . (Join-Path $scripts 'archive-interrupted-captures.ps1')
 . (Join-Path $scripts 'archive-capture-recovery.ps1')
 $copyFunction=(Get-Command Save-InterruptedCaptureFiles).ScriptBlock
+$verifySnapshotFunction=(Get-Command Assert-InterruptedCaptureSnapshot).ScriptBlock
 $fixture=Join-Path $env:TEMP ('atlas-recovery-'+[guid]::NewGuid().ToString('N'))
 $gameRoot=Join-Path $fixture 'game';$savesRoot=Join-Path $gameRoot 'saves'
 $StatePath=Join-Path $fixture 'worker\state.json';$privateRoot=Join-Path $fixture 'private'
-$Server='thearchive.world';$warpName='Fixture_2024-01-01';$identity=$warpName.ToLowerInvariant()
+$Server='archive.example';$warpName='Fixture_2024-01-01';$identity=$warpName.ToLowerInvariant()
 $adaptiveCaptureDimension='Overworld';$adaptiveLiveDimensionId='minecraft:worlds/2b2t/2b2t_1';$adaptiveWarpX=-500.0;$adaptiveWarpZ=1.0
 $AdaptiveCoreRadiusBlocks=512;$AdaptiveExpansionBlocks=256;$AdaptiveTerrainRadiusChunks=8;$AdaptiveStepChunks=8
 $state=[ordered]@{entries=@();updatedUtc=''};$stateByWarp=@{}
@@ -17,8 +18,13 @@ $queue=[pscustomobject]@{entries=@([pscustomobject]@{warp=$warpName;normalizedWa
 $script:lines=New-Object 'Collections.Generic.List[string]';$script:process=$null
 $script:copies=0;$script:commands=0;$script:writers=@()
 $script:failHintWrite=$false
+$script:failRecoveryRequest=$false
 function Assert($Value,$Message) { if (-not $Value) { throw $Message } }
 function Save-JsonAtomically($Value,$Path) {
+    if ($script:failRecoveryRequest -and (Split-Path -Leaf $Path) -eq 'capture-recovery-request.json') {
+        $script:failRecoveryRequest=$false
+        throw 'Injected failure before packing'
+    }
     if ($script:failHintWrite -and (Split-Path -Leaf $Path) -eq 'survey-hint.json') {
         $script:failHintWrite=$false
         throw 'Injected checkpoint write failure'
@@ -41,6 +47,9 @@ function Invoke-CollectorCommand($Command,$Patterns,$Timeout) {
 function Save-InterruptedCaptureFiles($SavesRoot,$CaptureNames,$WarpName) {
     $script:copies++
     & $copyFunction -SavesRoot $SavesRoot -CaptureNames $CaptureNames -WarpName $WarpName -RecoveryRoot (Join-Path $fixture 'preserved')
+}
+function Assert-InterruptedCaptureSnapshot($Path,$SavesRoot,$CaptureName) {
+    & $verifySnapshotFunction -Path $Path -SavesRoot $SavesRoot -CaptureName $CaptureName -RecoveryRoot (Join-Path $fixture 'preserved')
 }
 New-Item -ItemType Directory -Path $savesRoot -Force | Out-Null
 try {
@@ -117,6 +126,22 @@ archive(Path(os.environ['ATLAS_RECOVERY_FIXTURE'])/'archive-test.zip',{0:chunk('
     Assert ($nativeReceipt.savedChunks -eq 2) 'Native checkpoint recovery lost its parent terrain'
     Assert (@($nativeHint.voidChunks).Count -eq 1) 'Valid checkpoint void ledger was discarded'
     Assert ($null -ne $nativeHint.PSObject.Properties['terrainZip'] -and $null -eq $nativeHint.terrainZip) 'Optional terrainZip was not normalized'
+    Start-TrackedWdlCapture 'archive-third'
+    Copy-Item (Join-Path $savesRoot 'archive-test.zip') (Join-Path $savesRoot 'archive-third.zip')
+    $script:failRecoveryRequest=$true
+    $held=$false
+    try { Recover-CaptureJournal } catch { $held=$_.Exception.Message -eq 'Injected failure before packing' }
+    Assert ($held -and $script:copies -eq 3) 'Preservation failure fixture did not run'
+    $savedJournal=Read-JsonUtf8 (Get-CaptureJournalPath)
+    $savedFile=Join-Path $savedJournal.preservedCapturePath 'archive-third.zip'
+    $savedBytes=[IO.File]::ReadAllBytes($savedFile)
+    [IO.File]::WriteAllText($savedFile,'corrupt')
+    $held=$false
+    try { Recover-CaptureJournal } catch { $held=$_.Exception.Message -eq 'Interrupted snapshot hash mismatch.' }
+    Assert ($held -and $script:copies -eq 3) 'Invalid preserved snapshot accepted or copied again'
+    [IO.File]::WriteAllBytes($savedFile,$savedBytes)
+    Recover-CaptureJournal
+    Assert ($script:copies -eq 3) 'Failure before packing caused another preservation copy'
     'PASS: journal-before-download, live writer hold, native/foreign checkpoints, failure replay without duplicate copies, corrupt cache hold, parent linkage, flush boundary.'
 } finally {
     Remove-Item Env:\ATLAS_RECOVERY_FIXTURE -ErrorAction SilentlyContinue

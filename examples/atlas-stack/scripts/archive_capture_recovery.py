@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import struct
 import zipfile
 from archive_capture_resume import REGION, members, merge, slots
 
@@ -21,7 +22,7 @@ def inventory(path, dimension):
     folder = {'Overworld':'', 'Nether':'DIM-1/', 'End':'DIM1/'}[dimension]
     result = set()
     with zipfile.ZipFile(path) as archive:
-        _, index = members(archive)
+        _, index = members(archive, allow_partial=True)
         for name, entry in index.items():
             match = REGION.fullmatch(name)
             if not match or match[2] != 'region': continue
@@ -59,10 +60,27 @@ def repair_plan(request):
     return dict(expected=len(expected),present=len(expected & present),missing=len(missing),sourceSha256=digest(request['sourcePath']))
 
 
+def normalize_open_region(data):
+    """Add only unwritten trailing sector padding; never synthesize chunk bytes."""
+    if len(data) < 8192: raise ValueError('Incomplete region header')
+    for slot in range(1024):
+        location = struct.unpack_from('>I', data, slot * 4)[0]
+        if not location: continue
+        offset = (location >> 8) * 4096
+        if offset < 8192 or offset + 5 > len(data): raise ValueError('Incomplete region payload header')
+        length = struct.unpack_from('>I', data, offset)[0]
+        if length < 1 or offset + 4 + length > len(data): raise ValueError('Incomplete region payload')
+    padded = data + bytes((-len(data)) % 4096)
+    slots(padded)  # Keep all sector overlap, extent and encoding checks.
+    return padded
+
+
 def pack_working_save(source, output, capture_name, dimension):
     source, output = Path(source), Path(output)
-    if not (source/'level.dat').is_file(): raise ValueError('Interrupted save has no level.dat')
+    # Region writes precede the final level.dat/report flush. Recover the actual
+    # terrain even when that metadata never reached disk; do not invent it.
     if not re.fullmatch(r'archive-[A-Za-z0-9._-]+',capture_name) or '..' in capture_name: raise ValueError('Invalid capture name')
+    normalized = 0
     with zipfile.ZipFile(output,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=1) as archive:
         for current, directories, files in os.walk(source,followlinks=False):
             for name in [Path(current)] + [Path(current)/n for n in directories+files]:
@@ -71,13 +89,22 @@ def pack_working_save(source, output, capture_name, dimension):
             for name in files:
                 path = Path(current)/name
                 if path.name == 'session.lock': continue
-                archive.write(path,capture_name+'/'+path.relative_to(source).as_posix())
+                relative = path.relative_to(source).as_posix()
+                if REGION.fullmatch(relative) and path.stat().st_size % 4096:
+                    # Minecraft pads the last sector when closing a region.
+                    # An interrupted writer can leave complete chunks without it.
+                    archive.writestr(capture_name+'/'+relative,normalize_open_region(path.read_bytes()))
+                    normalized += 1
+                else:
+                    archive.write(path,capture_name+'/'+relative)
         if not (source/'wdl/download.jsonl').exists():
             # This is deliberately not a WDL completion claim. The future merged
             # capture must include a real completed downloader report and audit.
-            archive.writestr(capture_name+'/wdl/download.jsonl',json.dumps(dict(status='interrupted',dimensionName=dimension)))
+            archive.writestr(capture_name+'/wdl/download.jsonl',json.dumps(dict(status='interrupted',dimensionName=dimension,
+                missingLevelDat=not (source/'level.dat').is_file())))
     with output.open('r+b') as stream: os.fsync(stream.fileno())
     inventory(output,dimension)
+    return normalized
 
 
 def recover(request):
@@ -87,6 +114,7 @@ def recover(request):
     if not re.fullmatch(r'archive-[A-Za-z0-9._-]+',name) or '..' in name: raise ValueError('Invalid capture name')
     destination.mkdir(parents=True,exist_ok=False)
     candidates = []
+    normalized = 0
     for seed in request.get('seeds',[]):
         if digest(seed['path']).lower() != seed['sha256'].lower(): raise ValueError('Recovery seed hash mismatch')
         inventory(seed['path'],request['dimension']); candidates.append(Path(seed['path']))
@@ -100,17 +128,23 @@ def recover(request):
             if not (source/name).is_dir(): raise
     if (source/name).is_dir():
         packed = destination/'working-save.zip'
-        pack_working_save(source/name,packed,name,request['dimension']); candidates.append(packed)
+        normalized = pack_working_save(source/name,packed,name,request['dimension']); candidates.append(packed)
     if not candidates: raise ValueError('No persisted terrain available for recovery')
     combined = candidates[0]
     for number, current in enumerate(candidates[1:]):
         output = destination/f'union-{number}.zip'
-        merge(combined,current,output,name);combined=output
+        merge(combined,current,output,name,allow_partial_current=True);combined=output
     final = destination/'partial-wdl.zip'
-    shutil.copyfile(combined,final)
+    # The last packed/merged ZIP is private scratch owned by this attempt.
+    # Rename it instead of retaining another full copy of the recovered world.
+    # An external seed or preserved ZIP must always stay intact.
+    if combined.parent == destination:
+        combined.rename(final)
+    else:
+        shutil.copyfile(combined,final)
     with final.open('r+b') as stream: os.fsync(stream.fileno())
     coordinates = inventory(final,request['dimension'])
-    return dict(zipPath=str(final),zipSha256=digest(final),savedChunks=len(coordinates),
+    return dict(zipPath=str(final),zipSha256=digest(final),savedChunks=len(coordinates),normalizedRegions=normalized,
                 minChunkX=min(x for x,z in coordinates),maxChunkX=max(x for x,z in coordinates),
                 minChunkZ=min(z for x,z in coordinates),maxChunkZ=max(z for x,z in coordinates))
 
