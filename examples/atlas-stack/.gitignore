@@ -1,0 +1,170 @@
+# .gitignore for 2b2tAtlas Solution
+# Ignore build output, user-specific, and IDE files for .NET, Blazor, and Visual Studio
+
+# Ignore Visual Studio temporary files, build results, and user-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.vspscc
+*.vssscc
+*.cache
+*.pdb
+*.dbmdl
+*.bak
+*.log
+*.ldf
+*.ndf
+*.v12.suo
+*.DS_Store
+
+# Ignore Visual Studio Code workspace settings (but not history)
+.vscode/
+
+# Ignore Visual Studio folder
+.vs/
+
+# Ignore NuGet packages
+*.nupkg
+# Ignore NuGet restore results
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Ignore build output directories
+bin/
+obj/
+.gradle/
+
+# Ignore publish output
+[Dd]ebug/
+[Rr]elease/
+[Tt]est[Rr]esult*/
+build/
+
+# Ignore Rider IDE files
+.idea/
+*.sln.iml
+
+# Ignore Resharper files
+*.DotSettings.user
+
+# Ignore ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Ignore Webpack and npm artifacts
+node_modules/
+package-lock.json
+yarn.lock
+
+# Ignore Blazor static web assets
+wwwroot/css/*.map
+wwwroot/js/*.map
+
+# Ignore database files
+*.mdf
+*.sqlite
+*.db
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+.env
+.env.*
+!.env.example
+secrets.ps1
+backup-password.txt
+*.pfx
+*.p12
+*.key
+
+# Ignore EF Core tools config
+efpt.config.json
+efpt.config.json.user
+
+# Ignore generated files
+*.generated.cs
+
+# Ignore test output
+TestResults/
+
+# Ignore coverage reports
+/coverage/
+.artifacts/
+*.coverage
+*.coveragexml
+
+# Ignore other temp files
+*.tmp
+*.temp
+~$*
+__pycache__/
+*.py[cod]
+
+# Ignore accidental downloaded installers/media queue files
+*.exe
+*.nzb
+
+# Ignore Atlas specific files
+2b2tAtlas.Client/webpack.config.js
+
+# Ingestor source and documentation are versioned; hostile inputs, generated
+# output, credentials, and third-party tools are not.
+2b2tAtlas.Ingestor/**/*.zip
+2b2tAtlas.Ingestor/**/*.rar
+2b2tAtlas.Ingestor/**/*.7z
+2b2tAtlas.Ingestor/**/*.tar
+2b2tAtlas.Ingestor/**/*.gz
+2b2tAtlas.Ingestor/**/*.jar
+2b2tAtlas.Ingestor/**/*.exe
+2b2tAtlas.Ingestor/**/*.dll
+2b2tAtlas.Ingestor/**/*.so
+2b2tAtlas.Ingestor/**/*.dylib
+2b2tAtlas.Ingestor/**/*unmined*/
+2b2tAtlas.Ingestor/inbox/
+2b2tAtlas.Ingestor/work/
+2b2tAtlas.Ingestor/archive/
+2b2tAtlas.Ingestor/rejected/
+2b2tAtlas.Ingestor/published/
+2b2tAtlas.Ingestor/secrets/
+2b2tAtlas.Ingestor/**/*.world/
+2b2tAtlas.Ingestor/**/level.dat
+2b2tAtlas.Ingestor/**/level.dat_old
+2b2tAtlas.Ingestor/**/session.lock
+2b2tAtlas.Ingestor/**/*.mca
+2b2tAtlas.Ingestor/**/*.mcr
+2b2tAtlas.Ingestor/**/job-state.json
+
+# Exclude VS Code history folders
+.history/
+
+# Do NOT include any Copilot or VS Code/Visual Studio Copilot history
+.copilot/
+.copilot-history/
+.copilot.json
+.copilot.*.json
+
+# Auto-generated seed passwords (never commit)
+seed-credentials.txt
+
+# AI-assisted development/planning docs kept local only (not published)
+GAMEPLAN.md
+docs/RAG_INDEX.md
+docs/INGESTION_GAMEPLAN.md
+docs/RELEASE_READINESS.md
+docs/INGESTION_CHECKLIST.md
+docs/BLACKBRAIN_INTEGRATION.md
+docs/GROUP_ENRICHMENT.md
+docs/WIKI_ENRICHMENT.md
+docs/TGG_COORDINATE_FIXTURE.md
+docs/ROADMAP.md
+docs/END_HIGHWAY_RESEARCH.md
+
+# End of .gitignore
+
+# Local example state and generated secrets
+.local/
+*.sqlite3
+*.sqlite3-*
+*.pem
+secrets.json

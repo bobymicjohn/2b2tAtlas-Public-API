@@ -1,0 +1,14 @@
+# Working on the stack
+
+Build and test from this folder; the surrounding repository also has standalone API
+examples with their own dependencies. Keep changes to this source snapshot in this
+folder unless they also affect the shared documentation.
+
+Run the .NET suite and relevant collector/map fixtures, then stage changes and run
+`python scripts/check-public-export.py`. Never stage `.local`, credentials, databases,
+WDLs, game profiles, downloaded tools, private records or generated tiles. Use synthetic
+worlds and temporary databases in tests. Keep dependency and third-party notices intact.
+
+The CI workflow runs on GitHub-hosted runners with read-only repository permissions.
+It does not deploy services or contact an authenticated production API. Never add a
+self-hosted runner or pass deployment secrets to untrusted pull requests.

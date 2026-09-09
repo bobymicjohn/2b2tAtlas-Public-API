@@ -1,0 +1,519 @@
+@using Blazored.LocalStorage
+@using System.Linq
+@using _2b2tAtlas.Client.Services
+@using Atlas.Auth
+@inject ILocalStorageService LocalStorage
+@inject HttpClient Http
+@inject AuthService AuthService
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+@* Radzen component theme + app overrides are switched together so dark mode
+   actually applies to the Radzen controls, not just the custom chrome. *@
+@if (themes[themeIndex] == "dark")
+{
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/dark-base.css">
+    <link rel="stylesheet" href="./css/dark-base.css">
+}
+else
+{
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/default-base.css">
+    <link rel="stylesheet" href="./css/base.css">
+}
+
+<RadzenComponents @rendermode="RenderMode.InteractiveAuto" />
+
+<RadzenLayout class="@($"bg-style minecraft-font {(themes[themeIndex] == "light" ? "light-theme" : "")} {(showAppMenu ? "app-menu-open" : "")}")">
+    <RadzenHeader class="bg-style app-header">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0" Style="height: 100%;">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0" Style="width: 60%;">
+                <button type="button" class="app-menu-button" @onclick="ToggleAppMenu"
+                        aria-label="Toggle main menu" aria-expanded="@showAppMenu.ToString().ToLowerInvariant()">
+                    <RadzenIcon Icon="apps" />
+                </button>
+                <RadzenImage Style="height: 28px; padding-right: 13px; vertical-align: middle;" Path="@activeAppImage"></RadzenImage>
+                <RadzenLabel Text="@activeAppName" Style="font-size: large; font-weight: 700;" />
+            </RadzenStack>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem" Style="width: 50%; padding-right: 12px;">
+                <RadzenIcon Icon="@(themes[themeIndex] == "dark" ? "light_mode" : "dark_mode")"
+                            @onclick="@NextTheme"
+                            Style="cursor: pointer; font-size: 20pt; vertical-align: middle;"
+                            title="@(themes[themeIndex] == "dark" ? "Switch to light mode" : "Switch to dark mode")" />
+                @if (isAuthenticated && currentUser != null)
+                {
+                    <img src="@UserAvatar.Url(currentUser)"
+                         alt="@currentUser.Username Avatar" 
+                         style="height: 32px; width: 32px; vertical-align: middle; cursor: pointer; border-radius: 4px; border: 2px solid #92CC52;" 
+                         @onclick="@(() => NavigationManager.NavigateTo(canAccessAdmin ? "/admin" : "/"))"
+                         title="@(canAccessAdmin ? "Admin Panel" : $"Logged in as {currentUser.Username}")" />
+                }
+                else
+                {
+                    <img src="@UserAvatar.Url(currentUser)"
+                         alt="Login" 
+                         style="height: 32px; width: 32px; vertical-align: middle; cursor: pointer; border-radius: 4px; border: 2px solid #666; opacity: 0.7; filter: grayscale(100%);" 
+                         @onclick="@(() => NavigationManager.NavigateTo("/login"))"
+                         title="Click to Login" />
+                }
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenHeader>
+    <RadzenSidebar Responsive="false" Expanded="@showAppMenu" Style="width: max-content;" class="bg-style">
+        @if (showAppMenu)
+        {
+            <div style="height: 100%; width: 69px; padding-left: 7px; padding-top: 17px;">
+                <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start" Style="height: 100%; color: #">
+                    <!-- ----- -->
+@*                     <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                        <h6 style="margin-bottom: 0px !important;">
+                            2b2t
+                        </h6>
+                        <h6 style="margin-bottom: 0px !important;">
+                            Atlas
+                        </h6>
+                    </div> *@
+                    <div style="display: flex; flex-direction: column; align-items: center; @((activeApp == "about") ? "" : "color: #9c9c9c;")">
+                        <RadzenImage Style="height: 25px; width: 25px; vertical-align: middle; cursor: pointer;" Path="./Images/sign.webp" Click="@(() => { NavToAbout(); })"></RadzenImage>
+                        <RadzenLabel Text="About" Style="font-size: x-small; font-weight: 700; margin-bottom: 0px !important;" />
+                    </div>
+                    <!-- ----- -->
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                        <hr style="width: 80%; height: 2px; margin-top: 3px; margin-bottom: 3px;" />
+                    </div>
+
+
+                    <!-- Home -->
+                    <div style="display: flex; flex-direction: column; align-items: center; @((activeApp == "") ? "" : "color: #9c9c9c;")">
+                        <RadzenImage Style="height: 28px; width: 28px; vertical-align: middle; cursor: pointer;" Path="./Images/logo.webp" Click="@(() => { NavToHome(); })"></RadzenImage>
+                        <RadzenLabel Text="Directory" Style="font-size: x-small; font-weight: 700;" />
+                    </div>
+                    <!-- Map -->
+                    <div style="display: flex; flex-direction: column; align-items: center; @((activeApp == "overworld") ? "" : "color: #9c9c9c;")">
+                        <RadzenImage Style="height: 28px; width: 28px; vertical-align: middle; cursor: pointer;" Path="./Images/ovw.webp" Click="@(() => { NavToOVW(); })"></RadzenImage>
+                        <RadzenLabel Text="Overworld" Style="font-size: x-small; font-weight: 700;" />
+                    </div>
+                    <!-- Nether -->
+                    <div style="display: flex; flex-direction: column; align-items: center; @((activeApp == "nether") ? "" : "color: #9c9c9c;")">
+                        <RadzenImage Style="height: 28px; width: 28px; vertical-align: middle; cursor: pointer;" Path="./Images/nether.png" Click="@(() => { NavToNether(); })"></RadzenImage>
+                        <RadzenLabel Text="Nether" Style="font-size: x-small; font-weight: 700;" />
+                    </div>
+                    <!-- End -->
+                    <div style="display: flex; flex-direction: column; align-items: center; @((activeApp == "end") ? "" : "color: #9c9c9c;")">
+                        <RadzenImage Style="height: 28px; width: 28px; vertical-align: middle; cursor: pointer;" Path="./Images/end.webp" Click="@(() => { NavToEnd(); })"></RadzenImage>
+                        <RadzenLabel Text="End" Style="font-size: x-small; font-weight: 700;" />
+                    </div>
+
+
+                    <!-- ----- -->
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                        <hr style="width: 80%; height: 2px; margin-top: 3px; margin-bottom: 3px;" />
+                    </div>
+
+
+                    <!-- API -->
+                    <div style="display: flex; flex-direction: column; align-items: center; @((activeApp == "api") ? "" : "color: #9c9c9c;")">
+                        <RadzenImage Style="height: 25px; width: 25px; vertical-align: middle; cursor: pointer;" Path="./Images/api.webp" Click="@(() => { NavToAPI(); })"></RadzenImage>
+                        <RadzenLabel Text="API" Style="font-size: x-small; font-weight: 700; margin-bottom: auto;" />
+                    </div>
+
+                    <!-- Groups -->
+                    <div style="display: flex; flex-direction: column; align-items: center; @((activeApp == "groups") ? "" : "color: #9c9c9c;")">
+                        <RadzenImage Style="height: 28px; width: 28px; object-fit: contain; vertical-align: middle; cursor: pointer;" Path="./Images/groups.webp" Click="@(() => { NavToGroups(); })"></RadzenImage>
+                        <RadzenLabel Text="Groups" Style="font-size: x-small; font-weight: 700; margin-bottom: auto;" />
+                    </div>
+
+
+
+                    <!-- Bottom buttons -->
+                    <div style="display: flex; flex-direction: column; align-items: center; margin-top: auto;;">
+                        <RadzenImage id="shulkerImage" Style="height: 25px; width: 25px; vertical-align: middle; cursor: pointer;" Path="./Images/shulker.webp" Click="@(() => { NavToExtras(); })"></RadzenImage>
+                        <RadzenLabel Text="Extras" Style="font-size: x-small; font-weight: 700; margin-bottom: auto;" />
+                    </div>
+                    <div style="display: flex; flex-direction: row; align-items: center; padding-bottom: 11px;">
+                        <RadzenIcon Icon="settings" @onclick="@(() => NavigationManager.NavigateTo("/admin"))" title="Admin Panel" Style="cursor: pointer; font-size: 10pt; margin-right: 11px; margin-left: 3px;" />
+                        <RadzenIcon Icon="brush" @onclick="@(() =>{ NextTheme(); })" Style="cursor: pointer; font-size: 10pt;" />
+                    </div>
+                </RadzenStack>
+            </div>
+        }
+    </RadzenSidebar>
+    <RadzenBody>
+        <CascadingValue Value="@sidebarExpanded">
+            <CascadingValue Value="@themeIndex">
+                @if (isLoading)
+                {
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                    </div>
+                }
+                else
+                {
+                    @Body
+                }
+            </CascadingValue>
+        </CascadingValue>
+    </RadzenBody>
+</RadzenLayout>
+
+@code {
+    int themeIndex = 1; // default to dark mode
+    string[] themes = new string[] { "light", "dark" };
+
+    bool isLoading = true;
+    public bool sidebarExpanded = false;
+    public bool showAppMenu = false;
+
+    private void ToggleAppMenu()
+    {
+        showAppMenu = !showAppMenu;
+    }
+
+    // Authentication state
+    private bool isAuthenticated = false;
+    private User? currentUser = null;
+    private bool canAccessAdmin = false;
+    private DateTime? lastLoginUpdateTime = null;
+    private readonly TimeSpan loginUpdateThrottle = TimeSpan.FromMinutes(5); // Only update every 5 minutes
+
+    // Permissions that unlock at least one admin-panel tab.
+    private static readonly string[] AdminCapabilities =
+    {
+        Permissions.UsersManage, Permissions.UsersRolesAssign, Permissions.RolesManage,
+        Permissions.LocationsCreate, Permissions.LocationsEdit, Permissions.LocationsDelete, Permissions.AttachmentsManage,
+        Permissions.HighwaysEdit, Permissions.HighwaysDelete,
+        Permissions.SubmissionsModerate, Permissions.RendersManage, Permissions.RenderSettingsManage,
+        Permissions.GroupsManage, Permissions.SettingsManage, Permissions.AuditView,
+    };
+
+    /// <summary>Restores the theme, resolves cached authentication capabilities, and subscribes to navigation changes.</summary>
+    protected async override Task OnInitializedAsync()
+    {
+        //Get the theme index from local storage if it exists
+        if (await LocalStorage.ContainKeyAsync("atlasthemeIndex"))
+        {
+            themeIndex = await LocalStorage.GetItemAsync<int>("atlasthemeIndex");
+        }
+
+        // Check authentication status
+        await CheckAuthenticationStatus();
+
+        // Subscribe to navigation changes to update auth state
+        NavigationManager.LocationChanged += OnLocationChanged;
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        // Refresh authentication state when navigating
+        await CheckAuthenticationStatus();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Unsubscribes the layout from browser navigation notifications.</summary>
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private async Task CheckAuthenticationStatus()
+    {
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        if (isAuthenticated)
+        {
+            currentUser = await AuthService.GetCurrentUserAsync();
+            canAccessAdmin = currentUser != null
+                && (currentUser.IsSuperAdmin || currentUser.IsAdmin
+                    || (currentUser.Permissions?.Any(p => AdminCapabilities.Contains(p)) ?? false));
+            
+            // Update last login timestamp only if enough time has passed since last update
+            var now = DateTime.UtcNow;
+            if (lastLoginUpdateTime == null || (now - lastLoginUpdateTime.Value) > loginUpdateThrottle)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var success = await AuthService.UpdateLastLoginAsync();
+                        if (success)
+                        {
+                            lastLoginUpdateTime = now;
+                        }
+                    }
+                    catch
+                    {
+                        // Silently ignore errors - this is just for tracking
+                    }
+                });
+            }
+        }
+        else
+        {
+            currentUser = null;
+            canAccessAdmin = false;
+            lastLoginUpdateTime = null;
+        }
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        isAuthenticated = false;
+        currentUser = null;
+        canAccessAdmin = false;
+        NavigationManager.NavigateTo("/");
+        StateHasChanged();
+    }
+
+    /// <summary>Reapplies the browser hover animation binding after the layout renders.</summary>
+    /// <param name="firstRender">Whether this is the component's first completed render.</param>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("playGifOnHover", "shulkerImage", "./Images/shulker.gif", "./Images/shulker.webp");
+    }
+
+    bool isAuthorizedForApp(string appName)
+    {
+        return true;
+    }
+
+    void NavToHome()
+    {
+        NavigationManager.NavigateTo("");
+    }
+
+    void NavToOVW()
+    {
+        NavigationManager.NavigateTo("map?dimension=overworld");
+    }
+
+    void NavToNether()
+    {
+        NavigationManager.NavigateTo("map?dimension=nether");
+    }
+
+    void NavToEnd()
+    {
+        NavigationManager.NavigateTo("map?dimension=end");
+    }
+
+    void NavToAPI()
+    {
+        NavigationManager.NavigateTo("api");
+    }
+
+    void NavToAbout()
+    {
+        NavigationManager.NavigateTo("about");
+    }
+
+    void NavToExtras()
+    {
+        NavigationManager.NavigateTo("extras");
+    }
+
+    void NavToGroups()
+    {
+        NavigationManager.NavigateTo("groups");
+    }
+
+    void NextTheme()
+    {
+        if (themeIndex == themes.Length - 1)
+        {
+            themeIndex = 0;
+        }
+        else
+        {
+            themeIndex++;
+        }
+
+        //Save the theme index to local storage
+        LocalStorage.SetItemAsync("atlasthemeIndex", themeIndex);
+
+        StateHasChanged();
+    }
+
+    string activeApp
+    {
+        get
+        {
+            var uri = new Uri(NavigationManager.Uri);
+            var path = uri.AbsolutePath.TrimStart('/').Split('/')[0].ToLowerInvariant();
+            if (path == "map")
+            {
+                var q = uri.Query;
+                if (q.Contains("dimension=nether")) return "nether";
+                if (q.Contains("dimension=end")) return "end";
+                return "overworld";
+            }
+            return path;
+        }
+    }
+
+    string activeAppName
+    {
+        get
+        {
+            return activeApp switch
+            {
+                "overworld" => "Overworld",
+                "nether" => "Nether",
+                "end" => "End",
+                "api" => "API",
+                "about" => "About",
+                "extras" => "Extras",
+                "groups" => "Groups",
+                "login" => "Login",
+                "register" => "Register",
+                "admin" => "Admin Panel",
+                _ => "Directory",
+            };
+        }
+    }
+
+    string activeAppImage
+    {
+        get
+        {
+            return activeApp switch
+            {
+                "overworld" => "./Images/ovw.webp",
+                "nether" => "./Images/nether.png",
+                "end" => "./Images/end.webp",
+                "api" => "./Images/api.webp",
+                "about" => "./Images/sign.webp",
+                "extras" => "./Images/shulker.webp",
+                "groups" => "./Images/groups.webp",
+                "login" => "./Images/logo.png",
+                "admin" => "./Images/cartographer.webp",
+                _ => "./Images/logo.webp",
+            };
+        }
+    }
+
+}
+
+<style>
+    .app-menu-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        margin: 0 13px 0 4px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .app-menu-button .rzi {
+        font-size: 32px;
+        pointer-events: none;
+    }
+
+    .app-menu-button:focus-visible {
+        outline: 2px solid #92CC52;
+        outline-offset: -3px;
+    }
+
+    .app-header {
+        height: 48px;
+        padding: 4px 0;
+        position: relative;
+        z-index: 1200;
+    }
+
+    .app-menu-open .rz-body {
+        width: 100%;
+        min-width: 0;
+    }
+
+    @@media (max-width: 600px) {
+        .app-menu-button {
+            flex-basis: 40px;
+            width: 40px;
+            height: 40px;
+            margin: 0 8px 0 2px;
+        }
+
+        .app-menu-button .rzi {
+            font-size: 28px;
+        }
+    }
+
+    .lds-ring {
+        color: #92CC52 !important;
+    }
+
+    .rz-button:has(+ .rz-splitbutton-menubutton) {
+        border-top-left-radius: 5px !important;
+        border-bottom-left-radius: 5px !important;
+    }
+
+    .rz-splitbutton-menubutton {
+        border-top-right-radius: 5px !important;
+        border-bottom-right-radius: 5px !important;
+    }
+
+    .disabled {
+        cursor: not-allowed !important;
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
+    #contentBody {
+        height: calc(100% - 50px);
+    }
+
+    #username-display {
+        position: absolute;
+        top: 50px;
+        right: 13px;
+        text-align: end;
+    }
+
+    #activity-button {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        cursor: pointer;
+        font-size: x-large;
+    }
+
+    #admin-button {
+        position: absolute;
+        top: 15px;
+        right: 75px;
+        cursor: pointer;
+        font-size: x-large;
+    }
+
+        #admin-button:hover,
+        #activity-button:hover {
+            color: gray;
+        }
+
+    .rz-selectable tbody tr.rz-data-row.rz-state-highlight > td {
+        background-color: #20495e;
+    }
+
+    .light-theme .rz-selectable tbody tr.rz-data-row.rz-state-highlight > td {
+        background-color: #e3f6d5;
+    }
+
+    .rz-body {
+        padding: 0px !important;
+    }
+
+    .minecraft-font {
+        font-family: var(--rz-text-font-family, Roboto, sans-serif);
+    }
+</style>

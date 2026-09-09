@@ -1,0 +1,37 @@
+{
+  "executablePath": "../tools/unmined-cli.exe",
+  "expectedSha256": "REPLACE_WITH_64_CHARACTER_SHA256_HEX_DIGEST_BEFORE_USE",
+  "version": "Record the exact uNmINeD CLI version here",
+  "nightColorGrade": {
+    "enabled": true,
+    "saturation": 1.2,
+    "lightness": 1.15
+  },
+  "dimensionArguments": {
+    "overworld": [
+      "web",
+      "render",
+      "--world={world}",
+      "--dimension=overworld",
+      "--imageformat=png",
+      "--output={output}"
+    ],
+    "end": [
+      "web",
+      "render",
+      "--world={world}",
+      "--dimension=end",
+      "--imageformat=png",
+      "--output={output}"
+    ],
+    "nether": [
+      "web",
+      "render",
+      "--world={world}",
+      "--dimension=nether",
+      "--topY=122",
+      "--imageformat=png",
+      "--output={output}"
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.10" PrivateAssets="all" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+    <PackageReference Include="Radzen.Blazor" Version="11.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\2b2tAtlas.Shared\2b2tAtlas.Shared.csproj" />
+    <EmbeddedResource Include="Data\youtube-creators.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\Images\boby.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\index.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\minecraft_custom_coordinate_system.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\minecraft_custom_coordinate_system.prj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="GenerateMapModuleAsset" BeforeTargets="CoreCompile">
+    <GetFileHash Files="$(MSBuildProjectDirectory)/wwwroot/js/atlas-map.js" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_AtlasMapModuleHash" />
+    </GetFileHash>
+    <WriteLinesToFile File="$(IntermediateOutputPath)MapModuleAsset.g.cs"
+                      Lines="namespace _2b2tAtlas.Client { internal static class MapModuleAsset { public const string Url = &quot;./js/atlas-map.js?v=%(_AtlasMapModuleHash.FileHash)&quot;%3B } }"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)MapModuleAsset.g.cs" />
+    </ItemGroup>
+  </Target>
+
+</Project>

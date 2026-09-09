@@ -1,0 +1,3 @@
+{"id":1,"name":"Thin Build","description":"","sources":[],"renders":[],"groups":[{"id":1,"name":"Builders One"}]}
+{"id":2,"name":"Documented Build","description":"Sourced history.","sources":["https://example.invalid/source"],"renders":[{"id":10}],"groups":[{"id":1,"name":"Builders One"},{"id":2,"name":"Builders Two"}]}
+{"id":3,"name":"Ungrouped Build","description":"","sources":[],"renders":[],"groups":[]}

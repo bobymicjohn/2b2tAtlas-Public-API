@@ -1,0 +1,42 @@
+.attachment-card {
+    --attachment-accent: var(--rz-primary);
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--rz-base-500);
+    border-top: 3px solid var(--attachment-accent);
+    border-radius: 8px;
+    background: var(--rz-base-background-color);
+    color: var(--rz-text-color);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.attachment-card.is-youtube { --attachment-accent: #ef4444; }
+.attachment-card:hover { box-shadow: 0 4px 14px #0002; border-color: var(--attachment-accent); }
+.attachment-type { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; }
+.attachment-type-label { display: flex; align-items: center; gap: 6px; font-size: .7rem; font-weight: 700; line-height: 1; }
+.is-youtube .attachment-type-label svg { color: #ef4444; }
+.attachment-format { color: var(--rz-text-secondary-color); font-size: .59rem; letter-spacing: .07em; }
+.attachment-preview { position: relative; display: grid; place-items: center; height: 112px; overflow: hidden; background: var(--rz-body-background-color); color: var(--rz-text-secondary-color); }
+.attachment-preview > img { width: 100%; height: 100%; object-fit: cover; transition: transform .18s ease; }
+.is-wiki .attachment-preview > img { object-fit: contain; padding: 22px; box-sizing: border-box; }
+.attachment-preview:hover > img { transform: scale(1.025); }
+.attachment-placeholder { display: grid; place-items: center; width: 100%; height: 100%; background: linear-gradient(135deg, transparent, #80808016); }
+.attachment-play { position: absolute; display: grid; place-items: center; width: 38px; height: 28px; border-radius: 7px; background: #13151be6; color: white; box-shadow: 0 2px 8px #0004; }
+.is-youtube .attachment-play { background: #df2828ed; }
+.attachment-time { position: absolute; bottom: 6px; right: 6px; padding: 3px 5px; background: #111e; color: white; border-radius: 3px; font-size: .62rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.attachment-content { display: flex; flex-direction: column; gap: 7px; padding: 10px; }
+.attachment-title, .attachment-caption, .attachment-credit { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.attachment-title { color: inherit; font-size: .82rem; font-weight: 650; line-height: 1.35; -webkit-line-clamp: 2; text-decoration: none; }
+.attachment-title:hover { color: var(--rz-link-color); }
+.attachment-caption { margin: 0; font-size: .73rem; line-height: 1.4; color: var(--rz-text-secondary-color); -webkit-line-clamp: 2; }
+.attachment-creator { display: flex; align-items: center; gap: 7px; color: inherit; text-decoration: none; font-size: .72rem; min-width: 0; padding-top: 2px; }
+.attachment-creator > img, .attachment-avatar-fallback { width: 26px; height: 26px; flex-shrink: 0; object-fit: cover; border-radius: 50%; background: var(--rz-body-background-color); }
+.attachment-avatar-fallback { display: grid; place-items: center; font-weight: 700; }
+.attachment-creator > span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.attachment-creator:hover > span { text-decoration: underline; }
+.attachment-credit { font-size: .67rem; line-height: 1.35; color: var(--rz-text-secondary-color); -webkit-line-clamp: 2; }
+.attachment-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 7px; border-top: 1px solid var(--rz-base-500); }
+.attachment-actions a { color: var(--rz-text-secondary-color); font-size: .65rem; text-decoration: none; }
+.attachment-actions a:hover { color: var(--rz-link-color); text-decoration: underline; }
+a:focus-visible { outline: 2px solid var(--rz-primary); outline-offset: 2px; border-radius: 2px; }
+.attachment-preview:focus-visible { outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) { .attachment-card, .attachment-preview > img { transition: none; } }

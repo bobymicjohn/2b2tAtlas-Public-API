@@ -1,0 +1,1140 @@
+@page "/"
+@using Atlas
+@using System.Net.Http.Json
+@using System.Text.Json
+@using System.IO.Compression
+@using Radzen
+@using Radzen.Blazor
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<PageTitle>2b2t Atlas - Location Directory</PageTitle>
+<HeadContent>
+    <link rel="canonical" href="https://atlas.example/" />
+</HeadContent>
+<div class="directory-page">
+    <details class="directory-intro">
+        <summary>
+            <span class="directory-intro-icon" aria-hidden="true"><RadzenIcon Icon="explore" /></span>
+            <span>
+                <strong>What is the 2b2t Atlas?</strong>
+                <small>An interactive map and historical directory covering 2b2t's Overworld, Nether, and End.</small>
+            </span>
+            <span class="directory-intro-expand" aria-hidden="true"><RadzenIcon Icon="expand_more" /></span>
+        </summary>
+        <div class="directory-intro-body">
+            <p>
+                2b2t Atlas is a searchable historical map and location directory for 2builders2tools (2b2t),
+                one of Minecraft's longest-running anarchy servers. Browse more than 1,500 documented bases,
+                ruins, monuments, spawn landmarks, highways, canals, world-border sites, and community projects
+                across the Overworld, Nether, and End.
+            </p>
+            <p>
+                Each location can connect exact coordinates and dimension data with dated world-download (WDL)
+                map renders, The Archive warps, screenshots, videos, source links, builders, groups, and related
+                infrastructure. Compare multiple snapshots of the same place, open records on the interactive map,
+                follow the groups behind important builds, or reuse the public data in mods, bots, research, and
+                preservation projects.
+            </p>
+            <ul class="directory-intro-features" aria-label="2b2t Atlas features">
+                <li><strong>Three dimensions</strong><span>Dedicated Overworld, Nether, and End maps and layers.</span></li>
+                <li><strong>Evidence-linked history</strong><span>Renders, warps, media, sources, builders, and groups.</span></li>
+                <li><strong>Open structured data</strong><span>A public API and machine-readable catalogs for community tools.</span></li>
+            </ul>
+            <div class="directory-intro-links">
+                <a href="/about">Learn about the Atlas</a>
+                <a href="/map">Explore the full map</a>
+                <a href="/groups">Browse groups</a>
+                <a href="/api">Build with the public API</a>
+            </div>
+        </div>
+    </details>
+
+    @if (isLoading)
+    {
+        <div class="directory-loading">
+            <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" AllowClose="false">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                             JustifyContent="JustifyContent.SpaceBetween" Gap="1rem">
+                    <span>@loadError</span>
+                    <RadzenButton Text="Retry" Icon="refresh" Size="ButtonSize.Small"
+                                  ButtonStyle="ButtonStyle.Light" Click="@LoadLocationsAsync" />
+                </RadzenStack>
+            </RadzenAlert>
+        }
+
+        <div class="directory-toolbar">
+            <div class="directory-search">
+                <RadzenIcon Icon="search" />
+                <input value="@searchString" @oninput="OnSearchInput" placeholder="Search locations or groups..."
+                       aria-label="Search locations or groups" autocomplete="off" />
+            </div>
+            <span class="directory-count">@filteredLocations.Count.ToString("N0") locations</span>
+            <div class="directory-actions">
+                @if (selectedLocations.Count > 0)
+                {
+                    <span class="selection-count"><strong>@selectedLocations.Count</strong> selected</span>
+                    <RadzenButton Icon="close" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Danger"
+                                  Size="ButtonSize.Small" Click="ClearSelection" title="Clear selection" />
+                    <RadzenButton Click="ExportToJourneymap" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                  title="Export selected locations for JourneyMap" class="export-button">
+                        <img src="/Images/journeymap.png" alt="" aria-hidden="true" style="height: 24px; width: 24px;" />
+                    </RadzenButton>
+                    <RadzenButton Click="ExportToXaeromap" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                  title="Export selected locations for Xaero's Map" class="export-button">
+                        <img src="/Images/xaeroplus.webp" alt="" aria-hidden="true" style="height: 24px; width: 24px; border-radius: 4px;" />
+                    </RadzenButton>
+                }
+                else
+                {
+                    <RadzenButton Icon="check" Text="Select all" Variant="Variant.Outlined"
+                                  ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Click="SelectAll" />
+                }
+            </div>
+        </div>
+
+        <div class="directory-desktop">
+            <RadzenDataGrid @ref="grid"
+                            Data="@filteredLocations" TItem="Atlas.Location"
+                            Style="height: 100%;"
+                            AllowColumnResize="true" AllowColumnPicking="true" AllowPickAllColumns="true"
+                            AllowFiltering="true" FilterMode="FilterMode.SimpleWithMenu"
+                            AllowSorting="true"
+                            AllowPaging="true" PageSize="25" PageSizeOptions="@(new List<int> { 25, 50, 100 })"
+                            SelectionMode="DataGridSelectionMode.Multiple" @bind-Value=@selectedLocations>
+                <Columns>
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="Rowid" Title="Id" Visible="false" />
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="Name" Title="Name" Width="200px">
+                        <Template Context="location">
+                            <a href="javascript:void(0)" @onclick="() => NavToLocation(location)">@location.Name</a>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="Description" Title="Description" Width="250px" Visible="false">
+                        <Template Context="location">@CompactDescription(location.Description)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="GroupNames" Title="Groups" Width="210px">
+                        <Template Context="location">
+                            @if (location.Groups is { Count: > 0 })
+                            {
+                                <div class="directory-group-pills" @onclick:stopPropagation="true">
+                                    @foreach (var group in location.Groups.OrderBy(group => group.GroupName))
+                                    {
+                                        <a href="@(string.IsNullOrWhiteSpace(group.GroupInteractiveUrl) ? $"/group/{group.GroupId}" : group.GroupInteractiveUrl)"
+                                           title="@($"{group.GroupName} · {group.Role}")"
+                                           style="--group-color: @(string.IsNullOrWhiteSpace(group.Color) ? "#4da3ff" : group.Color)">@group.GroupName</a>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="directory-no-group">—</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="DimensionName" Title="Dimension" Width="100px">
+                        <Template Context="location">
+                            <RadzenBadge BadgeStyle="@GetDimensionBadgeStyle(location.Dimension)" Text="@location.DimensionName" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="X" Title="X" Width="100px" />
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="Y" Title="Y" Width="80px" Visible="false" />
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="Z" Title="Z" Width="100px" />
+
+                    <!-- NEW SORTABLE/FILTERABLE COUNT COLUMNS -->
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="WarpCount" Title="Warps" Width="80px" TextAlign="TextAlign.Center">
+                        <Template Context="location">
+                            <RadzenBadge BadgeStyle="@(location.WarpCount > 0 ? BadgeStyle.Info : BadgeStyle.Light)"
+                                         Text="@location.WarpCount.ToString()"
+                                         title="@($"{location.WarpCount} warp{(location.WarpCount == 1 ? "" : "s")}")" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="BlueMapReadyRenderCount" Title="3D Ready" Width="90px"
+                                          TextAlign="TextAlign.Center" Visible="true">
+                        <Template Context="location">
+                            <RadzenBadge BadgeStyle="@(location.BlueMapReadyRenderCount > 0 ? BadgeStyle.Primary : BadgeStyle.Light)"
+                                         Text="@location.BlueMapReadyRenderCount.ToString()"
+                                         title="@($"{location.BlueMapReadyRenderCount} validated 3D render{(location.BlueMapReadyRenderCount == 1 ? "" : "s")} ready")" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="AttachmentCount" Title="Attachments" Width="80px" TextAlign="TextAlign.Center">
+                        <Template Context="location">
+                            <RadzenBadge BadgeStyle="@(location.AttachmentCount > 0 ? BadgeStyle.Success : BadgeStyle.Light)"
+                                         Text="@location.AttachmentCount.ToString()"
+                                         title="@($"{location.AttachmentCount} attachment{(location.AttachmentCount == 1 ? "" : "s")}")" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="RenderCount" Title="Renders" Width="80px" TextAlign="TextAlign.Center">
+                        <Template Context="location">
+                            <RadzenBadge BadgeStyle="@(location.RenderCount > 0 ? BadgeStyle.Warning : BadgeStyle.Light)"
+                                         Text="@location.RenderCount.ToString()"
+                                         title="@($"{location.RenderCount} render{(location.RenderCount == 1 ? "" : "s")}")" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="TotalRelatedItems" Title="Total" Width="80px" TextAlign="TextAlign.Center" Visible="false">
+                        <Template Context="location">
+                            <RadzenBadge BadgeStyle="@(location.TotalRelatedItems > 0 ? BadgeStyle.Primary : BadgeStyle.Light)"
+                                         Text="@location.TotalRelatedItems.ToString()"
+                                         title="@location.RelatedContentSummary" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="Atlas.Location" Property="DateAddedUtc" Title="Date Added" Width="120px" SortOrder="SortOrder.Descending" Visible="false">
+                        <Template Context="location">
+                            @location.DateAddedUtc.ToString("MMM dd, yyyy")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Atlas.Location" Title="Actions" Width="286px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center" Pickable="false">
+                        <Template Context="location">
+                            @{ var preferredWarp = PreferredDirectoryWarp(location); var downloadableRender = PreferredDownloadRender(location); }
+                            <div class="directory-row-actions" @onclick:stopPropagation="true">
+                                <span class="directory-action-slot">
+                                    <RadzenButton Text="Map" Icon="map" Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                  Click="@(() => OpenLocationInMap(location))"
+                                                  title="@($"Open {location.Name} in the interactive map")" />
+                                </span>
+                                <span class="directory-action-slot">
+                                    @if (preferredWarp is not null)
+                                    {
+                                        <RadzenButton Text="Warp" Icon="content_copy" Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                      Click="@(() => CopyDirectoryWarp(preferredWarp))"
+                                                      title="@($"Copy /warp {preferredWarp.Name}")" />
+                                    }
+                                    else
+                                    {
+                                        <span class="directory-action-placeholder" aria-hidden="true"></span>
+                                    }
+                                </span>
+                                <span class="directory-action-slot">
+                                    @if (downloadableRender is not null)
+                                    {
+                                        <a class="directory-wdl-button" href="@RenderDownloadUrl(downloadableRender)"
+                                           download="@RenderDownloadFileName(location, downloadableRender)"
+                                           title="@($"Download the preserved source WDL for {downloadableRender.Name}")">
+                                            <RadzenIcon Icon="download" /><span>WDL</span>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="directory-action-placeholder" aria-hidden="true"></span>
+                                    }
+                                </span>
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+
+        <section class="directory-compact" aria-label="Location directory">
+            @if (filteredLocations.Count == 0)
+            {
+                <div class="directory-empty">
+                    <RadzenIcon Icon="search_off" />
+                    <strong>No locations found</strong>
+                    <span>Try a different location, description, or group.</span>
+                </div>
+            }
+            else
+            {
+                <div class="location-card-list">
+                    @foreach (var location in CompactLocations)
+                    {
+                        var isSelected = IsSelected(location);
+                        <article class="location-card@(isSelected ? " selected" : "")">
+                            <div class="location-card-header">
+                                <button type="button" class="location-select" @onclick="@(() => ToggleSelection(location))"
+                                        title="@(isSelected ? "Remove from selection" : "Add to selection")"
+                                        aria-label="@(isSelected ? $"Deselect {location.Name}" : $"Select {location.Name}")">
+                                    <RadzenIcon Icon="@(isSelected ? "check_box" : "check_box_outline_blank")" />
+                                </button>
+                                <button type="button" class="location-name" @onclick="@(() => NavToLocation(location))">
+                                    @location.Name
+                                </button>
+                                <RadzenBadge BadgeStyle="@GetDimensionBadgeStyle(location.Dimension)" Text="@location.DimensionName" />
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(location.Description))
+                            {
+                                <p class="location-description">@CompactDescription(location.Description)</p>
+                            }
+
+                            @if (location.Groups is { Count: > 0 })
+                            {
+                                <div class="directory-group-pills location-card-groups" aria-label="Attributed groups">
+                                    @foreach (var group in location.Groups.OrderBy(group => group.GroupName))
+                                    {
+                                        <a href="@(string.IsNullOrWhiteSpace(group.GroupInteractiveUrl) ? $"/group/{group.GroupId}" : group.GroupInteractiveUrl)"
+                                           title="@($"{group.GroupName} · {group.Role}")"
+                                           style="--group-color: @(string.IsNullOrWhiteSpace(group.Color) ? "#4da3ff" : group.Color)">@group.GroupName</a>
+                                    }
+                                </div>
+                            }
+
+                            <div class="location-card-footer">
+                                @{ var preferredWarp = PreferredDirectoryWarp(location); var downloadableRender = PreferredDownloadRender(location); }
+                                <button type="button" class="location-coordinates" @onclick="@(() => NavToLocation(location))"
+                                        title="Open location details">
+                                    <RadzenIcon Icon="location_on" />
+                                    <span>@location.X.ToString("N0"), @location.Z.ToString("N0")</span>
+                                </button>
+                                <div class="location-counts" aria-label="Related content">
+                                    @if (location.WarpCount > 0)
+                                    {
+                                        <span title="@($"{location.WarpCount} warps")"><RadzenIcon Icon="near_me" /> @location.WarpCount</span>
+                                    }
+                                    @if (location.AttachmentCount > 0)
+                                    {
+                                        <span title="@($"{location.AttachmentCount} attachments")"><RadzenIcon Icon="attach_file" /> @location.AttachmentCount</span>
+                                    }
+                                    @if (location.RenderCount > 0)
+                                    {
+                                        <span title="@($"{location.RenderCount} renders")"><RadzenIcon Icon="map" /> @location.RenderCount</span>
+                                    }
+                                </div>
+                                <div class="location-quick-actions">
+                                    @if (preferredWarp is not null)
+                                    {
+                                        <button type="button" class="location-action-button" @onclick="@(() => CopyDirectoryWarp(preferredWarp))"
+                                                title="@($"Copy /warp {preferredWarp.Name}")">
+                                            <RadzenIcon Icon="content_copy" /><span>Warp</span>
+                                        </button>
+                                    }
+                                    @if (downloadableRender is not null)
+                                    {
+                                        <a class="location-action-button" href="@RenderDownloadUrl(downloadableRender)"
+                                           download="@RenderDownloadFileName(location, downloadableRender)"
+                                           title="@($"Download the preserved source WDL for {downloadableRender.Name}")">
+                                            <RadzenIcon Icon="download" /><span>WDL</span>
+                                        </a>
+                                    }
+                                    <button type="button" class="location-action-button" @onclick="@(() => OpenLocationInMap(location))"
+                                            title="@($"Open {location.Name} in the interactive map")">
+                                        <RadzenIcon Icon="map" /><span>Map</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                <nav class="compact-pagination" aria-label="Directory pages">
+                    <div class="pagination-summary">
+                        <strong>@CompactFirstItem-@CompactLastItem</strong>
+                        <span>of @filteredLocations.Count.ToString("N0")</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <button type="button" @onclick="@(() => SetCompactPage(0))" disabled="@(compactPage == 0)" title="First page" aria-label="First page"><RadzenIcon Icon="first_page" /></button>
+                        <button type="button" @onclick="@(() => SetCompactPage(compactPage - 1))" disabled="@(compactPage == 0)" title="Previous page" aria-label="Previous page"><RadzenIcon Icon="chevron_left" /></button>
+                        <span>Page <strong>@(compactPage + 1)</strong> of @CompactPageCount</span>
+                        <button type="button" @onclick="@(() => SetCompactPage(compactPage + 1))" disabled="@(compactPage >= CompactPageCount - 1)" title="Next page" aria-label="Next page"><RadzenIcon Icon="chevron_right" /></button>
+                        <button type="button" @onclick="@(() => SetCompactPage(CompactPageCount - 1))" disabled="@(compactPage >= CompactPageCount - 1)" title="Last page" aria-label="Last page"><RadzenIcon Icon="last_page" /></button>
+                    </div>
+                </nav>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private List<Atlas.Location> locations = new();
+    private List<Atlas.Location> filteredLocations = new();
+    private IList<Atlas.Location> selectedLocations = new List<Atlas.Location>();
+    private string searchString = "";
+    private RadzenDataGrid<Atlas.Location> grid = null!;
+    private string? loadError;
+    private const int CompactPageSize = 12;
+    private int compactPage;
+
+    private IEnumerable<Atlas.Location> CompactLocations => filteredLocations
+        .Skip(compactPage * CompactPageSize)
+        .Take(CompactPageSize);
+
+    private int CompactPageCount => Math.Max(1, (int)Math.Ceiling(filteredLocations.Count / (double)CompactPageSize));
+    private int CompactFirstItem => filteredLocations.Count == 0 ? 0 : compactPage * CompactPageSize + 1;
+    private int CompactLastItem => Math.Min(filteredLocations.Count, (compactPage + 1) * CompactPageSize);
+
+    /// <summary>Loads the public location directory from <c>api/locations</c> for the desktop grid and compact pager.</summary>
+    protected override Task OnInitializedAsync() => LoadLocationsAsync();
+
+    private async Task LoadLocationsAsync()
+    {
+        isLoading = true;
+        loadError = null;
+        try
+        {
+            using var response = await Http.GetAsync("api/locations");
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<List<Atlas.Location>>();
+            // The desktop grid applies its own hidden Date Added sort, while the
+            // compact mobile view pages this backing list directly. Keep the
+            // canonical client list newest-first so both layouts start in the
+            // same order; Rowid provides a deterministic tie-breaker.
+            locations = (result ?? new List<Atlas.Location>())
+                .OrderByDescending(location => location.DateAddedUtc)
+                .ThenByDescending(location => location.Rowid)
+                .ToList();
+            filteredLocations = locations;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading locations: {ex.Message}");
+            loadError = "Locations could not be loaded from the Atlas API. Check the API URL, DNS, and CORS configuration.";
+            locations = new List<Atlas.Location>();
+            filteredLocations = locations;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchInput(ChangeEventArgs args)
+    {
+        var value = args.Value?.ToString() ?? string.Empty;
+        searchString = value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            filteredLocations = locations;
+        }
+        else
+        {
+            filteredLocations = locations.Where(l =>
+                l.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+                (l.Description?.Contains(value, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                l.GroupNames.Contains(value, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+        compactPage = 0;
+    }
+
+    private BadgeStyle GetDimensionBadgeStyle(int dimension)
+    {
+        return dimension switch
+        {
+            0 => BadgeStyle.Success, // Overworld - Green
+            1 => BadgeStyle.Danger,  // Nether - Red
+            2 => BadgeStyle.Warning, // End - Yellow
+            _ => BadgeStyle.Secondary
+        };
+    }
+
+    private void NavToLocation(Atlas.Location location)
+    {
+        NavigationManager.NavigateTo($"location/{location.Rowid}");
+    }
+
+    /// <summary>Opens the full map using the same default dimension and coordinate conversion as location details.</summary>
+    private void OpenLocationInMap(Atlas.Location location)
+    {
+        var selectedDimension = location.Renders.Any(render => render.Dimension == location.Dimension)
+            ? location.Dimension
+            : location.Renders
+                .OrderByDescending(render => render.WorldDownloadDate)
+                .ThenByDescending(render => render.Id)
+                .Select(render => render.Dimension)
+                .FirstOrDefault(location.Dimension);
+
+        var x = location.X;
+        var z = location.Z;
+        if (location.Dimension == 0 && selectedDimension == 1)
+        {
+            x /= 8;
+            z /= 8;
+        }
+        else if (location.Dimension == 1 && selectedDimension == 0)
+        {
+            x *= 8;
+            z *= 8;
+        }
+
+        var dimensionName = selectedDimension switch
+        {
+            1 => "nether",
+            2 => "end",
+            _ => "overworld"
+        };
+        NavigationManager.NavigateTo($"map?dimension={dimensionName}&x={x}&z={z}&zoom=8");
+    }
+
+    private static Atlas.Locations.Warp? PreferredDirectoryWarp(Atlas.Location location) =>
+        location.Renders
+            .Where(render => render.ArchiveWarp is not null)
+            .OrderByDescending(render => render.WorldDownloadDate)
+            .ThenByDescending(render => render.Id)
+            .Select(render => render.ArchiveWarp)
+            .FirstOrDefault() ??
+        location.Warps
+            .OrderByDescending(warp => warp.WorldDownloadDate)
+            .ThenByDescending(warp => warp.TimeAdded)
+            .ThenByDescending(warp => warp.Id)
+            .FirstOrDefault();
+
+    private static Atlas.Locations.Render? PreferredDownloadRender(Atlas.Location location) =>
+        location.Renders
+            .Where(render => !string.IsNullOrWhiteSpace(RenderDownloadUrl(render)))
+            .OrderByDescending(render => render.WorldDownloadDate)
+            .ThenByDescending(render => render.Id)
+            .FirstOrDefault();
+
+    private static string? RenderDownloadUrl(Atlas.Locations.Render render) =>
+        render.ArchiveWarp?.WorldDownloadUrl ?? render.WorldDownloadUrl;
+
+    private static string RenderDownloadFileName(Atlas.Location location, Atlas.Locations.Render render) =>
+        render.ArchiveWarp is { } warp
+            ? DownloadFileNames.WorldDownload(
+                render.IsSinglePlayerConcept ? $"{location.Name} singleplayer concept" : location.Name, warp.Id)
+            : DownloadFileNames.RenderWorldDownload(
+                render.IsSinglePlayerConcept ? $"{location.Name} singleplayer concept" : location.Name, render.Id);
+
+    private async Task CopyDirectoryWarp(Atlas.Locations.Warp warp) =>
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", $"/warp {warp.Name}");
+
+    private void SelectAll()
+    {
+        selectedLocations = filteredLocations.ToList();
+        StateHasChanged();
+    }
+
+    private void ClearSelection()
+    {
+        selectedLocations.Clear();
+        StateHasChanged();
+    }
+
+    private bool IsSelected(Atlas.Location location) => selectedLocations.Contains(location);
+
+    private void ToggleSelection(Atlas.Location location)
+    {
+        if (!selectedLocations.Remove(location))
+        {
+            selectedLocations.Add(location);
+        }
+    }
+
+    private void SetCompactPage(int page)
+    {
+        compactPage = Math.Clamp(page, 0, CompactPageCount - 1);
+    }
+
+    private static string CompactDescription(string? description)
+    {
+        return DisplayText.CompactDescription(description);
+    }
+
+    private async Task ExportToJourneymap()
+    {
+        var waypoints = selectedLocations.Select(location => new
+        {
+            id = $"{location.Name.Replace(" ", "-")}_{location.X}_{location.Y}_{location.Z}",
+            name = location.Name,
+            icon = "journeymap:ui/img/waypoint-icon.png",
+            colorizedIcon = "fake:color--2263500-waypoint-icon.png",
+            x = location.X,
+            y = location.Y ?? 64,
+            z = location.Z,
+            r = 221,
+            g = 118,
+            b = 52,
+            enable = true,
+            type = "Normal",
+            origin = "journeymap",
+            dimensions = location.Dimension switch
+            {
+                0 => new[] { "minecraft:overworld" },
+                1 => new[] { "minecraft:the_nether" },
+                2 => new[] { "minecraft:the_end" },
+                _ => new[] { "minecraft:overworld" }
+            },
+            persistent = true,
+            showDeviation = false,
+            iconColor = -1,
+            customIconColor = false
+        }).ToList();
+
+        var zipFileName = "journeymap_waypoints.zip";
+        using (var memoryStream = new MemoryStream())
+        {
+            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+            {
+                foreach (var waypoint in waypoints)
+                {
+                    var json = JsonSerializer.Serialize(waypoint);
+                    var entry = archive.CreateEntry($"{waypoint.id}.json");
+                    using (var entryStream = entry.Open())
+                    using (var streamWriter = new StreamWriter(entryStream))
+                    {
+                        await streamWriter.WriteAsync(json);
+                    }
+                }
+            }
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var base64 = Convert.ToBase64String(memoryStream.ToArray());
+            await JSRuntime.InvokeVoidAsync("downloadFile", zipFileName, base64);
+        }
+    }
+
+    private async Task ExportToXaeromap()
+    {
+        var waypoints = selectedLocations.Select(location => new
+        {
+            name = location.Name,
+            initials = location.Name.Substring(0, Math.Min(2, location.Name.Length)).ToUpper(),
+            x = location.X,
+            y = location.Y ?? 64,
+            z = location.Z,
+            color = 0,
+            disabled = false,
+            dimension = location.Dimension.ToString(),
+            type = 0,
+            set = "gui.xaero_default",
+            rotate_on_tp = false,
+            tp_yaw = 0,
+            visibility_type = 1,
+            destination = false
+        }).ToList();
+
+        var zipFileName = "xaeromap_waypoints.zip";
+        using (var memoryStream = new MemoryStream())
+        {
+            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+            {
+                var dimensionGroups = waypoints.GroupBy(wp => wp.dimension);
+
+                foreach (var group in dimensionGroups)
+                {
+                    var dimensionFolder = $"dim%{group.Key}";
+                    var entry = archive.CreateEntry($"{dimensionFolder}/mw$default_1.txt");
+                    using (var entryStream = entry.Open())
+                    using (var streamWriter = new StreamWriter(entryStream))
+                    {
+                        foreach (var waypoint in group)
+                        {
+                            var line = $"waypoint:{waypoint.name}:{waypoint.initials}:{waypoint.x}:{waypoint.y}:{waypoint.z}:{waypoint.color}:{waypoint.disabled}:{waypoint.type}:{waypoint.set}:{waypoint.rotate_on_tp}:{waypoint.tp_yaw}:{waypoint.visibility_type}:{waypoint.destination}";
+                            await streamWriter.WriteLineAsync(line);
+                        }
+                    }
+                }
+            }
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var base64 = Convert.ToBase64String(memoryStream.ToArray());
+            await JSRuntime.InvokeVoidAsync("downloadFile", zipFileName, base64);
+        }
+    }
+}
+
+<style>
+    .directory-page {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        padding: 17px;
+        overflow: hidden;
+    }
+
+    .directory-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+    }
+
+    .directory-intro { flex: 0 0 auto; border: 1px solid var(--rz-border-color, #343a42); border-radius: 8px; background: linear-gradient(110deg, rgba(146, 204, 82, 0.1), rgba(70, 164, 255, 0.04)); }
+    .directory-intro > summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 13px; cursor: pointer; list-style: none; }
+    .directory-intro > summary::-webkit-details-marker { display: none; }
+    .directory-intro-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 6px; background: rgba(146, 204, 82, 0.15); color: #92cc52; }
+    .directory-intro > summary > span:nth-child(2) { display: flex; flex-direction: column; min-width: 0; }
+    .directory-intro > summary strong { font-size: 0.92rem; }
+    .directory-intro > summary small { overflow: hidden; font-size: 0.78rem; font-weight: 400; opacity: 0.66; text-overflow: ellipsis; white-space: nowrap; }
+    .directory-intro-expand { transition: transform 0.16s ease; }
+    .directory-intro[open] .directory-intro-expand { transform: rotate(180deg); }
+    .directory-intro-body { padding: 0 14px 13px 58px; }
+    .directory-intro-body p { max-width: 1040px; margin: 0; font-size: 0.85rem; line-height: 1.55; opacity: 0.8; }
+    .directory-intro-body p + p { margin-top: 7px; }
+    .directory-intro-features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 1040px; margin: 11px 0 0; padding: 0; list-style: none; }
+    .directory-intro-features li { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--rz-border-color, #59636b) 55%, transparent); border-radius: 7px; background: color-mix(in srgb, var(--rz-base-background-color, #171b1f) 70%, transparent); }
+    .directory-intro-features strong { font-size: 0.8rem; }
+    .directory-intro-features span { font-size: 0.75rem; line-height: 1.35; opacity: 0.7; }
+    .directory-intro-links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+    .directory-intro-links a { color: var(--rz-link-color, #46a4ff); font-size: 0.82rem; font-weight: 700; }
+
+    .directory-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .directory-search {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: min(360px, 100%);
+        min-width: 220px;
+        height: 42px;
+        padding: 0 12px;
+        border: 1px solid var(--rz-input-border-color, #606774);
+        border-radius: 6px;
+        background: var(--rz-input-background-color, #11151a);
+        color: var(--rz-input-color, inherit);
+    }
+
+    .directory-search:focus-within {
+        border-color: #92cc52;
+        box-shadow: 0 0 0 2px rgba(146, 204, 82, 0.22);
+    }
+
+    .directory-search .rzi {
+        flex: 0 0 auto;
+        font-size: 20px;
+        opacity: 0.7;
+    }
+
+    .directory-search input {
+        width: 100%;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        letter-spacing: 0;
+    }
+
+    .directory-search input::placeholder {
+        color: currentColor;
+        opacity: 0.58;
+    }
+
+    .directory-count,
+    .selection-count {
+        white-space: nowrap;
+        font-size: 0.86rem;
+        opacity: 0.75;
+    }
+
+    .directory-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+    }
+
+    .export-button {
+        width: 40px;
+        height: 36px;
+        padding: 0 !important;
+    }
+
+    .directory-desktop {
+        flex: 1 1 auto;
+        min-height: 0;
+        min-width: 0;
+    }
+
+    .directory-compact {
+        display: none;
+        flex: 1 1 auto;
+        min-height: 0;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .location-card-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 1px 3px 8px 1px;
+        scrollbar-gutter: stable;
+    }
+
+    .location-card {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        min-width: 0;
+        padding: 12px;
+        border: 1px solid var(--rz-border-color, #343a42);
+        border-radius: 6px;
+        background: var(--rz-panel-background-color, #15191e);
+        transition: border-color 0.12s, background 0.12s;
+    }
+
+    .location-card.selected {
+        border-color: #92cc52;
+        background: rgba(146, 204, 82, 0.08);
+    }
+
+    .location-card-header {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .location-select,
+    .location-name,
+    .location-coordinates,
+    .pagination-controls button {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        letter-spacing: 0;
+        cursor: pointer;
+    }
+
+    .location-select {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        color: #92cc52;
+    }
+
+    .location-select .rzi {
+        font-size: 22px;
+    }
+
+    .location-name {
+        min-width: 0;
+        padding: 4px 0;
+        overflow: hidden;
+        color: var(--rz-link-color, #46a4ff);
+        font-weight: 700;
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .location-name:hover,
+    .location-name:focus-visible,
+    .location-coordinates:hover,
+    .location-coordinates:focus-visible {
+        text-decoration: underline;
+    }
+
+    .location-description {
+        display: -webkit-box;
+        min-height: 2.5em;
+        margin: 0;
+        overflow: hidden;
+        font-size: 0.84rem;
+        line-height: 1.25;
+        opacity: 0.76;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .directory-group-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .directory-group-pills a {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        overflow: hidden;
+        padding: 2px 7px;
+        border: 1px solid color-mix(in srgb, var(--group-color) 70%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--group-color) 14%, transparent);
+        color: inherit;
+        font-size: .72rem;
+        line-height: 1.35;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .directory-group-pills a:hover,
+    .directory-group-pills a:focus-visible {
+        background: color-mix(in srgb, var(--group-color) 27%, transparent);
+        border-color: var(--group-color);
+    }
+
+    .directory-no-group { opacity: .4; }
+    .location-card-groups { margin-top: -2px; }
+
+    .location-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: auto;
+        padding-top: 8px;
+        border-top: 1px solid var(--rz-border-color, #343a42);
+    }
+
+    .location-coordinates {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+        padding: 3px 0;
+        font-size: 0.84rem;
+        white-space: nowrap;
+    }
+
+    .location-coordinates .rzi {
+        font-size: 17px;
+        color: #92cc52;
+    }
+
+    .location-counts {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .location-counts span {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 0.75rem;
+        opacity: 0.78;
+    }
+
+    .location-counts .rzi {
+        font-size: 15px;
+    }
+
+    .directory-row-actions { display: grid; grid-template-columns: repeat(3, 82px); align-items: center; justify-content: center; gap: 3px; width: 100%; }
+    .directory-action-slot { display: flex; align-items: center; justify-content: center; width: 82px; min-width: 0; }
+    .directory-action-slot > .rz-button, .directory-action-slot > .directory-wdl-button { width: 100%; }
+    .directory-action-placeholder { display: block; width: 100%; min-height: 30px; visibility: hidden; }
+    .location-quick-actions { display: flex; align-items: center; justify-content: center; gap: 3px; }
+    .directory-wdl-button, .location-action-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 30px; padding: 4px 7px; border: 1px solid var(--rz-border-color, #4b535e); border-radius: 5px; background: rgba(127, 127, 127, 0.08); color: inherit; font: inherit; font-size: 0.74rem; font-weight: 700; line-height: 1; text-decoration: none; cursor: pointer; white-space: nowrap; }
+    .directory-wdl-button:hover, .directory-wdl-button:focus-visible, .location-action-button:hover, .location-action-button:focus-visible { border-color: #92cc52; color: #92cc52; }
+    .directory-wdl-button .rzi, .location-action-button .rzi { font-size: 16px; }
+    .location-quick-actions { flex: 0 0 auto; margin-left: auto; }
+
+    .compact-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex: 0 0 auto;
+        padding: 8px 2px 0;
+    }
+
+    .pagination-summary {
+        display: flex;
+        align-items: baseline;
+        gap: 5px;
+        white-space: nowrap;
+        font-size: 0.82rem;
+        opacity: 0.78;
+    }
+
+    .pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .pagination-controls button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 4px;
+    }
+
+    .pagination-controls button:hover:not(:disabled),
+    .pagination-controls button:focus-visible {
+        background: rgba(146, 204, 82, 0.15);
+        color: #92cc52;
+    }
+
+    .pagination-controls button:disabled {
+        cursor: default;
+        opacity: 0.3;
+    }
+
+    .pagination-controls > span {
+        min-width: 100px;
+        text-align: center;
+        white-space: nowrap;
+        font-size: 0.82rem;
+    }
+
+    .directory-empty {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 24px;
+        text-align: center;
+    }
+
+    .directory-empty .rzi {
+        font-size: 36px;
+        opacity: 0.45;
+    }
+
+    .directory-empty span {
+        font-size: 0.86rem;
+        opacity: 0.65;
+    }
+
+    @@media (max-width: 1023px) {
+        .directory-page {
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .directory-desktop {
+            display: none;
+        }
+
+        .directory-compact {
+            display: flex;
+        }
+
+        .directory-toolbar {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .directory-search {
+            order: 1;
+            flex: 1 1 280px;
+            width: auto;
+        }
+
+        .directory-count {
+            order: 2;
+        }
+
+        .directory-actions {
+            order: 3;
+        }
+    }
+
+    @@media (max-width: 639px) {
+        .directory-page {
+            padding: 10px 8px 8px;
+        }
+
+        .directory-search {
+            flex-basis: 100%;
+            min-width: 0;
+        }
+
+        .directory-count {
+            margin-right: auto;
+        }
+
+        .directory-actions {
+            margin-left: 0;
+        }
+
+        .directory-intro > summary small { display: none; }
+        .directory-intro-body { padding-left: 13px; }
+        .directory-intro-features { grid-template-columns: minmax(0, 1fr); }
+
+        .location-card-list {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .location-card-footer { flex-wrap: wrap; }
+        .location-quick-actions { margin-left: auto; }
+
+        .compact-pagination {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .pagination-summary {
+            justify-content: center;
+        }
+
+        .pagination-controls {
+            justify-content: space-between;
+        }
+
+        .pagination-controls > span {
+            flex: 1;
+        }
+    }
+
+    .lds-ring {
+        display: inline-block;
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+        .lds-ring div {
+            box-sizing: border-box;
+            display: block;
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            margin: 8px;
+            border: 8px solid #fff;
+            border-radius: 50%;
+            animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            border-color: #007bff transparent transparent transparent;
+        }
+
+            .lds-ring div:nth-child(1) {
+                animation-delay: -0.45s;
+            }
+
+            .lds-ring div:nth-child(2) {
+                animation-delay: -0.3s;
+            }
+
+            .lds-ring div:nth-child(3) {
+                animation-delay: -0.15s;
+            }
+
+    @@keyframes lds-ring {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>

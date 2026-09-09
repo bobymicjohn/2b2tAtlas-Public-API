@@ -1,0 +1,1911 @@
+{
+  "sourceFile": "highway_stats.sql.gz",
+  "sha256": "bfd8a77ae6a051187bbe24061a08ec632996a5538b2eda872502b28467b368f1",
+  "sourceScope": "Authors published temporary highway aggregate; no server_id column. Historical query notes filter 2b2t.org, but their month offset differs from the released table. Dates here use released Unix 30-day bucket IDs 611-627, matching the World Pulse periods.",
+  "rows": [
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 611,
+      "observations": 4341773
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 612,
+      "observations": 23283736
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 613,
+      "observations": 18472865
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 614,
+      "observations": 17350738
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 615,
+      "observations": 17387781
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 616,
+      "observations": 15915392
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 617,
+      "observations": 17515345
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 618,
+      "observations": 21139806
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 619,
+      "observations": 19204780
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 620,
+      "observations": 20037066
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 621,
+      "observations": 19274921
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 622,
+      "observations": 17959096
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 623,
+      "observations": 17847361
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 624,
+      "observations": 19289402
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 625,
+      "observations": 21297404
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 626,
+      "observations": 9542069
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 627,
+      "observations": 2019751
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 611,
+      "observations": 1912400
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 612,
+      "observations": 9401392
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 613,
+      "observations": 6561962
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 614,
+      "observations": 3650670
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 615,
+      "observations": 3867006
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 616,
+      "observations": 3670343
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 617,
+      "observations": 3410097
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 618,
+      "observations": 3582595
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 619,
+      "observations": 3562004
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 620,
+      "observations": 3561646
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 621,
+      "observations": 3093949
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 622,
+      "observations": 3638311
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 623,
+      "observations": 4627556
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 624,
+      "observations": 4449802
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 625,
+      "observations": 4087080
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 626,
+      "observations": 1758334
+    },
+    {
+      "directionX": -1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 627,
+      "observations": 492425
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 611,
+      "observations": 310069
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 612,
+      "observations": 2039626
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 613,
+      "observations": 1776031
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 614,
+      "observations": 2011844
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 615,
+      "observations": 2052315
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 616,
+      "observations": 2012280
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 617,
+      "observations": 2461132
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 618,
+      "observations": 2918198
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 619,
+      "observations": 2427479
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 620,
+      "observations": 2803959
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 621,
+      "observations": 2705489
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 622,
+      "observations": 2500582
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 623,
+      "observations": 2942611
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 624,
+      "observations": 3098474
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 625,
+      "observations": 2940166
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 626,
+      "observations": 1015624
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 627,
+      "observations": 190259
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 611,
+      "observations": 151508
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 612,
+      "observations": 905171
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 613,
+      "observations": 659634
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 614,
+      "observations": 353186
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 615,
+      "observations": 391201
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 616,
+      "observations": 386975
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 617,
+      "observations": 320894
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 618,
+      "observations": 453524
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 619,
+      "observations": 459297
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 620,
+      "observations": 417951
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 621,
+      "observations": 345891
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 622,
+      "observations": 361634
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 623,
+      "observations": 517780
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 624,
+      "observations": 505062
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 625,
+      "observations": 439378
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 626,
+      "observations": 166967
+    },
+    {
+      "directionX": -1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 627,
+      "observations": 44422
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 611,
+      "observations": 3594359
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 612,
+      "observations": 19391054
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 613,
+      "observations": 14136674
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 614,
+      "observations": 15419717
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 615,
+      "observations": 15147255
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 616,
+      "observations": 16321221
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 617,
+      "observations": 19018728
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 618,
+      "observations": 22232021
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 619,
+      "observations": 19438236
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 620,
+      "observations": 21245990
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 621,
+      "observations": 19883753
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 622,
+      "observations": 17717879
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 623,
+      "observations": 20401176
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 624,
+      "observations": 21911436
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 625,
+      "observations": 18253749
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 626,
+      "observations": 6637439
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 627,
+      "observations": 1500319
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 611,
+      "observations": 2130934
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 612,
+      "observations": 9957486
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 613,
+      "observations": 5775979
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 614,
+      "observations": 3289139
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 615,
+      "observations": 3522922
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 616,
+      "observations": 3490901
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 617,
+      "observations": 3312406
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 618,
+      "observations": 3544824
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 619,
+      "observations": 3730711
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 620,
+      "observations": 3380010
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 621,
+      "observations": 2859336
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 622,
+      "observations": 3202258
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 623,
+      "observations": 4380346
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 624,
+      "observations": 4191708
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 625,
+      "observations": 4043491
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 626,
+      "observations": 1452781
+    },
+    {
+      "directionX": -1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 627,
+      "observations": 421458
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 611,
+      "observations": 428780
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 612,
+      "observations": 1716094
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 613,
+      "observations": 1296854
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 614,
+      "observations": 1797202
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 615,
+      "observations": 1661518
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 616,
+      "observations": 1610468
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 617,
+      "observations": 1707229
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 618,
+      "observations": 2400234
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 619,
+      "observations": 1832625
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 620,
+      "observations": 1586068
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 621,
+      "observations": 2330564
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 622,
+      "observations": 1969798
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 623,
+      "observations": 2446999
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 624,
+      "observations": 1701290
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 625,
+      "observations": 1514219
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 626,
+      "observations": 867599
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 627,
+      "observations": 147603
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 611,
+      "observations": 158914
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 612,
+      "observations": 615082
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 613,
+      "observations": 487762
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 614,
+      "observations": 335127
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 615,
+      "observations": 318853
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 616,
+      "observations": 345813
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 617,
+      "observations": 263857
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 618,
+      "observations": 264976
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 619,
+      "observations": 235106
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 620,
+      "observations": 221815
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 621,
+      "observations": 220884
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 622,
+      "observations": 191521
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 623,
+      "observations": 345578
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 624,
+      "observations": 295271
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 625,
+      "observations": 265773
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 626,
+      "observations": 157788
+    },
+    {
+      "directionX": 0,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 627,
+      "observations": 35803
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 611,
+      "observations": 473896
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 612,
+      "observations": 2150070
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 613,
+      "observations": 1360493
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 614,
+      "observations": 1479143
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 615,
+      "observations": 1448139
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 616,
+      "observations": 1391730
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 617,
+      "observations": 1553406
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 618,
+      "observations": 1769970
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 619,
+      "observations": 2203652
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 620,
+      "observations": 2138596
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 621,
+      "observations": 1851599
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 622,
+      "observations": 1894341
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 623,
+      "observations": 1936922
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 624,
+      "observations": 1991216
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 625,
+      "observations": 2015442
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 626,
+      "observations": 802660
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 627,
+      "observations": 193621
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 611,
+      "observations": 146348
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 612,
+      "observations": 703477
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 613,
+      "observations": 426611
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 614,
+      "observations": 298413
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 615,
+      "observations": 319628
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 616,
+      "observations": 287534
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 617,
+      "observations": 323485
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 618,
+      "observations": 306269
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 619,
+      "observations": 321557
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 620,
+      "observations": 280385
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 621,
+      "observations": 256968
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 622,
+      "observations": 312847
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 623,
+      "observations": 332828
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 624,
+      "observations": 327784
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 625,
+      "observations": 341556
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 626,
+      "observations": 131703
+    },
+    {
+      "directionX": 0,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 627,
+      "observations": 32982
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 611,
+      "observations": 3216117
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 612,
+      "observations": 15945287
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 613,
+      "observations": 14106512
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 614,
+      "observations": 14957270
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 615,
+      "observations": 17744254
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 616,
+      "observations": 16794522
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 617,
+      "observations": 19608035
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 618,
+      "observations": 21190175
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 619,
+      "observations": 21568806
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 620,
+      "observations": 20184175
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 621,
+      "observations": 21963648
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 622,
+      "observations": 17301569
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 623,
+      "observations": 19849627
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 624,
+      "observations": 21233108
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 625,
+      "observations": 17361034
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 626,
+      "observations": 10234634
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": -1,
+      "bucket": 627,
+      "observations": 1316049
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 611,
+      "observations": 1855741
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 612,
+      "observations": 9620620
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 613,
+      "observations": 5856570
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 614,
+      "observations": 3454072
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 615,
+      "observations": 3857172
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 616,
+      "observations": 3584569
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 617,
+      "observations": 3604229
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 618,
+      "observations": 4178738
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 619,
+      "observations": 4237313
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 620,
+      "observations": 3393215
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 621,
+      "observations": 3396976
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 622,
+      "observations": 3250405
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 623,
+      "observations": 4398113
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 624,
+      "observations": 4143297
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 625,
+      "observations": 4120673
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 626,
+      "observations": 2001122
+    },
+    {
+      "directionX": 1,
+      "directionZ": -1,
+      "sourceDimension": 0,
+      "bucket": 627,
+      "observations": 454357
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 611,
+      "observations": 504846
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 612,
+      "observations": 2334770
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 613,
+      "observations": 2560961
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 614,
+      "observations": 2586003
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 615,
+      "observations": 2611389
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 616,
+      "observations": 2790022
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 617,
+      "observations": 2912455
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 618,
+      "observations": 3686988
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 619,
+      "observations": 4431429
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 620,
+      "observations": 4054911
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 621,
+      "observations": 3328310
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 622,
+      "observations": 2775861
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 623,
+      "observations": 3088009
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 624,
+      "observations": 3555458
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 625,
+      "observations": 3415187
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 626,
+      "observations": 1999910
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": -1,
+      "bucket": 627,
+      "observations": 292826
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 611,
+      "observations": 180011
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 612,
+      "observations": 940182
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 613,
+      "observations": 597295
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 614,
+      "observations": 349307
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 615,
+      "observations": 387411
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 616,
+      "observations": 430044
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 617,
+      "observations": 419085
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 618,
+      "observations": 709493
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 619,
+      "observations": 602197
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 620,
+      "observations": 487037
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 621,
+      "observations": 498714
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 622,
+      "observations": 519018
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 623,
+      "observations": 598773
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 624,
+      "observations": 539060
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 625,
+      "observations": 653845
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 626,
+      "observations": 306313
+    },
+    {
+      "directionX": 1,
+      "directionZ": 0,
+      "sourceDimension": 0,
+      "bucket": 627,
+      "observations": 54206
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 611,
+      "observations": 4362731
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 612,
+      "observations": 20721627
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 613,
+      "observations": 16526892
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 614,
+      "observations": 18234122
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 615,
+      "observations": 17831105
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 616,
+      "observations": 20368240
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 617,
+      "observations": 20912200
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 618,
+      "observations": 28616610
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 619,
+      "observations": 26840825
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 620,
+      "observations": 25592213
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 621,
+      "observations": 21169645
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 622,
+      "observations": 23151076
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 623,
+      "observations": 20494911
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 624,
+      "observations": 19009948
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 625,
+      "observations": 19819913
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 626,
+      "observations": 9496743
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": -1,
+      "bucket": 627,
+      "observations": 1579848
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 611,
+      "observations": 2329771
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 612,
+      "observations": 10110152
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 613,
+      "observations": 6633394
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 614,
+      "observations": 3510404
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 615,
+      "observations": 3839998
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 616,
+      "observations": 3952833
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 617,
+      "observations": 3811472
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 618,
+      "observations": 4218224
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 619,
+      "observations": 4624554
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 620,
+      "observations": 3731965
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 621,
+      "observations": 3630655
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 622,
+      "observations": 3960286
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 623,
+      "observations": 4568328
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 624,
+      "observations": 4490400
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 625,
+      "observations": 4549199
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 626,
+      "observations": 2004609
+    },
+    {
+      "directionX": 1,
+      "directionZ": 1,
+      "sourceDimension": 0,
+      "bucket": 627,
+      "observations": 533278
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "slug": "spawn-2026-01",
+  "name": "Spawn (January 2026)",
+  "worldDownloadDate": "2026-01-15",
+  "source": "Document the archive's provenance here",
+  "worldRoot": null,
+  "dimensions": "auto",
+  "dayNight": false,
+  "scale": "5k",
+  "publish": false
+}

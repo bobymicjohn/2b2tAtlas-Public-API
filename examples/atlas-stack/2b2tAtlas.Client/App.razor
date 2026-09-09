@@ -1,0 +1,107 @@
+@using Blazored.LocalStorage
+@using _2b2tAtlas.Client.Layout
+@inject ILocalStorageService LocalStorage
+
+@if (themes[themeIndex] == "light")
+{
+    <link rel="stylesheet" href="./css/base.css">
+}
+else if (themes[themeIndex] == "dark")
+{
+    <link rel="stylesheet" href="./css/dark-base.css">
+}
+else
+{
+    <link rel="stylesheet" href="./css/base.css">
+}
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not found</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column;">
+                <h2 style="margin-bottom: 0px;">Nothing Here</h2>
+                <hr style="width: 300px;" />
+                <p class="text-muted">
+                    Sorry, there's nothing at this address. Please check the URL and try again.
+                </p>
+                <br />
+                <a href="javascript:history.back()">Go back</a>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>
+
+@code
+{
+    private int themeIndex = 0;
+    string[] themes = new string[] { "light", "dark", "newmont" };
+
+    protected async override Task OnInitializedAsync()
+    {
+        //Get the theme index from local storage if it exists
+        if (await LocalStorage.ContainKeyAsync("atlasthemeIndex"))
+        {
+            themeIndex = await LocalStorage.GetItemAsync<int>("atlasthemeIndex");
+        }
+        StateHasChanged();
+    }
+}
+
+<style>
+    .lds-ring {
+        /* change color here */
+        color: #1c4c5b
+    }
+
+        .lds-ring,
+        .lds-ring div {
+            box-sizing: border-box;
+        }
+
+    .lds-ring {
+        display: inline-block;
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+        .lds-ring div {
+            box-sizing: border-box;
+            display: block;
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            margin: 8px;
+            border: 8px solid currentColor;
+            border-radius: 50%;
+            animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            border-color: currentColor transparent transparent transparent;
+        }
+
+            .lds-ring div:nth-child(1) {
+                animation-delay: -0.45s;
+            }
+
+            .lds-ring div:nth-child(2) {
+                animation-delay: -0.3s;
+            }
+
+            .lds-ring div:nth-child(3) {
+                animation-delay: -0.15s;
+            }
+
+    @@keyframes lds-ring {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>

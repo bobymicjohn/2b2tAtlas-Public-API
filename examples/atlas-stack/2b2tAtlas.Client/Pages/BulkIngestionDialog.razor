@@ -1,0 +1,379 @@
+@using Atlas
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@inject IJSRuntime JS
+@inject _2b2tAtlas.Client.Services.IngestionUploadService IngestionUploadService
+
+<RadzenStack Gap="1rem">
+    <label class="wdl-drop-zone @(files.Count == 0 ? string.Empty : "has-file")">
+        <InputFile id="@bulkInputId" OnChange="@SelectArchives" multiple accept=".zip,application/zip" disabled="@(isUploading || isInspecting)" />
+        <RadzenIcon Icon="folder_zip" class="wdl-drop-icon" />
+        @if (files.Count == 0)
+        {
+            <strong>Drop many world download ZIPs here</strong>
+            <span>or click to choose multiple files</span>
+        }
+        else
+        {
+            <strong>@files.Count world download@(files.Count == 1 ? "" : "s") selected</strong>
+            <span>@(isInspecting ? $"Inspecting {inspectedCount} of {files.Count} locally..." : "Dimensions and dates were read locally; uploads have not started")</span>
+        }
+    </label>
+
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeMD="7">
+            <RadzenFormField Text="Source / attribution (applied to all)" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="sharedSource" MaxLength="200" Disabled="@(isUploading || isInspecting)" Style="width: 100%" />
+            </RadzenFormField>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="5">
+            <RadzenFormField Text="Fallback date" Variant="Variant.Outlined">
+                <RadzenDatePicker @bind-Value="fallbackDate" DateFormat="yyyy-MM-dd" Max="DateTime.Today"
+                                  Disabled="@(isUploading || isInspecting)" Style="width: 100%" />
+            </RadzenFormField>
+        </RadzenColumn>
+    </RadzenRow>
+
+    @if (files.Count > 0)
+    {
+        <RadzenDataGrid Data="@files" TItem="BulkFile" AllowPaging="true" PageSize="8" Density="Density.Compact">
+            <Columns>
+                <RadzenDataGridColumn TItem="BulkFile" Title="Render name">
+                    <Template Context="f">
+                        <RadzenTextBox @bind-Value="f.Name" MaxLength="90" Style="width: 100%"
+                                       Disabled="@(isUploading || isInspecting || f.Status is "Queued" or "Review needed")" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="BulkFile" Property="DetectedSummary" Title="Detected" Width="190px" />
+                <RadzenDataGridColumn TItem="BulkFile" Title="Import as" Width="180px">
+                    <Template Context="f">
+                        <RadzenDropDown TValue="string" Value="@f.SelectedDimension" Data="@DimensionOptions"
+                                        TextProperty="Label" ValueProperty="Value" Style="width: 100%"
+                                        Disabled="@(isUploading || isInspecting)"
+                                        Change="@(value => SetFileDimension(f, value))" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="BulkFile" Property="WorldDownloadDate" Title="WDL date" Width="120px" />
+                <RadzenDataGridColumn TItem="BulkFile" Title="Status" Width="230px">
+                    <Template Context="f">
+                        <RadzenBadge BadgeStyle="@f.BadgeStyle" Text="@f.Status" />
+                        @if (!string.IsNullOrWhiteSpace(f.Detail))
+                        {
+                            <div class="bulk-file-detail">@f.Detail</div>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    }
+
+    @if (isUploading)
+    {
+        <RadzenProgressBar Mode="ProgressBarMode.Determinate" Value="@(targetCount == 0 ? 0 : 100.0 * processed / targetCount)" />
+        <RadzenText TextStyle="TextStyle.Body2">Processed @processed of @targetCount. Each accepted WDL continues through matching, rendering, and publication automatically.</RadzenText>
+    }
+
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" JustifyContent="JustifyContent.End">
+        <RadzenButton Text="Close" ButtonStyle="ButtonStyle.Light" Disabled="@(isUploading || isInspecting)" Click="@Close" />
+        @if (files.Any(f => f.Status == "Failed"))
+        {
+            <RadzenButton Text="Retry failed" Icon="refresh" ButtonStyle="ButtonStyle.Warning"
+                          Disabled="@(isUploading || isInspecting)" Click="@RetryFailed" />
+        }
+        <RadzenButton Text="Queue ready files" Icon="upload_file" ButtonStyle="ButtonStyle.Success"
+                      Disabled="@(isUploading || isInspecting || !files.Any(IsQueueable))" Click="@QueueAll" />
+    </RadzenStack>
+</RadzenStack>
+
+<style>
+    .wdl-drop-zone {
+        position: relative; min-height: 150px; border: 2px dashed var(--rz-base-400);
+        border-radius: var(--rz-border-radius); display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 0.35rem; padding: 1.25rem;
+        text-align: center; background: var(--rz-base-50);
+        transition: border-color 120ms ease, background-color 120ms ease; overflow: hidden;
+    }
+    .wdl-drop-zone:hover, .wdl-drop-zone:focus-within, .wdl-drop-zone.has-file {
+        border-color: var(--rz-success);
+        background: color-mix(in srgb, var(--rz-success) 7%, var(--rz-base-background-color));
+    }
+    .wdl-drop-zone input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .wdl-drop-icon { font-size: 2.4rem; color: var(--rz-success); }
+    .bulk-file-detail { margin-top: 0.2rem; color: var(--rz-text-secondary-color); font-size: 0.72rem; line-height: 1.25; }
+</style>
+
+@code {
+    /// <summary>Gets or sets the locations offered when a WDL should attach to an existing location instead of creating one.</summary>
+    [Parameter] public IReadOnlyList<Location> Locations { get; set; } = [];
+
+    private const string bulkInputId = "atlas-wdl-bulk";
+    private readonly List<BulkFile> files = new();
+    private string sharedSource = "2b2t world download";
+    private DateTime fallbackDate = DateTime.Today;
+    private bool isUploading;
+    private bool isInspecting;
+    private int inspectedCount;
+    private int processed;
+    private int targetCount;
+    private int queuedCount;
+
+    private sealed record WdlInspect(
+        List<MatchPreviewCandidate> Candidates,
+        List<string>? UnknownDimensions,
+        string? LastPlayed);
+
+    private sealed class BulkFile
+    {
+        public int Index { get; init; }
+        public IBrowserFile File { get; init; } = default!;
+        public string FileName { get; init; } = "";
+        public string Name { get; set; } = "";
+        public string Slug { get; set; } = "";
+        public string? WorldDownloadDate { get; set; }
+        public string SelectedDimension { get; set; } = "auto";
+        public IReadOnlyList<string> DetectedDimensions { get; set; } = [];
+        public IReadOnlyList<string> UnknownDimensions { get; set; } = [];
+        public string DetectedSummary => UnknownDimensions.Count > 0
+            ? $"Custom: {string.Join(", ", UnknownDimensions)}"
+            : DetectedDimensions.Count > 0 ? string.Join(", ", DetectedDimensions.Select(LabelDimension)) : "No dimension found";
+        public string Status { get; set; } = "Inspecting";
+        public string? Detail { get; set; }
+        public BadgeStyle BadgeStyle { get; set; } = BadgeStyle.Light;
+    }
+
+    private async Task SelectArchives(InputFileChangeEventArgs args)
+    {
+        files.Clear();
+        queuedCount = 0;
+        inspectedCount = 0;
+        var index = 0;
+        foreach (var file in args.GetMultipleFiles(maximumFileCount: 500))
+        {
+            if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                var name = Path.GetFileNameWithoutExtension(file.Name).Replace('_', ' ').Trim();
+                var slug = Slugify(name);
+                if (string.IsNullOrWhiteSpace(slug)) slug = $"archive-wdl-{index + 1}";
+                files.Add(new BulkFile { Index = index, File = file, FileName = file.Name, Name = name, Slug = slug });
+            }
+            index++;
+        }
+
+        isInspecting = true;
+        StateHasChanged();
+        foreach (var file in files)
+        {
+            try
+            {
+                var inspection = await JS.InvokeAsync<WdlInspect>("atlasInspectWdl", bulkInputId, file.Index);
+                file.DetectedDimensions = inspection?.Candidates?.Select(candidate => candidate.Dimension).Distinct().ToList() ?? [];
+                file.UnknownDimensions = inspection?.UnknownDimensions ?? [];
+                file.WorldDownloadDate = DateTime.TryParse(inspection?.LastPlayed, out var lastPlayed)
+                    ? lastPlayed.ToString("yyyy-MM-dd")
+                    : null;
+                if (file.UnknownDimensions.Count > 0)
+                {
+                    file.Status = "Choose dimension";
+                    file.BadgeStyle = BadgeStyle.Warning;
+                    file.Detail = "Custom storage needs one explicit original dimension.";
+                }
+                else if (file.DetectedDimensions.Count == 0)
+                {
+                    file.Status = "Inspect on server";
+                    file.BadgeStyle = BadgeStyle.Warning;
+                    file.Detail = "No standard region path found in the ZIP directory.";
+                }
+                else
+                {
+                    file.Status = "Ready";
+                    file.BadgeStyle = BadgeStyle.Light;
+                    file.Detail = file.WorldDownloadDate is null ? "Using the fallback date." : "Date read from level.dat.";
+                }
+            }
+            catch
+            {
+                file.Status = "Inspect on server";
+                file.BadgeStyle = BadgeStyle.Warning;
+                file.Detail = "Local preflight was inconclusive; secure server inspection still runs.";
+            }
+            inspectedCount++;
+            StateHasChanged();
+        }
+        EnsureUniqueSlugs();
+        isInspecting = false;
+    }
+
+    private Task QueueAll() => QueueFilesAsync(files.Where(IsQueueable));
+
+    private Task RetryFailed() => QueueFilesAsync(files.Where(file => file.Status == "Failed"));
+
+    private async Task QueueFilesAsync(IEnumerable<BulkFile> selectedFiles)
+    {
+        var targets = selectedFiles.ToList();
+        if (targets.Count == 0) return;
+        isUploading = true;
+        processed = 0;
+        targetCount = targets.Count;
+        var acceptedThisBatch = 0;
+        try
+        {
+            foreach (var f in targets)
+            {
+                if (f.UnknownDimensions.Count > 0 && f.SelectedDimension == "auto")
+                {
+                    f.Status = "Choose dimension";
+                    f.BadgeStyle = BadgeStyle.Warning;
+                    f.Detail = "Select Overworld, Nether, or End above, then queue again.";
+                    processed++;
+                    StateHasChanged();
+                    continue;
+                }
+                var request = new IngestionJobRequest
+                {
+                    Name = f.Name,
+                    Slug = f.Slug.Trim().ToLowerInvariant(),
+                    Source = sharedSource,
+                    WorldDownloadDate = f.WorldDownloadDate ?? fallbackDate.ToString("yyyy-MM-dd"),
+                    // Bulk dates are browser hints, not operator-reviewed overrides. The worker's bounded
+                    // NBT inspection remains authoritative and replaces the fallback when LastPlayed exists.
+                    UseArchiveLastPlayed = true,
+                    Scale = "1",
+                    Dimension = f.SelectedDimension,
+                    IntakeFileName = "pending.zip",
+                };
+                var errors = IngestionJobValidator.ValidateRequest(request);
+                if (errors.Count > 0)
+                {
+                    f.Status = "Invalid"; f.BadgeStyle = BadgeStyle.Danger;
+                    f.Detail = string.Join(" ", errors);
+                    processed++; StateHasChanged();
+                    continue;
+                }
+                f.Status = "Uploading"; f.BadgeStyle = BadgeStyle.Info; f.Detail = "Starting resumable upload..."; StateHasChanged();
+                try
+                {
+                    var progress = new Progress<long>(bytes =>
+                    {
+                        var percent = f.File.Size == 0 ? 100 : (int)Math.Min(100, bytes * 100 / f.File.Size);
+                        f.Detail = $"{percent}% uploaded";
+                        InvokeAsync(StateHasChanged);
+                    });
+                    var job = await UploadArchiveAsync(f.File, request, progress);
+                    f.Status = job?.Status == "needs-match" ? "Review needed" : "Queued";
+                    f.BadgeStyle = job?.Status == "needs-match" ? BadgeStyle.Warning : BadgeStyle.Success;
+                    f.Detail = job?.Status == "needs-match"
+                        ? job.MatchReason ?? "Atlas could not make a safe automatic location decision."
+                        : job?.MatchReason ?? "Accepted for automatic match, render, and publish.";
+                    queuedCount++;
+                    acceptedThisBatch++;
+                }
+                catch (Exception ex)
+                {
+                    f.Status = "Failed"; f.BadgeStyle = BadgeStyle.Danger;
+                    f.Detail = FriendlyFailure(ex.Message);
+                    NotificationService.Notify(NotificationSeverity.Warning, f.FileName, ex.Message, 6000);
+                }
+                processed++; StateHasChanged();
+            }
+            var reviewCount = files.Count(file => file.Status == "Review needed");
+            NotificationService.Notify(NotificationSeverity.Success, "Bulk upload complete",
+                $"{acceptedThisBatch} accepted in this pass; {reviewCount} waiting for review. Confident jobs continue automatically.", 6000);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Bulk upload failed", ex.Message, 8000);
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private void Close() => DialogService.Close(queuedCount);
+
+    private void SetFileDimension(BulkFile file, object? value)
+    {
+        file.SelectedDimension = value?.ToString() ?? "auto";
+        if (file.UnknownDimensions.Count > 0 && file.SelectedDimension == "auto")
+        {
+            file.Status = "Choose dimension";
+            file.BadgeStyle = BadgeStyle.Warning;
+            file.Detail = "Custom storage needs one explicit original dimension.";
+        }
+        else if (file.Status is "Choose dimension" or "Invalid")
+        {
+            file.Status = "Ready";
+            file.BadgeStyle = BadgeStyle.Light;
+            file.Detail = file.UnknownDimensions.Count > 0
+                ? $"Will normalize the private work copy as {LabelDimension(file.SelectedDimension)}."
+                : "Ready for secure server inspection.";
+        }
+    }
+
+    private static bool IsQueueable(BulkFile file) => file.Status is "Ready" or "Inspect on server" or "Invalid";
+
+    private async Task<IngestionJobDto?> UploadArchiveAsync(
+        IBrowserFile file,
+        IngestionJobRequest request,
+        IProgress<long>? progress = null)
+    {
+        return await IngestionUploadService.UploadAsync(file, request, progress);
+    }
+
+    private void EnsureUniqueSlugs()
+    {
+        foreach (var group in files.GroupBy(file => file.Slug, StringComparer.OrdinalIgnoreCase).Where(group => group.Count() > 1))
+        {
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var file in group)
+            {
+                var suffix = file.WorldDownloadDate ?? $"upload-{file.Index + 1}";
+                var stemLength = Math.Max(1, 54 - suffix.Length - 1);
+                var candidate = $"{file.Slug[..Math.Min(stemLength, file.Slug.Length)].TrimEnd('-')}-{suffix}";
+                var serial = 2;
+                while (!used.Add(candidate))
+                {
+                    var numberedSuffix = $"{suffix}-{serial++}";
+                    stemLength = Math.Max(1, 54 - numberedSuffix.Length - 1);
+                    candidate = $"{file.Slug[..Math.Min(stemLength, file.Slug.Length)].TrimEnd('-')}-{numberedSuffix}";
+                }
+                file.Slug = candidate;
+            }
+        }
+    }
+
+    private static string FriendlyFailure(string message)
+    {
+        if (message.Contains("already", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("duplicate", StringComparison.OrdinalIgnoreCase))
+            return "Already known or conflicts with an existing immutable WDL; review the server response.";
+        return message.Length > 240 ? message[..240] + "..." : message;
+    }
+
+    private static string Slugify(string value)
+    {
+        var slug = System.Text.RegularExpressions.Regex.Replace(value.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+        return slug.Length > 54 ? slug[..54].TrimEnd('-') : slug;
+    }
+
+    private static string LabelDimension(string dimension) => dimension switch
+    {
+        "overworld" => "Overworld",
+        "nether" => "Nether",
+        "end" => "End",
+        _ => dimension,
+    };
+
+    private static readonly IReadOnlyList<DimensionOption> DimensionOptions =
+    [
+        new("Auto-detect (all present)", "auto"),
+        new("Overworld", "overworld"),
+        new("Nether", "nether"),
+        new("End", "end"),
+    ];
+
+    private sealed record DimensionOption(string Label, string Value);
+}

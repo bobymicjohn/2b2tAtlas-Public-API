@@ -1,0 +1,63 @@
+name: Atlas stack source
+
+on:
+  push:
+    branches: [main]
+    paths: ['examples/atlas-stack/**', '.github/workflows/atlas-stack.yml']
+  pull_request:
+    paths: ['examples/atlas-stack/**', '.github/workflows/atlas-stack.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build and test coverage companion
+        working-directory: examples/atlas-stack
+        shell: powershell
+        run: ./scripts/build-archive-coverage-mod.ps1 -Java "$env:JAVA_HOME/bin/java.exe" -WrapperCache "$env:RUNNER_TEMP/atlas-example-gradle"
+  stack:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: examples/atlas-stack
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: examples/atlas-stack/global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check source boundary
+        run: python scripts/check-public-export.py
+      - name: Build
+        run: dotnet build 2b2tAtlas.sln -c Release --nologo
+      - name: Test application and ingestion
+        run: dotnet test 2b2tAtlas.sln -c Release --no-build --nologo
+      - name: Test collector recovery and research
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($script in @('scripts/tests/test-archive-capture-recovery.ps1', 'scripts/tests/test-archive-survey-handoff.ps1', 'scripts/tests/test-archive-fast-lane-routing.ps1', 'scripts/tests/test-archive-fast-lane-refill.ps1')) {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $script
+            if ($LASTEXITCODE -ne 0) { throw "Failed: $script" }
+          }
+          foreach ($script in @('scripts/test_archive_capture_recovery.py', 'scripts/test_archive_capture_resume.py', 'scripts/test-media-research.py')) {
+            & python $script
+            if ($LASTEXITCODE -ne 0) { throw "Failed: $script" }
+          }
+          node scripts/test-map-primary-layers.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Map tests failed' }
+          node scripts/test-highway-edit-coordinates.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Highway tests failed' }

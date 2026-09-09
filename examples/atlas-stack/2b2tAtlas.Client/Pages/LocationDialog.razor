@@ -1,0 +1,440 @@
+@using Atlas
+@using Atlas.Locations
+@using Atlas.Enrichment
+@using _2b2tAtlas.Client.Services
+@using Radzen
+@using Radzen.Blazor
+@using System.Linq
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@inject EnrichmentService EnrichmentService
+@inject GroupService GroupService
+
+<RadzenTemplateForm TItem="Location" Data="@Location" Submit="@OnSubmit">
+    <RadzenStack Gap="1rem">
+        <!-- Basic Information -->
+        <RadzenFieldset Text="Basic Information">
+            <RadzenStack Gap="0.5rem">
+                <RadzenRow Gap="1rem">
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenFormField Text="Name" Variant="Variant.Outlined">
+                            <RadzenTextBox @bind-Value="@Location.Name" Name="Name" MaxLength="255" />
+                        </RadzenFormField>
+                        <RadzenRequiredValidator Text="Name is required" Component="Name" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenFormField Text="Dimension" Variant="Variant.Outlined">
+                            <RadzenDropDown @bind-Value="@Location.Dimension"
+                                            Data="@dimensionOptions"
+                                            TextProperty="Text"
+                                            ValueProperty="Value"
+                                            Name="Dimension" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenFormField Text="Description" Variant="Variant.Outlined">
+                    <RadzenTextArea @bind-Value="@Location.Description" Name="Description" Rows="3" MaxLength="2000" />
+                </RadzenFormField>
+
+                <RadzenRow Gap="1rem" AlignItems="AlignItems.End">
+                    <RadzenColumn Size="12" SizeMD="9">
+                        <RadzenFormField Text="Wiki URL" Variant="Variant.Outlined">
+                            <RadzenTextBox @bind-Value="@Location.Wiki" Name="Wiki" MaxLength="250" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        @if (IsEdit && Location.Rowid > 0)
+                        {
+                            <RadzenButton Text="Generate with AI" Icon="auto_awesome" ButtonStyle="ButtonStyle.Secondary"
+                                          ButtonType="ButtonType.Button" IsBusy="@isGenerating" Disabled="@isGenerating"
+                                          Click="@GenerateWithAi" Style="width: 100%" />
+                        }
+                    </RadzenColumn>
+                </RadzenRow>
+                @if (IsEdit && Location.Rowid > 0)
+                {
+                    <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                        Matches this location to the 2b2t wiki and drafts a description for you to review and edit. Nothing is saved until you click Update.
+                    </RadzenText>
+                }
+            </RadzenStack>
+        </RadzenFieldset>
+
+        <RadzenFieldset Text="Built by">
+            @if (isLoadingGroups)
+            {
+                <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Small" />
+            }
+            else
+            {
+                <RadzenDropDown @bind-Value="selectedGroupIds" TValue="IEnumerable<int>"
+                                Data="@availableGroups" TextProperty="Name" ValueProperty="Id"
+                                Multiple="true" AllowClear="true" Chips="true" AllowFiltering="true"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                Placeholder="Select one or more builder groups" Style="width: 100%;" />
+                <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary rz-mt-1">
+                    These links appear beside the location description and on each group's build page.
+                </RadzenText>
+            }
+        </RadzenFieldset>
+
+        <!-- Coordinates -->
+        <RadzenFieldset Text="Coordinates">
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenFormField Text="X Coordinate" Variant="Variant.Outlined">
+                        <RadzenNumeric @bind-Value="@Location.X" Name="X" TValue="int" />
+                    </RadzenFormField>
+                    <RadzenRequiredValidator Text="X coordinate is required" Component="X" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenFormField Text="Y Coordinate" Variant="Variant.Outlined">
+                        <RadzenNumeric @bind-Value="@Location.Y" Name="Y" TValue="int?" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenFormField Text="Z Coordinate" Variant="Variant.Outlined">
+                        <RadzenNumeric @bind-Value="@Location.Z" Name="Z" TValue="int" />
+                    </RadzenFormField>
+                    <RadzenRequiredValidator Text="Z coordinate is required" Component="Z" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <!-- Warps Management -->
+        <RadzenFieldset Text="Warps">
+            <RadzenStack Gap="0.5rem">
+                <div class="rz-d-flex rz-justify-content-between rz-align-items-center">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">Manage Warps for this Location</RadzenText>
+                    <RadzenButton Text="Add Warp" Icon="add" Size="ButtonSize.Small"
+                                  ButtonStyle="ButtonStyle.Success" Click="@AddWarp" />
+                </div>
+
+                @if (warps?.Any() == true)
+                {
+                    <!-- Use a simple list instead of DataGrid for better reactivity -->
+                    <div class="warps-container">
+                        @for (int i = 0; i < warps.Count; i++)
+                        {
+                            var index = i; // Capture index for closure
+                            var warp = warps[index];
+                            <RadzenCard Style="margin-bottom: 0.5rem; padding: 1rem;">
+                                <RadzenRow Gap="1rem" AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="12" SizeMD="5">
+                                        <RadzenFormField Text="Warp Name" Variant="Variant.Outlined">
+                                            <RadzenTextBox @bind-Value="@warp.Name"
+                                                           @bind-Value:after="@(() => StateHasChanged())"
+                                                           MaxLength="255"
+                                                           Style="width: 100%" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="12" SizeMD="4">
+                                        <RadzenFormField Text="Date Added" Variant="Variant.Outlined">
+                                            <RadzenDatePicker @bind-Value="@warp.TimeAdded"
+                                                              @bind-Value:after="@(() => StateHasChanged())"
+                                                              DateFormat="yyyy-MM-dd"
+                                                              Style="width: 100%" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="12" SizeMD="3">
+                                        <RadzenButton Icon="delete"
+                                                      Text="Remove"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Danger"
+                                                      Click="@(() => RemoveWarp(index))"
+                                                      Style="width: 100%" />
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenCard>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <RadzenText TextStyle="TextStyle.Body2" class="rz-text-secondary">
+                        No warps added yet. Click "Add Warp" to create the first warp.
+                    </RadzenText>
+                }
+            </RadzenStack>
+        </RadzenFieldset>
+
+        <!-- Form Actions -->
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" JustifyContent="JustifyContent.End">
+            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+            <RadzenButton Text="@(IsEdit ? "Update" : "Create")" ButtonType="ButtonType.Submit"
+                          ButtonStyle="ButtonStyle.Primary" />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenTemplateForm>
+
+@code {
+    /// <summary>Gets or sets the location model edited by the dialog.</summary>
+    [Parameter] public Location Location { get; set; } = new();
+
+    /// <summary>Gets or sets whether the dialog updates an existing location rather than creating one.</summary>
+    [Parameter] public bool IsEdit { get; set; } = false;
+
+    // Use a separate list for warps to ensure proper binding and reactivity
+    private List<Warp> warps = new();
+    private List<Atlas.Group> availableGroups = [];
+    private IEnumerable<int> selectedGroupIds = [];
+    private bool isLoadingGroups = true;
+
+    private bool isGenerating;
+
+    private List<DimensionOption> dimensionOptions = new()
+    {
+        new DimensionOption { Value = 0, Text = "Overworld" },
+        new DimensionOption { Value = 1, Text = "Nether" },
+        new DimensionOption { Value = 2, Text = "End" }
+    };
+
+    /// <summary>Initializes editable warp state and normalizes nullable text and collection properties for form binding.</summary>
+    protected override void OnInitialized()
+    {
+        // Initialize warps list from location
+        warps = Location.Warps?.ToList() ?? new List<Warp>();
+
+        // Ensure location warps list is initialized
+        Location.Warps ??= new List<Warp>();
+
+        // Initialize empty name if null to prevent binding issues
+        if (string.IsNullOrEmpty(Location.Name))
+        {
+            Location.Name = string.Empty;
+        }
+
+        // Initialize other nullable fields
+        Location.Description ??= string.Empty;
+        Location.Tags ??= string.Empty;
+        Location.Wiki ??= string.Empty;
+        Location.VideoUrl ??= string.Empty;
+        selectedGroupIds = Location.Groups?.Select(group => group.GroupId).Distinct().ToArray() ?? [];
+    }
+
+    /// <summary>Loads the canonical group list used for explicit build attribution.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        availableGroups = await GroupService.GetGroupsAsync();
+        isLoadingGroups = false;
+    }
+
+    private async Task GenerateWithAi()
+    {
+        if (!IsEdit || Location.Rowid <= 0)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Save first",
+                Detail = "Save the location before generating AI enrichment.",
+                Duration = 4000
+            });
+            return;
+        }
+
+        isGenerating = true;
+        StateHasChanged();
+        var suggestion = await EnrichmentService.PreviewAsync(Location.Rowid, regenerateDescription: true);
+        isGenerating = false;
+
+        if (suggestion is null)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unavailable",
+                Detail = "AI enrichment is disabled, paused, or the request failed.",
+                Duration = 4000
+            });
+            return;
+        }
+
+        var applied = false;
+        if (!string.IsNullOrWhiteSpace(suggestion.WikiUrl))
+        {
+            Location.Wiki = suggestion.WikiUrl;
+            applied = true;
+        }
+        if (!string.IsNullOrWhiteSpace(suggestion.SuggestedDescription))
+        {
+            Location.Description = suggestion.SuggestedDescription;
+            applied = true;
+        }
+        if (suggestion.SuggestedGroups.Count > 0)
+        {
+            Location.Groups ??= [];
+            var knownIds = Location.Groups.Select(group => group.GroupId).ToHashSet();
+            foreach (var group in suggestion.SuggestedGroups.Where(group => !knownIds.Contains(group.GroupId)))
+            {
+                Location.Groups.Add(new LocationGroupAttribution
+                {
+                    GroupId = group.GroupId,
+                    GroupName = group.GroupName,
+                    Role = group.Role,
+                });
+                knownIds.Add(group.GroupId);
+            }
+            selectedGroupIds = Location.Groups.Select(group => group.GroupId).Distinct().ToArray();
+            applied = true;
+        }
+
+        if (applied)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Draft ready",
+                Detail = $"Matched {suggestion.WikiTitle ?? "available evidence"} ({suggestion.Confidence:P0}); " +
+                         $"suggested {suggestion.SuggestedGroups.Count} group link(s). Review and edit, then click Update.",
+                Duration = 6000
+            });
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Info,
+                Summary = "No confident match",
+                Detail = suggestion.MatchReason ?? "No wiki page matched this location confidently.",
+                Duration = 5000
+            });
+        }
+        StateHasChanged();
+    }
+
+    private void AddWarp()
+    {
+        var newWarp = new Warp
+            {
+                Id = 0, // New warp, will be assigned by database
+                Name = $"{(string.IsNullOrEmpty(Location.Name) ? "Location" : Location.Name)}_{DateTime.Now:yyyy-MM-dd}",
+                TimeAdded = DateTime.Now,
+                LocationRowid = Location.Rowid,
+                WarpUuid = null,
+                LocationUuidFk = Location.LocationUuid
+            };
+
+        warps.Add(newWarp);
+        StateHasChanged();
+
+        // Also add to the location's warps list
+        Location.Warps.Add(newWarp);
+    }
+
+    private void RemoveWarp(int index)
+    {
+        if (index >= 0 && index < warps.Count)
+        {
+            var warpToRemove = warps[index];
+            warps.RemoveAt(index);
+
+            // Also remove from location's warps list
+            Location.Warps.Remove(warpToRemove);
+
+            StateHasChanged();
+        }
+    }
+
+    private void OnSubmit()
+    {
+        try
+        {
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(Location.Name))
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Validation Error",
+                        Detail = "Location name is required.",
+                        Duration = 4000
+                    });
+                return;
+            }
+
+            // Set default Y coordinate if not provided
+            if (!Location.Y.HasValue)
+            {
+                Location.Y = 64;
+            }
+
+            // Set DateAddedUtc for new locations
+            if (!IsEdit)
+            {
+                Location.DateAddedUtc = DateTime.UtcNow;
+            }
+
+            // Sync warps back to location
+            Location.Warps = warps.ToList();
+            var selectedIds = selectedGroupIds.ToHashSet();
+            Location.Groups = availableGroups
+                .Where(group => selectedIds.Contains(group.Id))
+                .Select(group => new LocationGroupAttribution
+                {
+                    GroupId = group.Id,
+                    GroupName = group.Name,
+                    Role = "Builder",
+                    Color = group.Color,
+                    LogoUrl = group.LogoUrl,
+                })
+                .ToList();
+
+            // Set TimeAdded for new warps that don't have it set
+            foreach (var warp in Location.Warps.Where(w => w.TimeAdded == default))
+            {
+                warp.TimeAdded = DateTime.Now;
+            }
+
+            // Ensure all warps have names
+            foreach (var warp in Location.Warps.Where(w => string.IsNullOrWhiteSpace(w.Name)))
+            {
+                warp.Name = $"{Location.Name}_{DateTime.Now:yyyy-MM-dd}";
+            }
+
+            // Set LocationRowid for all warps
+            foreach (var warp in Location.Warps)
+            {
+                warp.LocationRowid = Location.Rowid;
+                warp.LocationUuidFk = Location.LocationUuid;
+            }
+
+            Console.WriteLine($"Submitting location with {Location.Warps.Count} warps");
+            foreach (var warp in Location.Warps)
+            {
+                Console.WriteLine($"Warp: {warp.Name}, TimeAdded: {warp.TimeAdded}, LocationRowid: {warp.LocationRowid}");
+            }
+
+            DialogService.Close(Location);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = $"Error saving location: {ex.Message}",
+                    Duration = 4000
+                });
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+
+    public class DimensionOption
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+}
+
+<style>
+    .warps-container {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>

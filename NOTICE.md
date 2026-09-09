@@ -1,6 +1,10 @@
 # Data and media notice
 
-Repository-authored examples and documentation are released under the [Unlicense](LICENSE). Use, copy, modify, publish, redistribute, or commercialize them however you want; 2b2tAtlas permission and attribution are not required.
+Original API examples and documentation are released under the [Unlicense](LICENSE). Use, copy, modify, publish, redistribute, or commercialize them however you want; 2b2tAtlas permission and attribution are not required.
+
+The imported application in [examples/atlas-stack](examples/atlas-stack/README.md) retains
+its [MIT license](examples/atlas-stack/LICENSE) and third-party notices. The root Unlicense
+does not replace those licenses. See its [source/data notice](examples/atlas-stack/DATA_AND_LICENSES.md).
 
 Atlas places no Atlas-specific restriction or attribution condition on reuse of its factual API catalog. A link to 2b2tAtlas is appreciated because it helps people find the canonical record and its evidence.
 

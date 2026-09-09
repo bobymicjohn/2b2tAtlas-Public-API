@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2b2t Atlas - Location History, Maps, and World Downloads</title>
+    <meta name="description" content="Explore 2b2t Atlas: documented bases, groups, highways, preserved partial WDLs, uNmINeD 2D maps, BlueMap 3D views, Archive warps, and historical media." />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="alternate" type="application/x-ndjson" href="https://atlas.example/entities/locations.jsonl" title="2b2t location entity catalog" />
+    <link rel="alternate" type="application/x-ndjson" href="https://atlas.example/entities/groups.jsonl" title="2b2t group entity catalog" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="2b2t Atlas" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="2b2t Atlas - Locations, Maps, and World Downloads" />
+    <meta property="og:description" content="Explore interactive Overworld, Nether, and End maps with documented 2b2t locations, partial world downloads, 2D map layers, 3D views, groups, highways, and historical media." />
+    <meta property="og:url" content="https://atlas.example/" />
+    <meta property="og:image" content="https://atlas.example/Images/banner_web.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="2b2t Atlas - Locations, Maps, and World Downloads" />
+    <meta name="twitter:description" content="Explore documented 2b2t locations, partial world downloads, 2D map layers, 3D views, groups, highways, and historical media across all three dimensions." />
+    <meta name="twitter:image" content="https://atlas.example/Images/banner_web.png" />
+    
+    <base href="/" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.ico" />
+    <link href="2b2tAtlas.Client.styles.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" data-cfasync="false"></script>
+</head>
+
+<body>
+    <div id="app">
+        <div class="atlas-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+        </div>
+        <noscript>
+            <style>.atlas-loading { display: none; }</style>
+            <!-- SEO_HOME_FALLBACK_START -->
+            <main style="max-width: 900px; margin: 0 auto; padding: 32px; color: #e8edf0; background: #111518; font: 16px/1.6 Georgia, serif;">
+                <p style="font: 700 12px Arial, sans-serif; text-transform: uppercase; color: #8ca0ab;">Public 2b2t archive</p>
+                <h1 style="font: 700 42px/1.1 Arial, sans-serif;">2b2t Atlas</h1>
+                <p>Explore interactive Overworld, Nether, and End maps with more than 1,500 documented 2b2t bases, ruins, monuments, spawn landmarks, highways, canals, world-border sites, Archive warps, world-download renders, groups, and historical media.</p>
+                <p>2b2t Atlas connects exact coordinates and dimensions with dated WDL map renders, screenshots, videos, sources, builders, and community history. Its public API, MCP server, and machine-readable catalogs support mods, bots, AI assistants, research, and preservation projects.</p>
+                <nav aria-label="Atlas collections"><a href="/locations/">All locations</a> | <a href="/locations/overworld/">Overworld</a> | <a href="/locations/nether/">Nether</a> | <a href="/locations/end/">End</a> | <a href="/entities/groups/">Groups</a> | <a href="/entities/media/">Historical media</a> | <a href="/entities/world-downloads/">World downloads</a> | <a href="/mcp/">MCP server</a></nav>
+                <p><a href="/entities/locations.jsonl">Location JSONL</a> | <a href="/entities/groups.jsonl">Group JSONL</a> | <a href="/entities/media.jsonl">Media JSONL</a> | <a href="/entities/world-downloads.jsonl">World-download JSONL</a></p>
+            </main>
+            <!-- SEO_HOME_FALLBACK_END -->
+        </noscript>
+    </div>
+
+    <div id="blazor-error-ui">
+        <a href="." class="reload" aria-label="Reload the interactive Atlas">Reload</a>
+        <span class="dismiss">ðŸ—™</span>
+    </div>
+
+    <script data-cfasync="false">
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations()
+                .then(registrations => Promise.all(registrations.map(registration => registration.unregister())));
+        }
+        if ('caches' in window) {
+            caches.keys()
+                .then(keys => Promise.all(keys
+                    .filter(key => key.startsWith('offline-cache-'))
+                    .map(key => caches.delete(key))));
+        }
+    </script>
+    <script src="_framework/blazor.webassembly.js" data-cfasync="false"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js" data-cfasync="false"></script>
+    <script src="js/wdl-inspect.js" data-cfasync="false"></script>
+
+    <script data-cfasync="false">
+        window.playGifOnHover = (elementId, gifSrc, staticSrc) => {
+            const imgElement = document.getElementById(elementId);
+            if (imgElement) {
+                imgElement.onmouseover = () => {
+                    imgElement.width = 28;
+                    imgElement.height = 28;
+                    imgElement.src = gifSrc;
+                };
+
+                imgElement.onmouseout = () => {
+                    imgElement.width = 25;
+                    imgElement.height = 25;
+                    imgElement.src = staticSrc;
+                };
+            }
+        };
+
+        window.downloadFile = (fileName, base64) => {
+            const link = document.createElement('a');
+            link.href = 'data:application/zip;base64,' + base64;
+            link.download = fileName;
+            link.click();
+        };
+
+        window.downloadTextFile = (fileName, mime, text) => {
+            const blob = new Blob([text], { type: mime || 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        };
+    </script>
+</body>
+
+<style>
+    body {
+        background-color: #999;
+    }
+
+    .lds-ring {
+        /* change color here */
+        color: #000;
+    }
+
+        .lds-ring,
+        .lds-ring div {
+            box-sizing: border-box;
+        }
+
+    .lds-ring {
+        display: inline-block;
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+        .lds-ring div {
+            box-sizing: border-box;
+            display: block;
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            margin: 8px;
+            border: 8px solid currentColor;
+            border-radius: 50%;
+            animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            border-color: currentColor transparent transparent transparent;
+        }
+
+            .lds-ring div:nth-child(1) {
+                animation-delay: -0.45s;
+            }
+
+            .lds-ring div:nth-child(2) {
+                animation-delay: -0.3s;
+            }
+
+            .lds-ring div:nth-child(3) {
+                animation-delay: -0.15s;
+            }
+
+    @keyframes lds-ring {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+</html>

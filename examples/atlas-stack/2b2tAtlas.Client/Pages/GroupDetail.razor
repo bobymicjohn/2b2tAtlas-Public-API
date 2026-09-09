@@ -1,0 +1,1037 @@
+@page "/group/{Id:int}"
+@using Atlas
+@using Microsoft.JSInterop
+@inject _2b2tAtlas.Client.Services.GroupService GroupService
+@inject _2b2tAtlas.Client.Services.LocationService LocationService
+@inject _2b2tAtlas.Client.Services.HighwayService HighwayService
+@inject _2b2tAtlas.Client.Services.MapRenderService MapRenderService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@implements IAsyncDisposable
+
+<PageTitle>@(group?.Name ?? "Group") - 2b2t Atlas</PageTitle>
+
+@if (group is not null)
+{
+    <HeadContent>
+        <meta name="description" content="@MetaDescription" />
+        <meta name="robots" content="noindex,follow" />
+        <link rel="canonical" href="@CanonicalUrl" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="2b2t Atlas" />
+        <meta property="og:title" content="@($"{group.Name} - 2b2t Group")" />
+        <meta property="og:description" content="@MetaDescription" />
+        <meta property="og:url" content="@CanonicalUrl" />
+        @if (!string.IsNullOrWhiteSpace(group.LogoUrl))
+        {
+            <meta property="og:image" content="@group.LogoUrl" />
+        }
+    </HeadContent>
+}
+
+<main class="group-detail-page">
+    @if (loading)
+    {
+        <div class="group-detail-loading"><RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" /></div>
+    }
+    else if (group is null)
+    {
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.H5">Group not found</RadzenText>
+            <RadzenButton Text="Back to groups" Icon="arrow_back" class="rz-mt-3" Click="@BackToGroups" />
+        </RadzenCard>
+    }
+    else
+    {
+        <div class="group-detail-nav">
+            <RadzenButton Text="All groups" Icon="arrow_back" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Click="@BackToGroups" />
+        </div>
+
+        <RadzenCard class="group-hero" style="@($"--group-color: {Accent}")">
+            <div class="group-hero-main">
+                @if (!string.IsNullOrWhiteSpace(group.LogoUrl))
+                {
+                    <a href="@(group.LogoSourceUrl ?? group.WikiUrl ?? group.WebsiteUrl ?? group.LogoUrl)" target="_blank" rel="noopener" class="group-hero-logo-link"
+                       title="Open image source">
+                        <span class="group-hero-logo-shell">
+                            <span class="group-hero-monogram">@Monogram(group.Name)</span>
+                            <img class="group-hero-logo" src="@group.LogoUrl" alt="@($"{group.Name} emblem")" onerror="this.remove()" />
+                        </span>
+                    </a>
+                }
+                else
+                {
+                    <div class="group-hero-monogram">@Monogram(group.Name)</div>
+                }
+                <div class="group-hero-copy">
+                    <div class="group-hero-title-row">
+                        <h1>@group.Name</h1>
+                        <RadzenBadge BadgeStyle="@TypeBadge(group.Type)" Text="@TypeLabel(group.Type)" />
+                    </div>
+                    <div class="group-era">
+                        @if (!string.IsNullOrWhiteSpace(group.Founded))
+                        {
+                            <span><RadzenIcon Icon="event" /> Founded @group.Founded</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(group.Status))
+                        {
+                            <span><RadzenIcon Icon="radio_button_checked" /> @group.Status</span>
+                        }
+                    </div>
+                    @if (group.Aliases is { Count: > 0 })
+                    {
+                        <div class="group-aliases"><RadzenIcon Icon="alternate_email" /> Also known as @string.Join(", ", group.Aliases)</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(group.Description))
+                    {
+                        <p class="group-description">@DisplayText.NormalizeDescription(group.Description)</p>
+                    }
+                    <div class="group-links">
+                        @if (!string.IsNullOrWhiteSpace(group.WikiUrl))
+                        {
+                            <a href="@group.WikiUrl" target="_blank" rel="noopener"><RadzenIcon Icon="menu_book" /> 2b2t Wiki</a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(group.WebsiteUrl))
+                        {
+                            <a href="@group.WebsiteUrl" target="_blank" rel="noopener"><RadzenIcon Icon="language" /> Website</a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(group.DiscordUrl))
+                        {
+                            <a href="@group.DiscordUrl" target="_blank" rel="noopener"><RadzenIcon Icon="forum" /> Discord</a>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="group-stats">
+                <div><strong>@group.Locations.Count</strong><span>Attributed builds</span></div>
+                <div><strong>@group.Highways.Count</strong><span>Attributed highways</span></div>
+            </div>
+        </RadzenCard>
+
+        @if (group.Locations.Count > 0)
+        {
+            <section class="group-section group-map-section" style="@($"--group-color: {Accent}")" aria-labelledby="group-map-title">
+                <div class="group-section-heading group-map-heading">
+                    <div>
+                        <h2 id="group-map-title">Build map</h2>
+                        <p>Every reviewed @group.Name location, fitted to the full extent of the selected dimension.</p>
+                    </div>
+                    <span>@MapLocationCount</span>
+                </div>
+                <div class="group-map-toolbar" aria-label="Map dimension">
+                    @foreach (var dimension in MapDimensions)
+                    {
+                        <button type="button"
+                                class="group-map-dimension @(selectedMapDimension == dimension ? "active" : "")"
+                                aria-pressed="@(selectedMapDimension == dimension)"
+                                @onclick="@(() => SetMapDimension(dimension))">
+                            @DimensionName(dimension)
+                            <span>@MapLocationCountFor(dimension)</span>
+                        </button>
+                    }
+                    <a class="group-map-open" href="@GroupMapUrl"><RadzenIcon Icon="open_in_new" /> Open full map</a>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(mapError))
+                {
+                    <div class="group-map-error">@mapError</div>
+                }
+                <div class="group-map-wrap">
+                    <div id="@GroupMapId" class="group-map-canvas" aria-label="@($"{group.Name} locations in the {DimensionName(selectedMapDimension)}")"></div>
+                    @if (mapReady)
+                    {
+                        <div class="loc-map-ctrls">
+                            <button class="loc-ctrl @(showPrimaryRenderPanel ? "active" : "")" @onclick="TogglePrimaryRenderPanel" title="Primary renders">
+                                <RadzenIcon Icon="map" />
+                            </button>
+                            <button class="loc-ctrl @(showOthers ? "active" : "")" @onclick="ToggleOthers"
+                                    title="@(showOthers ? "Show only this group's locations" : "Show other Atlas locations")">
+                                <RadzenIcon Icon="pin_drop" />
+                            </button>
+                            @if (HasMapBaseRenders)
+                            {
+                                <button class="loc-ctrl @(showBaseRenders ? "active" : "")" @onclick="ToggleBaseRenders"
+                                        title="@(showBaseRenders ? "Hide selected location renders" : "Show selected location renders")">
+                                    <RadzenIcon Icon="layers" />
+                                </button>
+                            }
+                            <button class="loc-ctrl @(showHighways ? "active" : "")" @onclick="ToggleHighways" title="Highways"><RadzenIcon Icon="route" /></button>
+                            <button class="loc-ctrl @(showAxes ? "active" : "")" @onclick="ToggleAxes" title="Axes"><RadzenIcon Icon="grid_3x3" /></button>
+                            <button class="loc-ctrl @(showBorders ? "active" : "")" @onclick="ToggleBorders" title="World border"><RadzenIcon Icon="crop_square" /></button>
+                            <button class="loc-ctrl @(showEndPortals ? "active" : "")" @onclick="ToggleEndPortals" title="End portals"><RadzenIcon Icon="blur_circular" /></button>
+                            <button class="loc-ctrl @(isDay ? "" : "active")" @onclick="ToggleDay"
+                                    disabled="@(!currentPrimaryRenderDayNight)"
+                                    title="@(currentPrimaryRenderDayNight ? (isDay ? "Switch to night" : "Switch to day") : "Day/night not available for active renders")">
+                                <RadzenIcon Icon="@(isDay ? "dark_mode" : "light_mode")" />
+                            </button>
+                        </div>
+
+                        @if (showPrimaryRenderPanel)
+                        {
+                            <div class="loc-primary-render-panel">
+                                <div class="loc-primary-panel-header">
+                                    <span>Primary renders</span>
+                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                  Size="ButtonSize.Small" Click="TogglePrimaryRenderPanel" />
+                                </div>
+                                <div class="loc-primary-master-row">
+                                    <RadzenCheckBox @bind-Value="@showPrimaryRenders" TValue="bool"
+                                                    Change="@OnPrimaryRendersChanged" Name="groupPrimaryToggle" />
+                                    <RadzenLabel Text="Show primary renders" Component="groupPrimaryToggle" />
+                                    <span class="loc-primary-count">@orderedPrimaryRenders.Count</span>
+                                </div>
+                                <div class="loc-primary-section-label">Active</div>
+                                <div class="loc-primary-order @(showPrimaryRenders ? "" : "renders-disabled")">
+                                    @if (orderedPrimaryRenders.Count == 0)
+                                    {
+                                        <div class="loc-primary-empty">No active renders</div>
+                                    }
+                                    @for (var i = 0; i < orderedPrimaryRenders.Count; i++)
+                                    {
+                                        var renderId = orderedPrimaryRenders[i];
+                                        var index = i;
+                                        <div class="loc-primary-row @(primaryRenderDraggingIndex == index ? "dragging" : "")"
+                                             draggable="true"
+                                             @ondragstart="() => OnPrimaryRenderDragStart(index)"
+                                             @ondragenter="() => OnPrimaryRenderDragEnter(index)"
+                                             @ondragover:preventDefault="true"
+                                             @ondrop:preventDefault="true"
+                                             @ondragend="OnPrimaryRenderDragEnd">
+                                            <RadzenIcon Icon="drag_indicator" class="loc-primary-drag" />
+                                            <span class="loc-primary-label" title="@PrimaryRenderLabel(renderId)">@PrimaryRenderLabel(renderId)</span>
+                                            <RadzenButton Icon="remove" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Text"
+                                                          Size="ButtonSize.ExtraSmall" class="loc-primary-action"
+                                                          title="@($"Remove {PrimaryRenderLabel(renderId)}")"
+                                                          Click="@(() => RemovePrimaryRender(renderId))" />
+                                        </div>
+                                    }
+                                </div>
+                                <div class="loc-primary-hint">Top layer is in front · drag to reorder</div>
+                                <div class="loc-primary-section-label loc-primary-available-label">Available</div>
+                                <div class="loc-primary-available">
+                                    @if (!AvailablePrimaryRenders.Any())
+                                    {
+                                        <div class="loc-primary-empty">All renders are active</div>
+                                    }
+                                    @foreach (var render in AvailablePrimaryRenders)
+                                    {
+                                        <div class="loc-primary-row">
+                                            <span class="loc-primary-label" title="@render.Label">@render.Label</span>
+                                            <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Success" Variant="Variant.Text"
+                                                          Size="ButtonSize.ExtraSmall" class="loc-primary-action"
+                                                          title="@($"Add {render.Label}")" Click="@(() => AddPrimaryRender(render.Id))" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @if (mapLocationSelected && selectedMapLocation is not null)
+                    {
+                        <div class="loc-map-popup">
+                            <div class="loc-popup-header">
+                                <span>@selectedMapLocation.Name</span>
+                                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                              Size="ButtonSize.Small" Click="CloseMapLocationInfo" />
+                            </div>
+                            <span class="loc-popup-badge">@selectedMapLocation.DimensionName</span>
+                            <div class="loc-popup-coords">
+                                @selectedMapLocation.X, @selectedMapLocation.Z
+                                @if (selectedMapLocation.Dimension == 0)
+                                {
+                                    <span class="alt">N: @(selectedMapLocation.X / 8), @(selectedMapLocation.Z / 8)</span>
+                                }
+                                else if (selectedMapLocation.Dimension == 1)
+                                {
+                                    <span class="alt">OW: @(selectedMapLocation.X * 8), @(selectedMapLocation.Z * 8)</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(selectedMapLocation.Description))
+                            {
+                                <div class="loc-popup-desc">@DisplayText.NormalizeDescription(selectedMapLocation.Description)</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(selectedMapLocation.Tags))
+                            {
+                                <div class="loc-popup-tags">@selectedMapLocation.Tags</div>
+                            }
+                            @if (selectedMapLocation.Warps is { Count: > 0 })
+                            {
+                                <div class="loc-popup-section-label">Warps</div>
+                                @foreach (var warp in selectedMapLocation.Warps)
+                                {
+                                    <div class="loc-popup-warp-row">
+                                        <code>/warp @warp.Name</code>
+                                        <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                      Size="ButtonSize.Small" Click="@(() => CopyText($"/warp {warp.Name}"))" title="Copy warp" />
+                                    </div>
+                                }
+                            }
+                            @if (OrderedMapRenders(selectedMapLocation).Any())
+                            {
+                                <div class="loc-popup-section-label">Base renders</div>
+                                <div class="loc-popup-render-choices">
+                                    <button class="loc-popup-render-choice @(!HasSelectedBaseRenders(selectedMapLocation) ? "active" : "")"
+                                            aria-pressed="@(!HasSelectedBaseRenders(selectedMapLocation))"
+                                            @onclick="@(() => SelectBaseRender(selectedMapLocation.Rowid, null))">Off</button>
+                                    @foreach (var render in OrderedMapRenders(selectedMapLocation))
+                                    {
+                                        <div class="loc-popup-render-row">
+                                            <button class="loc-popup-render-choice @(IsBaseRenderSelected(selectedMapLocation, render.Id) ? "active" : "")"
+                                                    aria-pressed="@(IsBaseRenderSelected(selectedMapLocation, render.Id))"
+                                                    @onclick="@(() => SelectBaseRender(selectedMapLocation.Rowid, render.Id))">
+                                                <span>@(string.IsNullOrWhiteSpace(render.Name) ? $"Render {render.Id}" : render.Name)</span>
+                                                <small>@(string.IsNullOrWhiteSpace(render.WorldDownloadDate) ? "Date unknown" : render.WorldDownloadDate)</small>
+                                            </button>
+                                            <button type="button" class="loc-popup-render-focus"
+                                                    title="Show and zoom to this render's full footprint"
+                                                    aria-label="Show and zoom to @(string.IsNullOrWhiteSpace(render.Name) ? $"render {render.Id}" : render.Name)"
+                                                    @onclick="@(() => FocusBaseRender(selectedMapLocation, render))">
+                                                <RadzenIcon Icon="zoom_in" />
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="loc-popup-render-hint">Select one or more.</div>
+                            }
+                            <div class="loc-popup-actions">
+                                <RadzenButton Text="Go to" Icon="my_location" ButtonStyle="ButtonStyle.Primary"
+                                              Size="ButtonSize.Small" Click="GoToMapLocation" />
+                                <RadzenButton Text="Details" Icon="open_in_new" ButtonStyle="ButtonStyle.Light"
+                                              Size="ButtonSize.Small" Click="OpenMapLocationDetails" />
+                                <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                              Size="ButtonSize.Small" Click="CopyMapLocationCoords" title="Copy coordinates" />
+                                @if (!string.IsNullOrWhiteSpace(selectedMapLocation.Wiki))
+                                {
+                                    <a href="@selectedMapLocation.Wiki" target="_blank" rel="noopener" class="loc-popup-link">Wiki</a>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(selectedMapLocation.VideoUrl))
+                                {
+                                    <a href="@selectedMapLocation.VideoUrl" target="_blank" rel="noopener" class="loc-popup-link">Video</a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+
+        <section id="builds" class="group-section">
+            <div class="group-section-heading">
+                <div>
+                    <h2>Atlas builds</h2>
+                    <p>Locations with an explicit, reviewed attribution to @group.Name.</p>
+                </div>
+                <span>@group.Locations.Count</span>
+            </div>
+            @if (group.Locations.Count == 0)
+            {
+                <div class="group-empty">No Atlas locations have been attributed yet.</div>
+            }
+            else
+            {
+                <div class="group-build-grid">
+                    @foreach (var location in group.Locations)
+                    {
+                        <article class="group-build-card">
+                            <div>
+                                <span class="dimension-pill dimension-@location.Dimension">@DimensionName(location.Dimension)</span>
+                                <h3><a href="@(string.IsNullOrWhiteSpace(location.LocationInteractiveUrl) ? $"location/{location.LocationId}" : location.LocationInteractiveUrl)">@location.Name</a></h3>
+                                <div class="group-build-meta">@location.Role · @location.X, @location.Z</div>
+                            </div>
+                            <div class="group-build-actions">
+                                @if (location.RenderCount > 0)
+                                {
+                                    <span><RadzenIcon Icon="layers" /> @location.RenderCount</span>
+                                }
+                                <a href="@MapUrl(location)"><RadzenIcon Icon="map" /> Map</a>
+                                <a href="@(string.IsNullOrWhiteSpace(location.LocationUrl) ? $"/entities/locations/{location.LocationId}/" : location.LocationUrl)"><RadzenIcon Icon="link" /> Record</a>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+        <section id="highways" class="group-section">
+            <div class="group-section-heading">
+                <div>
+                    <h2>Highways and infrastructure</h2>
+                    <p>Public routes credited to @group.Name.</p>
+                </div>
+                <span>@group.Highways.Count</span>
+            </div>
+            @if (group.Highways.Count == 0)
+            {
+                <div class="group-empty">No Atlas highway records have been attributed yet.</div>
+            }
+            else
+            {
+                <div class="group-highway-list">
+                    @foreach (var highway in group.Highways)
+                    {
+                        <div class="group-highway-row">
+                            <a class="group-highway-map" href="@(string.IsNullOrWhiteSpace(highway.MapUrl) ? $"map?dimension={DimensionSlug(highway.Dimension)}" : highway.MapUrl)">
+                                <RadzenIcon Icon="route" />
+                                <span>@highway.Name</span>
+                                <small>@highway.Role · @DimensionName(highway.Dimension)</small>
+                            </a>
+                            <a class="group-highway-data" href="@(string.IsNullOrWhiteSpace(highway.HighwayApiUrl) ? $"http://127.0.0.1:5297/api/highways/{highway.HighwayId}" : highway.HighwayApiUrl)" target="_blank" rel="noopener">Data</a>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+</main>
+
+<style>
+    .group-detail-page { max-width: 1320px; margin: 0 auto; padding: 18px; }
+    .group-detail-loading { display: grid; place-items: center; min-height: 50vh; }
+    .group-detail-nav { margin-bottom: 10px; }
+    .group-hero { border-top: 5px solid var(--group-color); overflow: hidden; }
+    .group-hero-main { display: flex; gap: 22px; align-items: flex-start; }
+    .group-hero-logo-link { flex: 0 0 auto; }
+    .group-hero-logo-shell { position: relative; display: block; width: 132px; height: 132px; border-radius: 18px; overflow: hidden; background: var(--group-color); }
+    .group-hero-logo-shell .group-hero-logo, .group-hero-logo-shell .group-hero-monogram { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0; }
+    .group-hero-logo, .group-hero-monogram { width: 132px; height: 132px; border-radius: 18px; object-fit: contain; background: rgba(127,127,127,.1); }
+    .group-hero-logo { background: var(--rz-base-background-color, #1b1e26); }
+    .group-hero-monogram { display: grid; place-items: center; background: var(--group-color); color: #fff; font-size: 2.2rem; font-weight: 800; }
+    .group-hero-copy { min-width: 0; flex: 1; }
+    .group-hero-title-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .group-hero h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2.5rem); }
+    .group-hero p { max-width: 900px; margin: 12px 0 0; line-height: 1.6; }
+    .group-description { white-space: pre-line; }
+    .group-aliases { color: var(--rz-text-secondary-color); font-size: .92rem; display: flex; align-items: center; gap: .35rem; }
+    .group-era, .group-links { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 8px; }
+    .group-era span, .group-links a { display: inline-flex; align-items: center; gap: 5px; }
+    .group-era { opacity: .72; font-size: .88rem; }
+    .group-links a { color: var(--rz-link-color); text-decoration: none; }
+    .group-links a:hover { text-decoration: underline; }
+    .group-stats { display: flex; gap: 1px; margin: 20px -16px -16px; background: rgba(127,127,127,.2); }
+    .group-stats > div { flex: 1; display: grid; padding: 13px 18px; background: var(--rz-base-background-color, #1b1e26); }
+    .group-stats strong { font-size: 1.4rem; }
+    .group-stats span { font-size: .78rem; opacity: .7; }
+    .group-section { margin-top: 22px; }
+    .group-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .group-section-heading h2 { margin: 0; font-size: 1.25rem; }
+    .group-section-heading p { margin: 3px 0 0; opacity: .68; font-size: .86rem; }
+    .group-section-heading > span { font-weight: 800; font-size: 1.25rem; }
+    .group-map-section { overflow: hidden; }
+    .group-map-heading { margin-bottom: 10px; }
+    .group-map-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 9px; }
+    .group-map-dimension, .group-map-open {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 34px;
+        padding: 6px 11px;
+        border: 1px solid rgba(127,127,127,.36);
+        border-radius: 7px;
+        background: var(--rz-base-background-color, #1b1e26);
+        color: inherit;
+        font: inherit;
+        font-size: .8rem;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .group-map-dimension span { opacity: .67; font-size: .72rem; }
+    .group-map-dimension.active { border-color: var(--group-color); box-shadow: inset 0 0 0 1px var(--group-color); }
+    .group-map-open { margin-left: auto; color: var(--rz-link-color); }
+    .group-map-wrap { position: relative; width: 100%; }
+    .group-map-canvas { width: 100%; height: clamp(340px, 47vw, 540px); border: 1px solid rgba(127,127,127,.28); border-radius: 10px; overflow: hidden; background: #10141c; }
+    .group-map-error { margin-bottom: 9px; padding: 9px 11px; border: 1px solid #b95050; border-radius: 7px; color: #ffb5b5; font-size: .82rem; }
+    .loc-map-ctrls { position: absolute; top: 10px; right: 10px; z-index: 500; display: flex; flex-direction: column; gap: 6px; }
+    .loc-ctrl { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid rgba(255,255,255,.15); border-radius: 8px; background: rgba(23,26,33,.92); color: #e6e9ef; box-shadow: 0 2px 6px rgba(0,0,0,.35); cursor: pointer; }
+    .loc-ctrl:hover { background: rgba(40,45,56,.95); }
+    .loc-ctrl.active { border-color: #ffab40; background: #ffab40; color: #1a1a1a; }
+    .loc-ctrl:disabled { opacity: .42; cursor: default; }
+    .loc-ctrl .rzi, .loc-ctrl .notranslate { font-size: 19px; }
+    .loc-map-popup { position: absolute; top: 12px; left: 52px; z-index: 1000; box-sizing: border-box; width: 300px; max-height: calc(100% - 24px); overflow-y: auto; padding: 10px 12px; border: 1px solid #ffd24a; border-radius: 8px; background: var(--rz-base-background-color, #171a21); color: var(--rz-text-color, #e6e9ef); box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+    .loc-popup-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-weight: 700; }
+    .loc-popup-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; background: var(--rz-base-300); font-size: .72rem; }
+    .loc-popup-coords { margin: 8px 0; font-family: 'JetBrains Mono', monospace; }
+    .loc-popup-coords .alt { margin-left: 8px; color: #e0736f; }
+    .loc-popup-desc { margin: 6px 0; font-size: .85rem; opacity: .92; white-space: pre-line; }
+    .loc-popup-tags { margin-bottom: 6px; font-size: .75rem; opacity: .7; }
+    .loc-popup-section-label { margin: 8px 0 3px; font-size: .8rem; font-weight: 700; }
+    .loc-popup-warp-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .loc-popup-warp-row code { overflow: hidden; padding: 2px 5px; border-radius: 4px; background: var(--rz-base-300); font-size: .75rem; text-overflow: ellipsis; white-space: nowrap; }
+    .loc-popup-render-choices { display: grid; gap: 4px; }
+    .loc-popup-render-choice { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; padding: 6px 8px; border: 1px solid var(--rz-base-400); border-radius: 6px; background: var(--rz-base-200); color: var(--rz-text-color, #e6e9ef); cursor: pointer; text-align: left; }
+    .loc-popup-render-choice:hover { background: var(--rz-base-300); }
+    .loc-popup-render-choice.active { border-color: #ffd24a; box-shadow: inset 3px 0 #ffd24a; }
+    .loc-popup-render-choice span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .loc-popup-render-choice small { flex: 0 0 auto; opacity: .75; }
+    .loc-popup-render-row { display: grid; grid-template-columns: minmax(0,1fr) auto; }
+    .loc-popup-render-row .loc-popup-render-choice { border-radius: 6px 0 0 6px; }
+    .loc-popup-render-focus { display: grid; width: 34px; place-items: center; border: 1px solid var(--rz-base-400); border-left: 0; border-radius: 0 6px 6px 0; background: var(--rz-base-200); color: var(--rz-text-color, #e6e9ef); cursor: pointer; }
+    .loc-popup-render-focus:hover { background: var(--rz-base-300); }
+    .loc-popup-render-hint, .loc-primary-hint { margin-top: 4px; color: var(--rz-text-secondary-color); font-size: .75rem; line-height: 1.3; }
+    .loc-popup-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .loc-popup-link { padding: 0 4px; color: #4da3ff; font-size: .85rem; text-decoration: none; }
+    .loc-primary-render-panel { position: absolute; top: 10px; right: 52px; z-index: 501; box-sizing: border-box; width: min(290px, calc(100% - 70px)); max-height: calc(100% - 20px); overflow-y: auto; padding: 10px; border: 1px solid var(--rz-base-400); border-radius: 8px; background: var(--rz-base-background-color, #171a21); color: var(--rz-text-color, #e6e9ef); box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+    .loc-primary-panel-header, .loc-primary-master-row, .loc-primary-row { display: flex; align-items: center; }
+    .loc-primary-panel-header { justify-content: space-between; gap: 8px; margin-bottom: 8px; font-weight: 700; }
+    .loc-primary-master-row { gap: 8px; margin-bottom: 7px; }
+    .loc-primary-count { margin-left: auto; min-width: 22px; padding: 1px 6px; border-radius: 999px; background: var(--rz-base-200); text-align: center; font-size: .72rem; font-weight: 700; }
+    .loc-primary-section-label { margin: 4px 4px 3px; font-size: .7rem; font-weight: 700; text-transform: uppercase; opacity: .7; }
+    .loc-primary-available-label { margin-top: 9px; }
+    .loc-primary-order { padding: 4px 2px; border: 1px solid var(--rz-base-400); border-radius: 6px; }
+    .loc-primary-order.renders-disabled { opacity: .5; }
+    .loc-primary-row { gap: 8px; min-height: 30px; padding: 3px 6px; border-radius: 4px; }
+    .loc-primary-order .loc-primary-row { cursor: grab; user-select: none; }
+    .loc-primary-row.dragging { background: var(--rz-base-200); opacity: .5; }
+    .loc-primary-drag { flex: 0 0 auto; font-size: 18px; opacity: .5; }
+    .loc-primary-label { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-size: .8rem; line-height: 1.25; }
+    .loc-primary-action { flex: 0 0 auto; }
+    .loc-primary-empty { padding: 3px 6px 1px; font-size: .7rem; opacity: .6; }
+    .loc-primary-available { max-height: 190px; overflow-y: auto; padding-top: 3px; border-top: 1px solid var(--rz-base-400); }
+    .group-build-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    .group-build-card { display: flex; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid rgba(127,127,127,.26); border-radius: 9px; background: var(--rz-base-background-color, #1b1e26); }
+    .group-build-card h3 { margin: 8px 0 2px; font-size: 1rem; }
+    .group-build-card h3 a { color: inherit; }
+    .group-build-meta { opacity: .67; font-size: .78rem; font-family: 'JetBrains Mono', monospace; }
+    .group-build-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-size: .8rem; }
+    .group-build-actions a, .group-build-actions span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .dimension-pill { font-size: .7rem; border-radius: 999px; padding: 2px 7px; color: #fff; background: #4b8f29; }
+    .dimension-1 { background: #a73535; }
+    .dimension-2 { background: #9a8624; }
+    .group-highway-list { display: grid; gap: 8px; }
+    .group-highway-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 9px; align-items: center; padding: 11px 13px; border: 1px solid rgba(127,127,127,.26); border-radius: 8px; }
+    .group-highway-row:hover { background: rgba(127,127,127,.09); }
+    .group-highway-map { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 9px; align-items: center; color: inherit; text-decoration: none; }
+    .group-highway-list small { opacity: .65; }
+    .group-highway-data { color: var(--rz-link-color); font-size: .75rem; }
+    .group-empty { padding: 22px; border: 1px dashed rgba(127,127,127,.35); border-radius: 8px; opacity: .72; }
+    @@media (max-width: 640px) {
+        .group-detail-page { padding: 9px; }
+        .group-hero-main { display: grid; gap: 14px; }
+        .group-hero-logo-shell, .group-hero-logo, .group-hero-monogram { width: 92px; height: 92px; border-radius: 13px; }
+        .group-stats { margin-top: 15px; }
+        .group-build-grid { grid-template-columns: 1fr; }
+        .group-section-heading { align-items: flex-start; }
+        .group-map-open { margin-left: 0; }
+        .group-map-canvas { height: 360px; }
+        .loc-primary-render-panel { left: 58px; right: 52px; width: auto; }
+        .loc-map-popup { top: 10px; left: 8px; right: 52px; width: auto; max-height: calc(100% - 20px); }
+    }
+</style>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Atlas.Group? group;
+    private bool loading = true;
+    private const string GroupMapId = "group-build-map";
+    private IJSObjectReference? mapModule;
+    private DotNetObjectReference<GroupDetail>? mapDotNetRef;
+    private bool mapReady;
+    private bool mapInitializationPending;
+    private int selectedMapDimension;
+    private string? mapError;
+    private List<Location>? allLocations;
+    private List<Location> groupMapLocations = [];
+    private List<Location> displayedLocations = [];
+    private Location? selectedMapLocation;
+    private bool mapLocationSelected;
+    private readonly Dictionary<int, HashSet<int>> selectedBaseRenderIds = [];
+    private bool showOthers;
+    private bool showHighways = true;
+    private bool showAxes = true;
+    private bool showBorders = true;
+    private bool showEndPortals;
+    private bool showBaseRenders;
+    private bool isDay = true;
+    private bool showPrimaryRenderPanel;
+    private bool showPrimaryRenders = true;
+    private bool currentPrimaryRenderDayNight = true;
+    private List<PrimaryRenderInfo> primaryRenderOptions = [];
+    private List<string> orderedPrimaryRenders = [];
+    private int primaryRenderDraggingIndex = -1;
+    private IEnumerable<PrimaryRenderInfo> AvailablePrimaryRenders =>
+        primaryRenderOptions.Where(render => !orderedPrimaryRenders.Contains(render.Id));
+    private bool HasMapBaseRenders => (showOthers ? allLocations : groupMapLocations)?
+        .Any(location => (location.Renders ?? []).Any(render => render.Dimension == selectedMapDimension)) == true;
+    private string Accent => string.IsNullOrWhiteSpace(group?.Color) ? "#4da3ff" : group.Color;
+    private string CanonicalUrl => $"https://atlas.example/entities/groups/{Id}/";
+    private string MetaDescription
+    {
+        get
+        {
+            var value = group is null ? "A documented 2b2t group." : $"{group.Name}: {DisplayText.CompactDescription(group.Description)}";
+            return value.Length <= 160 ? value : $"{value[..157].TrimEnd()}...";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        await DisposeMapAsync();
+        group = await GroupService.GetGroupAsync(Id);
+        selectedMapDimension = group?.Locations
+            .GroupBy(location => location.Dimension)
+            .OrderByDescending(set => set.Count())
+            .ThenBy(set => set.Key == 0 ? 0 : 1)
+            .Select(set => set.Key)
+            .FirstOrDefault() ?? 0;
+        mapError = null;
+        allLocations = null;
+        groupMapLocations = [];
+        displayedLocations = [];
+        selectedMapLocation = null;
+        mapLocationSelected = false;
+        selectedBaseRenderIds.Clear();
+        showOthers = false;
+        showBaseRenders = false;
+        mapInitializationPending = group?.Locations.Count > 0;
+        loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!mapInitializationPending || group is null)
+            return;
+
+        mapInitializationPending = false;
+        try
+        {
+            mapModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", MapModuleAsset.Url);
+            mapDotNetRef ??= DotNetObjectReference.Create(this);
+            await mapModule.InvokeVoidAsync("setApiBase", Http.BaseAddress?.ToString());
+            var worldRenders = await MapRenderService.GetPublishedAsync();
+            if (worldRenders.Count > 0)
+                await mapModule.InvokeVoidAsync("registerWorldRenders", worldRenders);
+            await mapModule.InvokeVoidAsync("initialize", GroupMapId, DimensionSlug(selectedMapDimension), isDay, mapDotNetRef);
+            mapReady = true;
+            await RefreshPrimaryRenders();
+
+            allLocations = await LocationService.GetLocationsAsync();
+            var locationsById = allLocations.ToDictionary(location => location.Rowid);
+            groupMapLocations = group.Locations.Select(summary =>
+            {
+                if (locationsById.TryGetValue(summary.LocationId, out var fullLocation)) return fullLocation;
+                return new Location
+                {
+                    Rowid = summary.LocationId,
+                    Name = summary.Name,
+                    X = summary.X,
+                    Z = summary.Z,
+                    Dimension = summary.Dimension,
+                };
+            }).ToList();
+
+            await LoadGroupMapLocationsAsync(fit: true);
+            var highways = await HighwayService.GetHighwaysAsync();
+            if (highways.Count > 0)
+                await mapModule.InvokeVoidAsync("loadHighways", GroupMapId, highways);
+            await mapModule.InvokeVoidAsync("setHighways", GroupMapId, showHighways);
+            await mapModule.InvokeVoidAsync("setAxes", GroupMapId, showAxes);
+            await mapModule.InvokeVoidAsync("setBorders", GroupMapId, showBorders);
+            await mapModule.InvokeVoidAsync("setEndPortals", GroupMapId, showEndPortals);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            mapError = $"The build map could not be loaded: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private IReadOnlyList<int> MapDimensions
+    {
+        get
+        {
+            if (group is null) return [];
+            var dimensions = new List<int>();
+            if (group.Locations.Any(location => location.Dimension is 0 or 1)) dimensions.AddRange([0, 1]);
+            if (group.Locations.Any(location => location.Dimension == 2)) dimensions.Add(2);
+            return dimensions;
+        }
+    }
+
+    private int MapLocationCount => MapLocationCountFor(selectedMapDimension);
+
+    private int MapLocationCountFor(int dimension) => groupMapLocations.Count > 0
+        ? groupMapLocations.Count(location => IsVisibleInDimension(location.Dimension, dimension))
+        : group?.Locations.Count(location => IsVisibleInDimension(location.Dimension, dimension)) ?? 0;
+
+    private string GroupMapUrl
+    {
+        get
+        {
+            var first = group?.Locations.FirstOrDefault(location => location.Dimension == selectedMapDimension);
+            first ??= group?.Locations.FirstOrDefault(location =>
+                selectedMapDimension is 0 or 1 && location.Dimension is 0 or 1);
+            var x = first?.X ?? 0;
+            var z = first?.Z ?? 0;
+            if (first?.Dimension == 0 && selectedMapDimension == 1) { x /= 8; z /= 8; }
+            else if (first?.Dimension == 1 && selectedMapDimension == 0) { x *= 8; z *= 8; }
+            return first is null
+                ? $"map?dimension={DimensionSlug(selectedMapDimension)}"
+                : $"map?dimension={DimensionSlug(selectedMapDimension)}&x={x}&z={z}&zoom=4";
+        }
+    }
+
+    private async Task SetMapDimension(int dimension)
+    {
+        if (selectedMapDimension == dimension || mapModule is null)
+            return;
+        selectedMapDimension = dimension;
+        showOthers = false;
+        selectedMapLocation = null;
+        mapLocationSelected = false;
+        selectedBaseRenderIds.Clear();
+        showBaseRenders = false;
+        await mapModule.InvokeVoidAsync("setDimension", GroupMapId, DimensionSlug(dimension));
+        await RefreshPrimaryRenders();
+        await LoadGroupMapLocationsAsync(fit: true);
+        await LoadBaseRenders();
+        await mapModule.InvokeVoidAsync("setHighways", GroupMapId, showHighways);
+        await mapModule.InvokeVoidAsync("setAxes", GroupMapId, showAxes);
+        await mapModule.InvokeVoidAsync("setBorders", GroupMapId, showBorders);
+        await mapModule.InvokeVoidAsync("setEndPortals", GroupMapId, showEndPortals);
+        UpdatePrimaryRenderCapabilities();
+        StateHasChanged();
+    }
+
+    private async Task LoadGroupMapLocationsAsync(bool fit = false)
+    {
+        if (!mapReady || mapModule is null || group is null)
+            return;
+
+        displayedLocations = showOthers
+            ? allLocations?.ToList() ?? []
+            : groupMapLocations.ToList();
+        selectedMapLocation = null;
+        mapLocationSelected = false;
+
+        var payload = displayedLocations
+            .Select((location, index) => new
+            {
+                index,
+                name = location.Name,
+                x = location.X,
+                z = location.Z,
+                dimension = location.Dimension,
+                description = DisplayText.NormalizeDescription(location.Description),
+            })
+            .ToArray();
+        await mapModule.InvokeVoidAsync("loadLocations", GroupMapId, payload);
+        await mapModule.InvokeVoidAsync("setLocations", GroupMapId, true);
+        await mapModule.InvokeVoidAsync("setEndPortals", GroupMapId, showEndPortals);
+        if (fit)
+            await mapModule.InvokeVoidAsync("fitLocations", GroupMapId, 44, 8);
+    }
+
+    private async Task ToggleOthers()
+    {
+        showOthers = !showOthers;
+        await LoadGroupMapLocationsAsync();
+        await LoadBaseRenders();
+    }
+
+    private void TogglePrimaryRenderPanel() => showPrimaryRenderPanel = !showPrimaryRenderPanel;
+
+    private async Task RefreshPrimaryRenders()
+    {
+        if (mapModule is null) return;
+        var result = await mapModule.InvokeAsync<PrimaryRendersResult>("getRenders", GroupMapId);
+        primaryRenderOptions = result.Renders;
+        orderedPrimaryRenders = result.Current.ToList();
+        UpdatePrimaryRenderCapabilities();
+    }
+
+    private async Task AddPrimaryRender(string renderId)
+    {
+        if (!orderedPrimaryRenders.Contains(renderId)) orderedPrimaryRenders.Insert(0, renderId);
+        await ApplyPrimaryRenders();
+    }
+
+    private async Task RemovePrimaryRender(string renderId)
+    {
+        orderedPrimaryRenders.Remove(renderId);
+        await ApplyPrimaryRenders();
+    }
+
+    private async Task OnPrimaryRendersChanged(bool value)
+    {
+        showPrimaryRenders = value;
+        await ApplyPrimaryRenders();
+    }
+
+    private async Task ApplyPrimaryRenders()
+    {
+        if (mapModule is null) return;
+        await mapModule.InvokeVoidAsync("setRenders", GroupMapId,
+            showPrimaryRenders ? orderedPrimaryRenders : Array.Empty<string>());
+        UpdatePrimaryRenderCapabilities();
+    }
+
+    private void UpdatePrimaryRenderCapabilities()
+    {
+        var selectedBaseHasDayNight = displayedLocations.Any(location =>
+            selectedBaseRenderIds.TryGetValue(location.Rowid, out var ids) &&
+            (location.Renders ?? []).Any(render => ids.Contains(render.Id) && render.HasDayNight));
+        currentPrimaryRenderDayNight =
+            showPrimaryRenders && orderedPrimaryRenders.Any(renderId =>
+                primaryRenderOptions.FirstOrDefault(render => render.Id == renderId)?.DayNight == true) ||
+            showBaseRenders && selectedBaseHasDayNight;
+    }
+
+    private void OnPrimaryRenderDragStart(int index) => primaryRenderDraggingIndex = index;
+
+    private void OnPrimaryRenderDragEnter(int index)
+    {
+        if (primaryRenderDraggingIndex < 0 || primaryRenderDraggingIndex == index ||
+            index < 0 || index >= orderedPrimaryRenders.Count) return;
+        var renderId = orderedPrimaryRenders[primaryRenderDraggingIndex];
+        orderedPrimaryRenders.RemoveAt(primaryRenderDraggingIndex);
+        orderedPrimaryRenders.Insert(index, renderId);
+        primaryRenderDraggingIndex = index;
+    }
+
+    private async Task OnPrimaryRenderDragEnd()
+    {
+        if (primaryRenderDraggingIndex < 0) return;
+        primaryRenderDraggingIndex = -1;
+        await ApplyPrimaryRenders();
+    }
+
+    private string PrimaryRenderLabel(string renderId) =>
+        primaryRenderOptions.FirstOrDefault(render => render.Id == renderId)?.Label ?? renderId;
+
+    private async Task LoadBaseRenders()
+    {
+        if (mapModule is null) return;
+        var renders = displayedLocations
+            .SelectMany(sourceLocation => (sourceLocation.Renders ?? [])
+                .Where(render => selectedBaseRenderIds.TryGetValue(sourceLocation.Rowid, out var selectedIds) &&
+                    selectedIds.Contains(render.Id) && !string.IsNullOrWhiteSpace(render.TilesPath))
+                .OrderBy(render => render.WorldDownloadDate)
+                .ThenBy(render => render.Id)
+                .Select(render => new
+                {
+                    id = render.Id,
+                    locationId = sourceLocation.Rowid,
+                    tilesPath = render.TilesPath,
+                    x = sourceLocation.X,
+                    z = sourceLocation.Z,
+                    scale = render.Scale,
+                    dimension = render.Dimension,
+                    name = render.Name,
+                    date = render.WorldDownloadDate,
+                    minX = render.MinX,
+                    minZ = render.MinZ,
+                    maxXExclusive = render.MaxXExclusive,
+                    maxZExclusive = render.MaxZExclusive,
+                    maxNativeZoom = render.MaxNativeZoom,
+                    coordinateScheme = render.CoordinateScheme,
+                    hasDayNight = render.HasDayNight,
+                }))
+            .ToArray();
+        await mapModule.InvokeVoidAsync("loadBaseRenders", GroupMapId, renders);
+        await mapModule.InvokeVoidAsync("setBaseRenders", GroupMapId, showBaseRenders);
+    }
+
+    private async Task ToggleBaseRenders()
+    {
+        showBaseRenders = !showBaseRenders;
+        if (mapModule is not null)
+            await mapModule.InvokeVoidAsync("setBaseRenders", GroupMapId, showBaseRenders);
+        UpdatePrimaryRenderCapabilities();
+    }
+
+    private IEnumerable<Atlas.Locations.Render> OrderedMapRenders(Location selectedLocation) =>
+        (selectedLocation.Renders ?? [])
+            .Where(render => render.Dimension == selectedMapDimension)
+            .OrderByDescending(render => render.WorldDownloadDate)
+            .ThenByDescending(render => render.Id);
+
+    private bool HasSelectedBaseRenders(Location selectedLocation) =>
+        selectedBaseRenderIds.TryGetValue(selectedLocation.Rowid, out var renderIds) && renderIds.Count > 0;
+
+    private bool IsBaseRenderSelected(Location selectedLocation, int renderId) =>
+        selectedBaseRenderIds.TryGetValue(selectedLocation.Rowid, out var renderIds) && renderIds.Contains(renderId);
+
+    private async Task SelectBaseRender(int locationId, int? renderId)
+    {
+        if (!selectedBaseRenderIds.TryGetValue(locationId, out var renderIds))
+        {
+            renderIds = [];
+            selectedBaseRenderIds[locationId] = renderIds;
+        }
+        if (renderId is null) renderIds.Clear();
+        else if (!renderIds.Add(renderId.Value)) renderIds.Remove(renderId.Value);
+        showBaseRenders = selectedBaseRenderIds.Values.Any(ids => ids.Count > 0);
+        await LoadBaseRenders();
+        UpdatePrimaryRenderCapabilities();
+    }
+
+    private async Task FocusBaseRender(Location renderLocation, Atlas.Locations.Render render)
+    {
+        if (mapModule is null) return;
+        if (!selectedBaseRenderIds.TryGetValue(renderLocation.Rowid, out var renderIds))
+        {
+            renderIds = [];
+            selectedBaseRenderIds[renderLocation.Rowid] = renderIds;
+        }
+        renderIds.Add(render.Id);
+        showBaseRenders = true;
+        await LoadBaseRenders();
+        UpdatePrimaryRenderCapabilities();
+        await mapModule.InvokeAsync<bool>("focusBaseRender", GroupMapId, new
+        {
+            id = render.Id,
+            locationId = renderLocation.Rowid,
+            x = renderLocation.X,
+            z = renderLocation.Z,
+            scale = render.Scale,
+            dimension = render.Dimension,
+            minX = render.MinX,
+            minZ = render.MinZ,
+            maxXExclusive = render.MaxXExclusive,
+            maxZExclusive = render.MaxZExclusive,
+        });
+    }
+
+    [JSInvokable]
+    public async Task OnLocationSelected(int index)
+    {
+        if (index < 0 || index >= displayedLocations.Count) return;
+        selectedMapLocation = displayedLocations[index];
+        mapLocationSelected = true;
+        if (!selectedBaseRenderIds.ContainsKey(selectedMapLocation.Rowid))
+        {
+            var latestRenderId = OrderedMapRenders(selectedMapLocation).FirstOrDefault()?.Id;
+            selectedBaseRenderIds[selectedMapLocation.Rowid] = latestRenderId is null ? [] : [latestRenderId.Value];
+            if (latestRenderId is not null)
+            {
+                showBaseRenders = true;
+                await LoadBaseRenders();
+                UpdatePrimaryRenderCapabilities();
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void OnLocationDeselected()
+    {
+        mapLocationSelected = false;
+        selectedMapLocation = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CloseMapLocationInfo()
+    {
+        mapLocationSelected = false;
+        selectedMapLocation = null;
+        if (mapModule is not null)
+            await mapModule.InvokeVoidAsync("clearLocationSelection", GroupMapId);
+    }
+
+    private async Task GoToMapLocation()
+    {
+        if (mapModule is null || selectedMapLocation is null) return;
+        var x = selectedMapLocation.X;
+        var z = selectedMapLocation.Z;
+        if (selectedMapLocation.Dimension == 0 && selectedMapDimension == 1) { x /= 8; z /= 8; }
+        else if (selectedMapLocation.Dimension == 1 && selectedMapDimension == 0) { x *= 8; z *= 8; }
+        await mapModule.InvokeVoidAsync("goToCoords", GroupMapId, (double)x, (double)z, 8);
+    }
+
+    private async Task CopyMapLocationCoords()
+    {
+        if (selectedMapLocation is not null)
+            await CopyText($"{selectedMapLocation.X} {selectedMapLocation.Z}");
+    }
+
+    private void OpenMapLocationDetails()
+    {
+        if (selectedMapLocation is not null)
+            NavigationManager.NavigateTo($"location/{selectedMapLocation.Rowid}");
+    }
+
+    private async Task ToggleHighways()
+    {
+        showHighways = !showHighways;
+        if (mapModule is not null) await mapModule.InvokeVoidAsync("setHighways", GroupMapId, showHighways);
+    }
+
+    private async Task ToggleAxes()
+    {
+        showAxes = !showAxes;
+        if (mapModule is not null) await mapModule.InvokeVoidAsync("setAxes", GroupMapId, showAxes);
+    }
+
+    private async Task ToggleBorders()
+    {
+        showBorders = !showBorders;
+        if (mapModule is not null) await mapModule.InvokeVoidAsync("setBorders", GroupMapId, showBorders);
+    }
+
+    private async Task ToggleEndPortals()
+    {
+        showEndPortals = !showEndPortals;
+        if (mapModule is not null) await mapModule.InvokeVoidAsync("setEndPortals", GroupMapId, showEndPortals);
+    }
+
+    private async Task ToggleDay()
+    {
+        if (!currentPrimaryRenderDayNight) return;
+        isDay = !isDay;
+        if (mapModule is not null) await mapModule.InvokeVoidAsync("setTimeOfDay", GroupMapId, isDay);
+    }
+
+    private async Task CopyText(string text) =>
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+
+    private async ValueTask DisposeMapAsync()
+    {
+        mapReady = false;
+        mapInitializationPending = false;
+        if (mapModule is not null)
+        {
+            try { await mapModule.InvokeVoidAsync("dispose", GroupMapId); }
+            catch (JSDisconnectedException) { }
+            try { await mapModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+        mapModule = null;
+        mapDotNetRef?.Dispose();
+        mapDotNetRef = null;
+    }
+
+    public async ValueTask DisposeAsync() => await DisposeMapAsync();
+
+    private void BackToGroups() => NavigationManager.NavigateTo("groups");
+    private static string DimensionName(int dimension) => dimension switch { 1 => "Nether", 2 => "End", _ => "Overworld" };
+    private static string DimensionSlug(int dimension) => dimension switch { 1 => "nether", 2 => "end", _ => "overworld" };
+    private static string MapUrl(GroupLocationSummary location) =>
+        $"map?dimension={DimensionSlug(location.Dimension)}&x={location.X}&z={location.Z}&zoom=8";
+    private static bool IsVisibleInDimension(int locationDimension, int mapDimension) =>
+        locationDimension == mapDimension || locationDimension is 0 or 1 && mapDimension is 0 or 1;
+    private sealed record PrimaryRenderInfo(string Id, string Label, bool DayNight);
+    private sealed record PrimaryRendersResult(List<string> Current, bool DayNight, List<PrimaryRenderInfo> Renders);
+    private static BadgeStyle TypeBadge(GroupType type) => type switch
+    {
+        GroupType.Build => BadgeStyle.Info,
+        GroupType.Highway => BadgeStyle.Warning,
+        GroupType.Mixed => BadgeStyle.Success,
+        _ => BadgeStyle.Light,
+    };
+    private static string TypeLabel(GroupType type) => type switch
+    {
+        GroupType.Build => "Builders",
+        GroupType.Highway => "Infrastructure",
+        GroupType.Mixed => "Build + infrastructure",
+        _ => "Faction / community",
+    };
+    private static string Monogram(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+}

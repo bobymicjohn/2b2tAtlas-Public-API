@@ -1,0 +1,201 @@
+{
+  "channels": [
+    {
+      "slug": "barrendome",
+      "url": "https://www.youtube.com/channel/UCpIvXT9VhAA1Z4_yReFgdBg/shorts",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "barrendome",
+      "url": "https://www.youtube.com/channel/UCpIvXT9VhAA1Z4_yReFgdBg/streams",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "barrendome",
+      "url": "https://www.youtube.com/channel/UCpIvXT9VhAA1Z4_yReFgdBg/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "blizzen",
+      "url": "https://www.youtube.com/channel/UCdm95aVFrVD4Dpk2rkHrdLg/shorts",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "blizzen",
+      "url": "https://www.youtube.com/channel/UCdm95aVFrVD4Dpk2rkHrdLg/streams",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "blizzen",
+      "url": "https://www.youtube.com/channel/UCdm95aVFrVD4Dpk2rkHrdLg/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "cibergun",
+      "url": "https://www.youtube.com/channel/UCvV11r7YvvHalm8wAWhBrgA/videos",
+      "languages": [
+        "es-orig",
+        "es",
+        "en"
+      ]
+    },
+    {
+      "slug": "dadtwoknee",
+      "url": "https://www.youtube.com/channel/UCpjuCb-V73dC3YamhGTvAjg/shorts",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "dadtwoknee",
+      "url": "https://www.youtube.com/channel/UCpjuCb-V73dC3YamhGTvAjg/streams",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "dadtwoknee",
+      "url": "https://www.youtube.com/channel/UCpjuCb-V73dC3YamhGTvAjg/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "fastvincent1",
+      "url": "https://www.youtube.com/@FastVincent1/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "fastvincent1",
+      "url": "https://www.youtube.com/@fastvincent1/shorts",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "fitmc",
+      "url": "https://www.youtube.com/@FitMC/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "krauler-tv",
+      "url": "https://www.youtube.com/channel/UC3xG-XrMQlt8wgR96Ennw2g/videos",
+      "languages": [
+        "ru-orig",
+        "ru",
+        "en"
+      ]
+    },
+    {
+      "slug": "niko",
+      "url": "https://www.youtube.com/channel/UCS3lqf12QaNbpJg6h4RoNbA/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "ohnepixel",
+      "url": "https://www.youtube.com/@ohnepixel/shorts",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "ohnepixel",
+      "url": "https://www.youtube.com/@ohnepixel/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "ohnepixelraw",
+      "url": "https://www.youtube.com/@ohnepixelraw/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "oniya",
+      "url": "https://www.youtube.com/channel/UCLiQ--EXgzUV03q5jKQYWcw/videos",
+      "languages": [
+        "ja-orig",
+        "ja",
+        "en"
+      ]
+    },
+    {
+      "slug": "pitfall",
+      "url": "https://www.youtube.com/channel/UCImNlosEljXafiqau_SjcoQ/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "salc1",
+      "url": "https://www.youtube.com/@SalC1/videos",
+      "languages": [
+        "en-orig",
+        "en"
+      ]
+    },
+    {
+      "slug": "toxic-dude",
+      "url": "https://www.youtube.com/channel/UCTpTFaPgUYTyqwfvAX0c-gg/videos",
+      "languages": [
+        "es-orig",
+        "es",
+        "en"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "2b2t-blog",
+      "kind": "blogger",
+      "url": "https://www.jamesrustles.com/feeds/posts/default?alt=json&max-results=500"
+    },
+    {
+      "id": "burstmurst-timeline",
+      "kind": "timegraphics",
+      "url": "https://time.graphics/line/28104"
+    },
+    {
+      "id": "astro-timeline",
+      "kind": "timegraphics",
+      "url": "https://time.graphics/line/246979"
+    }
+  ]
+}

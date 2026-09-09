@@ -1,5 +1,14 @@
 # Changes
 
+## Full-stack source example — 2026-09-08
+
+Added `examples/atlas-stack`: the Blazor frontend, ASP.NET Core API, SQLite models,
+WDL ingestion and publication, Archive collectors and Fabric coverage companion,
+BlueMap orchestration, recovery and research tools. Includes local bootstrap,
+generalized host configuration, MIT license, setup guides and CI. Production
+databases, credentials, game state, private history and operator incident reports
+are excluded. Existing public API clients remain standalone.
+
 ## Since 1.1.0 — 2026-09-08
 
 Use the documented August 15–17, 2019 capture dates in the 43k Nether layer name.

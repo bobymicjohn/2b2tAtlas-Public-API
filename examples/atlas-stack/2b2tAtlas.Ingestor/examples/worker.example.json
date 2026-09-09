@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "apiBase": "http://127.0.0.1:5297/",
+  "apiKeyEnvironment": "ATLAS_INGEST_WORKER_KEY",
+  "intakeRoot": "D:\\AtlasExample\\Ingest\\intake",
+  "archiveRoot": "E:\\AtlasExample\\WorldDownloads",
+  "workRoot": "D:\\AtlasExample\\Ingest\\work",
+  "rendererProfile": "C:\\AtlasExample\\Ingest\\config\\renderer.json",
+  "publishRoot": "F:\\AtlasExample\\AtlasTiles",
+  "publicTileRoot": "https://tiles.atlas.example/AtlasTiles",
+  "tileScheme": "atlas-overworld-sparse-v1",
+  "pollSeconds": 15
+}

@@ -1,0 +1,619 @@
+@page "/api"
+@using Radzen
+@using Radzen.Blazor
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject _2b2tAtlas.Client.Services.AuthService AuthService
+
+<PageTitle>API - 2b2t Atlas</PageTitle>
+<HeadContent>
+    <meta name="description" content="Public 2b2t Atlas JSON API and MCP server documentation for locations, groups, Archive warps, bounded Minecraft worlds, renders, attachments, highways, bots, mods, LLMs, and research agents." />
+    <link rel="canonical" href="https://atlas.example/api" />
+</HeadContent>
+
+<div class="api-page">
+    <div class="api-heading">
+        <div>
+            <h1>Atlas Example API</h1>
+            @if (isAuthenticated)
+            {
+                <p>Stable public read endpoints. Administrative writes require a JWT and the listed permission.</p>
+            }
+            else
+            {
+                <p>Stable public read endpoints returning JSON.</p>
+            }
+        </div>
+        <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="v2" />
+    </div>
+
+    <RadzenCard class="api-summary">
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap">
+            <span><strong>Base URL</strong> @ApiBase</span>
+            <span><strong>Format</strong> JSON</span>
+            <span><strong>Dimensions</strong> 0 Overworld · 1 Nether · 2 End</span>
+            <span><strong>Schema</strong> <a href="@OpenApiUrl" target="_blank" rel="noopener">OpenAPI</a></span>
+        </RadzenStack>
+    </RadzenCard>
+
+    <aside class="api-github" aria-label="Developer examples on GitHub">
+        <RadzenIcon Icon="code" />
+        <div>
+            <strong>Building a mod, bot, map, or research tool?</strong>
+            <span>Start with runnable C#, JavaScript, Python, and Fabric-oriented examples in the public developer repository.</span>
+        </div>
+        <a href="https://github.com/bobymicjohn/2b2tAtlas-Public-API" target="_blank" rel="noopener noreferrer">
+            View GitHub examples
+        </a>
+    </aside>
+
+    <section class="mcp-panel" id="mcp" aria-labelledby="mcp-heading">
+        <div class="mcp-intro">
+            <span class="mcp-icon" aria-hidden="true"><RadzenIcon Icon="smart_toy" /></span>
+            <div>
+                <span class="mcp-kicker">Agent-native access</span>
+                <h2 id="mcp-heading">2b2t Atlas MCP server</h2>
+                <p>
+                    Connect an AI client or research agent directly to the reviewed Atlas knowledge graph.
+                    The public server exposes deterministic, read-only tools for locations, nearby searches,
+                    groups and their builds, highways, Archive warps, render metadata, historical capture dates,
+                    and downloadable bounded WDL metadata.
+                </p>
+            </div>
+        </div>
+        <div class="mcp-facts" aria-label="MCP connection details">
+            <span><strong>Endpoint</strong><code>@McpEndpoint</code></span>
+            <span><strong>Registry</strong><a href="@McpRegistryUrl" target="_blank" rel="noopener noreferrer"><code>io.github.example/2b2t-atlas</code></a></span>
+            <span><strong>Transport</strong>Streamable HTTP</span>
+            <span><strong>Authentication</strong>None for public reads</span>
+            <span><strong>Mode</strong>Stateless and read-only</span>
+        </div>
+        <div class="mcp-grid">
+            <div>
+                <h3>Client configuration</h3>
+                <p>Add this remote server to any MCP client that supports Streamable HTTP:</p>
+                <pre><code>@McpClientConfig</code></pre>
+            </div>
+            <div>
+                <h3>Purpose-built research tools</h3>
+                <p>
+                    Start with <code>research_location</code>, <code>search_locations</code>,
+                    <code>find_locations_near</code>, <code>search_groups</code>,
+                    <code>get_group_builds</code>, <code>search_highways</code>, or
+                    <code>find_preserved_builds</code>. Fifteen bounded tools and four URI resources
+                    are discoverable through the protocol itself.
+                </p>
+                <p class="mcp-note">
+                    WDL and render tools return metadata plus stable HTTPS URLs, never multi-megabyte
+                    binary payloads inside model context. Cite the returned canonical entity URL and
+                    retain original-source attribution when publishing a result.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="api-tags">
+        @foreach (var tag in VisibleGroups)
+        {
+            <section class="api-tag">
+                <div class="api-tag-head">
+                    <h2>@tag.Name</h2>
+                    <span>@tag.Description</span>
+                </div>
+                <div class="api-ops">
+                    @foreach (var op in tag.Operations)
+                    {
+                        <details class="api-op op-@op.Method.ToLowerInvariant()">
+                            <summary>
+                                <span class="op-method">@op.Method</span>
+                                <code class="op-path">@op.Route</code>
+                                <span class="op-desc">@op.Summary</span>
+                                <span class="op-auth">@(op.IsPublic ? "public" : "🔒 " + op.Permission)</span>
+                            </summary>
+                            <div class="op-detail">
+                                @if (op.Parameters.Length > 0)
+                                {
+                                    <h4>Parameters</h4>
+                                    <table class="op-params">
+                                        <thead><tr><th>Name</th><th>In</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                                        <tbody>
+                                            @foreach (var p in op.Parameters)
+                                            {
+                                                <tr>
+                                                    <td><code>@p.Name</code></td>
+                                                    <td>@p.In</td>
+                                                    <td>@p.Type</td>
+                                                    <td>@(p.Required ? "required" : "optional")</td>
+                                                    <td>@p.Description</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                                @if (!string.IsNullOrEmpty(op.RequestBody))
+                                {
+                                    <h4>Request body <span class="op-ct">application/json</span></h4>
+                                    <pre><code>@op.RequestBody</code></pre>
+                                }
+                                <h4>Responses</h4>
+                                @foreach (var r in op.Responses)
+                                {
+                                    <div class="op-resp">
+                                        <span class="op-status status-@(r.Status / 100)">@r.Status</span>
+                                        <span>@r.Description</span>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(r.Example))
+                                    {
+                                        <pre><code>@r.Example</code></pre>
+                                    }
+                                }
+                                @if (op.CanTry)
+                                {
+                                    <RadzenButton Icon="open_in_new" Text="Open in browser" Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light" Click="@(() => OpenEndpoint(op.Route))" />
+                                }
+                            </div>
+                        </details>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+
+    <RadzenCard class="api-notes">
+        <h2>Notes</h2>
+        <ul>
+            <li><code>/api/renders</code> is the dedicated collection of per-location base renders (filter by <code>locationId</code>, <code>dimension</code>, <code>scale</code>; page with <code>limit</code>/<code>offset</code>). <code>/api/maprenders</code> lists only the dimension-level primary layers, which may be empty.</li>
+            <li><code>/api/maprenders/catalog</code> returns every render in one call: <code>primary</code> full-map layers and per-location <code>location</code> renders.</li>
+            <li>Machine-readable schema is at <code>/openapi/v1.json</code> (OpenAPI); <code>/api</code> is a short endpoint index for discovery.</li>
+            <li>Bulk WDL discovery is available as <a href="https://atlas.example/entities/world-downloads/" target="_blank" rel="noopener">crawlable HTML/JSON-LD</a> and <a href="https://atlas.example/entities/world-downloads.jsonl" target="_blank" rel="noopener">JSONL</a>. Each record links its Archive warp or preserved source render, canonical location, capture scope, checksum, metadata, ZIP, and related renders.</li>
+            <li>Tile templates use <code>{z}/{y}/{x}</code>, plus <code>{dn}</code> → <code>day</code>/<code>night</code> when <code>hasDayNight</code> is true.</li>
+            <li>Coordinate schemes: <code>xyz-v1</code> (standard), <code>atlas-sparse-v1</code> (signed sparse world-download tiles), <code>place-proxy</code> (2b2t.place layers, served via <code>/tiles/place/…</code>).</li>
+            <li>Dimensions are <code>0</code> Overworld, <code>1</code> Nether, <code>2</code> End; the legacy <code>.php</code> query uses <code>1</code> End and <code>-1</code> Nether.</li>
+            <li>Location responses include reviewed groups, warps, attachments, renders, and exact render bounds when available.</li>
+            <li>Collector-backed warp records and verified pre-Archive render records advertise immutable <code>worldDownloadUrl</code> and metadata URLs. These ZIPs are playable Java-world snapshots rather than complete 2b2t worlds; clients should read each record's scope/warning and verify the SHA-256 before use.</li>
+            <li>Archive concept artifacts remain available for preservation, but warp, render, WDL, and MCP records explicitly set <code>isSinglePlayerConcept=true</code>. They are offline creative builds, not evidence of a structure existing on the live 2b2t server.</li>
+            <li>Entity and relationship records expose additive <code>canonicalUrl</code>, <code>interactiveUrl</code>, and <code>apiUrl</code> fields so integrations do not need to construct links.</li>
+            <li>Public reads allow cross-origin requests. Every mutation requires a bearer token and the route's explicit permission; authenticated users do not receive blanket write access.</li>
+            <li><a href="/nocom/">Nocom historical data</a>: <code>/api/nocom</code> supplies provenance and coverage;
+                <code>/api/nocom/periods</code> exposes fixed 30-day observation aggregates;
+                <code>/api/nocom/highways</code> exposes released highway activity by compass direction.
+                MCP provides <code>get_nocom_dataset</code>, <code>get_nocom_periods</code> and <code>get_nocom_highway_activity</code>.
+                Counts are observations, not players or visits.</li>
+            <li>Waypoint exports are generated in the map UI; there are no server export endpoints.</li>
+        </ul>
+    </RadzenCard>
+</div>
+
+@code {
+    private bool isAuthenticated;
+
+    private string ApiBase => (Http.BaseAddress ?? new Uri(NavigationManager.BaseUri)).ToString().TrimEnd('/') + "/api";
+
+    private string OpenApiUrl => (Http.BaseAddress ?? new Uri(NavigationManager.BaseUri)).ToString().TrimEnd('/') + "/openapi/v1.json";
+
+    private const string McpEndpoint = "http://127.0.0.1:5297/mcp";
+
+    private const string McpRegistryUrl = "https://registry.modelcontextprotocol.io/?q=io.github.example%2F2b2t-atlas";
+
+    private const string McpClientConfig = """
+{
+  "mcpServers": {
+    "2b2t-atlas": {
+      "type": "http",
+      "url": "http://127.0.0.1:5297/mcp"
+    }
+  }
+}
+""";
+
+    private IEnumerable<ApiTag> VisibleGroups =>
+        Tags.Select(t => t with { Operations = t.Operations.Where(o => isAuthenticated || o.IsPublic).ToArray() })
+            .Where(t => t.Operations.Length > 0);
+
+    /// <summary>Determines whether the visitor is signed in so non-public endpoints can be hidden from anonymous users.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+    }
+
+    private const string LocationsExample = """
+[
+  {
+    "rowid": 904,
+    "name": "+Z Border",
+    "canonicalUrl": "https://atlas.example/entities/locations/904/",
+    "interactiveUrl": "https://atlas.example/location/904",
+    "apiUrl": "http://127.0.0.1:5297/api/locations/904",
+    "dimension": 0,
+    "x": 0, "y": 64, "z": 30000000,
+    "groups": [{ "groupId": 12, "groupName": "Highway Workers Union", "role": "Contributor", "groupUrl": "https://atlas.example/entities/groups/12/", "groupApiUrl": "http://127.0.0.1:5297/api/groups/12" }],
+    "warps": [{ "id": 5, "name": "zborder", "apiUrl": "http://127.0.0.1:5297/api/warps/5", "worldDownloadUrl": "http://127.0.0.1:5297/api/warps/5/world-download.zip", "worldDownloadMetadataUrl": "http://127.0.0.1:5297/api/warps/5/world-download", "worldDownloadScope": "bounded-footprint", "timeAdded": "2021-02-09T00:00:00Z" }],
+    "attachments": [],
+    "renders": [
+      {
+        "id": 212,
+        "name": "+Z Border 2019-04-20",
+        "dimension": 1,
+        "scale": "1",
+        "tilesPath": "https://tiles.atlas.example/AtlasTiles/z-border-2019-04-20/nether/{z}/{y}/{x}.png",
+        "coordinateScheme": "atlas-sparse-v1",
+        "maxNativeZoom": 8,
+        "minX": -1280, "minZ": 3749808, "maxXExclusive": 1152, "maxZExclusive": 3750096
+      }
+    ]
+  }
+]
+""";
+
+    private const string MapRendersExample = """
+[
+  {
+    "id": 1,
+    "slug": "overworld-256k-2021",
+    "name": "256k (2021)",
+    "dimension": 0,
+    "scale": "256k",
+    "urlTemplate": "https://tiles.atlas.example/AtlasTiles/Overworld/256k/{dn}/{z}/{y}/{x}.png",
+    "hasDayNight": true,
+    "maxNativeZoom": null,
+    "source": "2b2t Atlas",
+    "sortOrder": 10,
+    "isPublished": true
+  }
+]
+""";
+
+    private const string CatalogExample = """
+{
+  "primary": [
+    {
+      "kind": "primary",
+      "id": "256k",
+      "name": "256k (2021)",
+      "dimension": 0,
+      "scale": "256k",
+      "tileUrlTemplate": "https://tiles.atlas.example/AtlasTiles/Overworld/256k/{dn}/{z}/{y}/{x}.png",
+      "hasDayNight": true,
+      "coordinateScheme": "xyz-v1",
+      "source": "2b2t Atlas"
+    },
+    {
+      "kind": "primary",
+      "id": "place-world",
+      "name": "1m World (2026)",
+      "dimension": 0,
+      "scale": "1m",
+      "tileUrlTemplate": null,
+      "coordinateScheme": "place-proxy",
+      "source": "2b2t.place"
+    }
+  ],
+  "locations": [
+    {
+      "kind": "location",
+      "id": "render-212",
+      "name": "+Z Border 2019-04-20",
+      "dimension": 1,
+      "scale": "1",
+      "tileUrlTemplate": "https://tiles.atlas.example/AtlasTiles/z-border-2019-04-20/nether/{z}/{y}/{x}.png",
+      "coordinateScheme": "atlas-sparse-v1",
+      "maxNativeZoom": 8,
+      "locationId": 904,
+      "locationName": "+Z Border",
+      "locationX": 0,
+      "locationZ": 30000000,
+      "minX": -1280, "minZ": 3749808, "maxXExclusive": 1152, "maxZExclusive": 3750096
+    }
+  ]
+}
+""";
+
+    private const string MapRenderBody = """
+{
+  "slug": "overworld-1m-2026",
+  "name": "1m World (2026)",
+  "dimension": 0,
+  "scale": "1m",
+  "urlTemplate": "https://tiles.atlas.example/AtlasTiles/1m/overworld/{z}/{y}/{x}.png",
+  "hasDayNight": false,
+  "maxNativeZoom": 10,
+  "source": "2b2t Atlas",
+  "sortOrder": 100,
+  "isPublished": true
+}
+""";
+
+    private const string RendersExample = """
+[
+  {
+    "renderId": 1,
+    "apiUrl": "http://127.0.0.1:5297/api/renders/1",
+    "locationId": 1242,
+    "locationName": "cutecurly's City",
+    "locationUrl": "https://atlas.example/entities/locations/1242/",
+    "locationApiUrl": "http://127.0.0.1:5297/api/locations/1242",
+    "locationX": 1247, "locationZ": -8324,
+    "dimension": 0,
+    "dimensionName": "Overworld",
+    "name": "cutecurly's City (2025)",
+    "scale": "256k",
+    "tileUrlTemplate": "https://tiles.atlas.example/AtlasTiles/cutecurlys-city-2025/overworld/g-20260819183000-acde1234/{dn}/{z}/{y}/{x}.png",
+    "hasDayNight": true,
+    "maxNativeZoom": 9,
+    "coordinateScheme": "atlas-sparse-v1",
+    "worldDownloadDate": "2025-11-30",
+    "minX": -768, "minZ": -8960, "maxXExclusive": 2304, "maxZExclusive": -7680,
+    "dateAddedUtc": "2026-08-16T00:00:00Z"
+  }
+]
+""";
+
+    private const string WorldDownloadExample = """
+{
+  "warpId": 1250,
+  "warpName": "Example_Base_2021-06-05",
+  "locationId": 608,
+  "locationName": "Example Base",
+  "metadataUrl": "http://127.0.0.1:5297/api/warps/1250/world-download",
+  "downloadUrl": "http://127.0.0.1:5297/api/warps/1250/world-download.zip",
+  "fileName": "2b2tAtlas-warp-1250.zip",
+  "contentType": "application/zip",
+  "byteLength": 10894532,
+  "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "captureType": "bounded-footprint",
+  "worldFormat": "Minecraft Java Edition save",
+  "playability": "partial-java-save",
+  "isCompleteWorld": false,
+  "dimension": "Overworld",
+  "chunkCount": 2444,
+  "bounds": { "minX": -182784, "minZ": -339712, "maxXExclusive": -181968, "maxZExclusive": -338896 },
+  "worldDownloadDate": "2021-06-05",
+  "source": "The Archive automated sync"
+}
+""";
+
+    private static readonly ApiParam[] IdOnly = [new("id", "path", "integer", true, "Row identifier.")];
+    private static readonly ApiParam[] NoParams = [];
+    private static readonly ApiParam[] RendersQuery =
+    [
+        new("locationId", "query", "integer", false, "Only renders for this location."),
+        new("dimension", "query", "integer", false, "0 Overworld, 1 Nether, 2 End."),
+        new("scale", "query", "string", false, "Scale label, e.g. 256k."),
+        new("limit", "query", "integer", false, "Max rows (default 500, max 1000)."),
+        new("offset", "query", "integer", false, "Rows to skip for paging."),
+    ];
+    private static readonly ApiParam[] AttachmentsQuery =
+    [
+        new("locationId", "query", "integer", false, "Only media for this location."),
+        new("mediaType", "query", "string", false, "Image, Video, Wiki, Link, Timeline, or Article."),
+        new("limit", "query", "integer", false, "Max rows (default 500, max 1000)."),
+        new("offset", "query", "integer", false, "Rows to skip for paging."),
+    ];
+    private static readonly ApiParam[] WarpsQuery =
+    [
+        new("locationId", "query", "integer", false, "Only Archive warps for this location."),
+        new("limit", "query", "integer", false, "Max rows (default 500, max 1000)."),
+        new("offset", "query", "integer", false, "Rows to skip for paging."),
+    ];
+
+    private static readonly ApiTag[] Tags =
+    [
+        new("Map renders", "Dimension-level layers and the combined render catalog.",
+        [
+            new("GET", "/api/maprenders/catalog", "Every render in one view: primary layers and per-location renders.", true, "", true,
+                NoParams, [new(200, "Primary layers and location renders.", CatalogExample)]),
+            new("GET", "/api/maprenders", "Published dimension-level map layers.", true, "", true,
+                NoParams, [new(200, "Published layers.", MapRendersExample)]),
+            new("GET", "/api/maprenders/all", "Every layer regardless of publish state.", false, "renders.manage", false,
+                NoParams, [new(200, "All layers.")]),
+            new("PUT", "/api/maprenders", "Register or refresh a layer (idempotent by slug).", false, "renders.manage", false,
+                NoParams, [new(200, "The upserted layer."), new(400, "Validation errors.")], MapRenderBody),
+            new("DELETE", "/api/maprenders/{id}", "Remove a layer.", false, "renders.manage", false,
+                IdOnly, [new(204, "Deleted."), new(404, "Not found.")]),
+        ]),
+        new("Renders", "Per-location base renders (tile pyramids anchored at individual bases).",
+        [
+            new("GET", "/api/renders", "Every per-location render with owning-location context; filterable and paged.", true, "", true,
+                RendersQuery, [new(200, "Render list.", RendersExample)]),
+            new("GET", "/api/renders/{id}", "One render by id, with its owning location.", true, "", false,
+                IdOnly, [new(200, "The render."), new(404, "Not found.")]),
+            new("GET", "/api/locations/{id}/renders", "The renders attached to a location.", true, "", false,
+                IdOnly, [new(200, "The location's renders."), new(404, "Location not found.")]),
+            new("GET", "/api/renders/{id}/world-download", "Metadata, provenance, digest, bounds, and safety warning for a verified preserved render-source WDL.", true, "", false,
+                IdOnly, [new(200, "World-download metadata.", WorldDownloadExample), new(404, "No preserved source WDL is linked."), new(503, "Archived object temporarily unavailable.")]),
+            new("GET", "/api/renders/{id}/world-download.zip", "Download the immutable preserved render-source Java world; byte ranges are supported.", true, "", false,
+                IdOnly, [new(200, "ZIP body (application/zip)."), new(206, "Partial content for a range request."), new(404, "No preserved source WDL is linked."), new(429, "Download concurrency limit reached."), new(503, "Archived object temporarily unavailable.")]),
+        ]),
+        new("Locations", "Bases, coordinates, warps, attachments, and per-location renders.",
+        [
+            new("GET", "/api/locations", "All locations with warps, attachments, and renders.", true, "", true,
+                NoParams, [new(200, "Location list.", LocationsExample)]),
+            new("GET", "/api/locations/{id}", "One location by row id.", true, "", false,
+                IdOnly, [new(200, "The location."), new(404, "Not found.")]),
+            new("POST", "/api/locations", "Create a location.", false, "locations.create", false,
+                NoParams, [new(200, "The created location.")]),
+            new("PUT", "/api/locations/{id}", "Update a location and its warps.", false, "locations.edit", false,
+                IdOnly, [new(200, "The updated location.")]),
+            new("PUT", "/api/locations/{id}/attachments", "Replace a location's attachment links.", false, "attachments.manage", false,
+                IdOnly, [new(204, "Replaced.")]),
+            new("DELETE", "/api/locations/{id}", "Delete a location and related records.", false, "locations.delete", false,
+                IdOnly, [new(204, "Deleted.")]),
+        ]),
+        new("Warps", "Archive warp identities. One warp identifies at most one WDL/render snapshot; one Atlas location may own many historical warps.",
+        [
+            new("GET", "/api/warps", "Public Archive warp catalog with owning-location context; filterable and paged.", true, "", true,
+                WarpsQuery, [new(200, "Warp records.")]),
+            new("GET", "/api/warps/{id}", "One Archive warp and its owning-location context.", true, "", false,
+                IdOnly, [new(200, "The warp."), new(404, "Not found.")]),
+            new("GET", "/api/warps/{id}/world-download", "Metadata, size, digest, bounds, and safety warning for a collector WDL.", true, "", false,
+                IdOnly, [new(200, "World-download metadata.", WorldDownloadExample), new(404, "No collector WDL is linked."), new(503, "Archived object temporarily unavailable.")]),
+            new("GET", "/api/warps/{id}/world-download.zip", "Download the immutable bounded Minecraft Java world; byte ranges are supported.", true, "", false,
+                IdOnly, [new(200, "ZIP body (application/zip)."), new(206, "Partial content for a range request."), new(404, "No collector WDL is linked."), new(429, "Download concurrency limit reached."), new(503, "Archived object temporarily unavailable.")]),
+        ]),
+        new("Attachments", "Sourced location media and reference links. Records retain a self-hosted asset, lightweight thumbnail, original source, caption, and attribution when available.",
+        [
+            new("GET", "/api/attachments", "Public attachment catalog with owning-location context; filterable and paged.", true, "", true,
+                AttachmentsQuery, [new(200, "Attachment records.")]),
+            new("GET", "/api/attachments/{id}", "One attachment and its owning-location context.", true, "", false,
+                IdOnly, [new(200, "The attachment."), new(404, "Not found.")]),
+        ]),
+        new("WDL ingestion", "Authenticated resumable uploads and secure rendering queue.",
+        [
+            new("POST", "/api/ingestion-jobs/upload-sessions", "Start a proxy-safe resumable WDL upload.", false, "renders.manage", false,
+                NoParams, [new(200, "Upload id and 32 MiB chunk size.")],
+                "{ \"metadata\": \"{...IngestionJobRequest JSON...}\", \"fileName\": \"base.zip\", \"totalBytes\": 123456789 }"),
+            new("PUT", "/api/ingestion-jobs/upload-sessions/{id}/chunks?offset={offset}", "Append one exact-offset binary chunk.", false, "renders.manage", false,
+                [new("id", "path", "string", true, "Opaque upload id."), new("offset", "query", "integer", true, "Current uploaded byte count.")],
+                [new(204, "Chunk accepted."), new(409, "Offset mismatch.")]),
+            new("POST", "/api/ingestion-jobs/upload-sessions/{id}/complete", "Verify, archive, detect dimensions, and queue the completed ZIP.", false, "renders.manage", false,
+                [new("id", "path", "string", true, "Opaque upload id.")], [new(201, "Ingestion queued."), new(409, "Upload incomplete.")]),
+        ]),
+        new("Highways", "The canonical 2b2t highway and canal network. Geometry uses native-dimension coordinates; disconnected documented segments are separate records rather than false connecting lines.",
+        [
+            new("GET", "/api/highways", "Approved public highways.", true, "", true,
+                NoParams, [new(200, "Highway list.")]),
+            new("GET", "/api/highways/{id}", "One highway by id.", true, "", false,
+                IdOnly, [new(200, "The highway."), new(404, "Not found.")]),
+            new("POST", "/api/highways", "Create or submit a highway.", false, "highways.create", false,
+                NoParams, [new(200, "The created highway.")]),
+            new("PUT", "/api/highways/{id}", "Update a highway.", false, "highways.edit", false,
+                IdOnly, [new(200, "The updated highway.")]),
+            new("DELETE", "/api/highways/{id}", "Delete a highway.", false, "highways.delete", false,
+                IdOnly, [new(204, "Deleted.")]),
+            new("GET", "/api/highways/pending", "Highways awaiting moderation.", false, "submissions.moderate", false,
+                NoParams, [new(200, "Pending highways.")]),
+            new("GET", "/api/highways/all", "Every highway regardless of visibility or review state.", false, "highways.edit", false,
+                NoParams, [new(200, "All highways.")]),
+            new("POST", "/api/highways/{id}/approve", "Approve a pending highway.", false, "submissions.moderate", false,
+                IdOnly, [new(200, "Approved."), new(404, "Not found.")]),
+            new("POST", "/api/highways/{id}/reject", "Reject a pending highway.", false, "submissions.moderate", false,
+                IdOnly, [new(200, "Rejected."), new(404, "Not found.")]),
+        ]),
+        new("Groups", "Builder, faction, and infrastructure directory with verified public links and build attribution.",
+        [
+            new("GET", "/api/groups", "Public groups.", true, "", true,
+                NoParams, [new(200, "Group list.")]),
+            new("GET", "/api/groups/{id}", "One group by id, including attributed locations and routes.", true, "", false,
+                IdOnly, [new(200, "The group."), new(404, "Not found.")]),
+            new("POST", "/api/groups", "Create a reviewed group record.", false, "groups.manage", false,
+                NoParams, [new(201, "The created group."), new(400, "Validation error.")]),
+            new("PUT", "/api/groups/{id}", "Update group history, links, logo, and classification.", false, "groups.manage", false,
+                IdOnly, [new(200, "The updated group."), new(404, "Not found.")]),
+            new("DELETE", "/api/groups/{id}", "Delete a group record and its attribution links.", false, "groups.manage", false,
+                IdOnly, [new(204, "Deleted."), new(404, "Not found.")]),
+        ]),
+        new("Legacy", "Wire-compatible endpoints for older community tools.",
+        [
+            new("GET", "/api/locations.php", "Snake-case location query with historical parameters.", true, "", true,
+            [
+                new("x", "query", "integer", false, "Center X for distance sort."),
+                new("z", "query", "integer", false, "Center Z for distance sort."),
+                new("rows", "query", "integer", false, "Maximum rows to return."),
+                new("dimension", "query", "integer", false, "0 Overworld, 1 End, -1 Nether."),
+                new("warps", "query", "boolean", false, "Include warp names."),
+                new("search", "query", "string", false, "Case-insensitive name search."),
+            ], [new(200, "Legacy snake_case locations.")]),
+            new("GET", "/api/locationCount.php", "Total location count.", true, "", true,
+                NoParams, [new(200, "{ \"locationCount\": 1234 }")]),
+        ]),
+        new("Revisions", "Moderated community suggestions.",
+        [
+            new("POST", "/api/revisions", "Submit an entity revision for moderation.", false, "authenticated", false,
+                NoParams, [new(200, "Accepted for review.")]),
+        ]),
+    ];
+
+    private async Task OpenEndpoint(string route)
+    {
+        var baseUri = Http.BaseAddress ?? new Uri(NavigationManager.BaseUri);
+        await JSRuntime.InvokeVoidAsync("open", new Uri(baseUri, route.TrimStart('/')).ToString(), "_blank");
+    }
+
+    private sealed record ApiParam(string Name, string In, string Type, bool Required, string Description);
+
+    private sealed record ApiResponse(int Status, string Description, string? Example = null);
+
+    private sealed record ApiOperation(
+        string Method, string Route, string Summary, bool IsPublic, string Permission, bool CanTry,
+        ApiParam[] Parameters, ApiResponse[] Responses, string? RequestBody = null);
+
+    private sealed record ApiTag(string Name, string Description, ApiOperation[] Operations);
+}
+
+<style>
+    .api-page { max-width: 1080px; margin: 0 auto; padding: 24px; }
+    .api-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .api-heading h1 { margin: 0 0 4px; font-size: 2rem; }
+    .api-heading p { margin: 0; opacity: 0.7; }
+    .api-summary, .api-notes { margin-bottom: 20px; }
+    .api-github { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; margin-bottom: 20px; padding: 14px 16px; border: 1px solid rgba(146, 204, 82, 0.5); border-radius: 8px; background: rgba(146, 204, 82, 0.08); }
+    .api-github > .rzi { color: #92cc52; font-size: 27px; }
+    .api-github div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .api-github div span { font-size: 0.85rem; line-height: 1.35; opacity: 0.72; }
+    .api-github > a { padding: 7px 11px; border: 1px solid #6da830; border-radius: 5px; background: #5b9224; color: #fff; font-size: 0.84rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+    .api-github > a:hover, .api-github > a:focus-visible { background: #6ca82e; color: #fff; }
+    .mcp-panel { margin-bottom: 22px; padding: 20px; border: 1px solid rgba(115, 170, 255, 0.48); border-radius: 10px; background: linear-gradient(135deg, rgba(55, 109, 191, 0.12), rgba(146, 204, 82, 0.05)); }
+    .mcp-intro { display: flex; align-items: flex-start; gap: 14px; }
+    .mcp-icon { display: grid; flex: 0 0 46px; height: 46px; place-items: center; border-radius: 9px; background: rgba(104, 160, 246, 0.17); color: #8cbcff; }
+    .mcp-icon .rzi { font-size: 27px; }
+    .mcp-kicker { color: #8cbcff; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    .mcp-panel h2 { margin: 2px 0 7px; font-size: 1.34rem; }
+    .mcp-panel h3 { margin: 0 0 7px; font-size: 0.98rem; }
+    .mcp-panel p { margin: 0; line-height: 1.5; opacity: 0.83; }
+    .mcp-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 17px 0; }
+    .mcp-facts > span { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid rgba(127, 127, 127, 0.25); border-radius: 7px; background: rgba(0, 0, 0, 0.09); font-size: 0.8rem; }
+    .mcp-facts code { overflow-wrap: anywhere; color: #8cbcff; }
+    .mcp-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 18px; }
+    .mcp-grid pre { margin: 9px 0 0; }
+    .mcp-note { margin-top: 10px !important; font-size: 0.83rem; }
+
+    /* Theme-agnostic: neutral translucent surfaces + inherited text so it works in light and dark. */
+    .api-tag { margin-bottom: 22px; }
+    .api-tag-head { border-bottom: 1px solid rgba(127, 127, 127, 0.35); padding-bottom: 6px; margin-bottom: 10px; }
+    .api-tag-head h2 { margin: 0; font-size: 1.3rem; }
+    .api-tag-head span { opacity: 0.7; font-size: 0.9rem; }
+    .api-ops { display: flex; flex-direction: column; gap: 8px; }
+
+    .api-op { border: 1px solid rgba(127, 127, 127, 0.3); border-radius: 6px; overflow: hidden; background: rgba(127, 127, 127, 0.06); }
+    .api-op > summary { display: grid; grid-template-columns: 64px auto 1fr auto; align-items: center; gap: 12px; padding: 8px 12px; cursor: pointer; list-style: none; }
+    .api-op > summary::-webkit-details-marker { display: none; }
+    .api-op[open] > summary { border-bottom: 1px solid rgba(127, 127, 127, 0.3); }
+    .op-method { text-align: center; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.5px; color: #fff; padding: 4px 0; border-radius: 4px; text-transform: uppercase; }
+    .op-get > summary .op-method { background: #2563eb; }
+    .op-post > summary .op-method { background: #16a34a; }
+    .op-put > summary .op-method { background: #d97706; }
+    .op-delete > summary .op-method { background: #dc2626; }
+    .op-path { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.92rem; font-weight: 600; overflow-wrap: anywhere; }
+    .op-desc { opacity: 0.7; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .op-auth { opacity: 0.6; font-size: 0.75rem; white-space: nowrap; }
+
+    .op-detail { padding: 4px 14px 14px; }
+    .op-detail h4 { margin: 14px 0 6px; font-size: 0.95rem; }
+    .op-ct { font-weight: 400; font-size: 0.78rem; opacity: 0.6; }
+    .op-params { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .op-params th, .op-params td { text-align: left; padding: 5px 8px; border-bottom: 1px solid rgba(127, 127, 127, 0.25); vertical-align: top; }
+    .op-params th { opacity: 0.7; font-weight: 600; }
+    .op-resp { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 0.88rem; }
+    .op-status { font-family: ui-monospace, monospace; font-weight: 700; padding: 1px 8px; border-radius: 4px; color: #fff; }
+    .status-2 { background: #16a34a; }
+    .status-4 { background: #d97706; }
+    .status-5 { background: #dc2626; }
+    /* Code blocks stay a fixed dark scheme (editor-style) so they read in either theme. */
+    .op-detail pre { margin: 8px 0 0; padding: 12px; border-radius: 6px; background: #1e1e1e; border: 1px solid rgba(127, 127, 127, 0.25); overflow-x: auto; }
+    .op-detail pre code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.8rem; line-height: 1.5; white-space: pre; color: #e6e6e6; background: transparent; padding: 0; }
+
+    .api-notes h2 { margin-top: 0; font-size: 1.15rem; }
+    .api-notes ul { margin: 0; padding-left: 20px; }
+    .api-notes li { margin: 4px 0; }
+    @@media (max-width: 680px) {
+        .api-page { padding: 14px; }
+        .api-github { grid-template-columns: auto minmax(0, 1fr); }
+        .api-github > a { grid-column: 1 / -1; text-align: center; }
+        .mcp-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .mcp-grid { grid-template-columns: 1fr; }
+        .api-op > summary { grid-template-columns: 56px 1fr; row-gap: 4px; }
+        .op-desc, .op-auth { grid-column: 1 / -1; white-space: normal; }
+    }
+</style>

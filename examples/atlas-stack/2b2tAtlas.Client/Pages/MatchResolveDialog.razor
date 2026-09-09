@@ -1,0 +1,151 @@
+@using Atlas
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenText TextStyle="TextStyle.Body2" class="rz-text-secondary">
+        No confident location match was found for <strong>@Job.Name</strong> (@DimensionLabel).
+        @if (Centroid is { } center)
+        {
+            <span> Render center: <strong>@center.X, @center.Z</strong>.</span>
+        }
+        @if (Job.Dimension == "nether")
+        {
+            <span> Nether renders attach to the corresponding <strong>overworld</strong> location.</span>
+        }
+        Attach it to an existing location, or create a new one at the render center.
+    </RadzenText>
+
+    @if (Evidence is { } evidence)
+    {
+        <RadzenFieldset Text="Archive/WDL evidence">
+            <RadzenStack Gap="0.25rem">
+                <span><strong>Downloader:</strong> @evidence.DownloaderKind</span>
+                @if (!string.IsNullOrWhiteSpace(evidence.DownloadName))
+                {
+                    <span><strong>Capture name:</strong> @evidence.DownloadName</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(evidence.SourceAddress))
+                {
+                    <span><strong>Captured server:</strong> @evidence.SourceAddress @(evidence.IsArchiveSource ? "(recognized Archive source)" : "(unverified)")</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(evidence.CompletionStatus))
+                {
+                    <span>
+                        <strong>Capture health:</strong> @evidence.CompletionStatus
+                        @if (evidence.SavedChunkCount is int savedChunks)
+                        {
+                            <text> &middot; @savedChunks.ToString("N0") chunks on disk</text>
+                        }
+                    </span>
+                }
+                @if (!string.IsNullOrWhiteSpace(evidence.MinecraftVersion) || !string.IsNullOrWhiteSpace(evidence.ModVersion))
+                {
+                    <span><strong>Software:</strong> Minecraft @(evidence.MinecraftVersion ?? "unknown")@(string.IsNullOrWhiteSpace(evidence.ModVersion) ? string.Empty : $" | WDL {evidence.ModVersion}")</span>
+                }
+                @if (evidence.PlayerX is double playerX && evidence.PlayerZ is double playerZ)
+                {
+                    <span><strong>Saved player:</strong> @Math.Round(playerX), @Math.Round(playerZ) · @(evidence.PlayerDimension ?? "unknown dimension")</span>
+                }
+                @if (evidence.RawDimensionIds.Count > 0)
+                {
+                    <span><strong>Raw dimension IDs:</strong> @string.Join(", ", evidence.RawDimensionIds)</span>
+                }
+                <span class="rz-text-secondary" style="font-size: 0.8rem">
+                    Downloader metadata is untrusted evidence. Current Archive WDL captures normalize vanilla dimension types;
+                    unknown or legacy custom dimensions stay visible and require corroborating evidence.
+                </span>
+            </RadzenStack>
+        </RadzenFieldset>
+    }
+
+    @if (Job.MatchSuggestions is { Count: > 0 } suggestions)
+    {
+        <RadzenFieldset Text="Suggested locations">
+            <RadzenStack Gap="0.5rem">
+                @foreach (var suggestion in suggestions)
+                {
+                    <RadzenRow AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenColumn Size="8">
+                            <strong>@suggestion.Name</strong>
+                            <div class="rz-text-secondary" style="font-size: 0.8rem">
+                                @suggestion.Reason · @((int)Math.Round(suggestion.Confidence * 100))% confidence
+                            </div>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" class="rz-text-align-end">
+                            <RadzenButton Text="Use this" Icon="link" Size="ButtonSize.Small"
+                                          ButtonStyle="ButtonStyle.Success" Click="@(() => Attach(suggestion.LocationId))" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                }
+            </RadzenStack>
+        </RadzenFieldset>
+    }
+
+    <RadzenFieldset Text="Archive WDL identity">
+        <RadzenFormField Text="Archive /warp" Variant="Variant.Outlined">
+            <RadzenTextBox @bind-Value="warpName" MaxLength="240" Style="width: 100%"
+                           Placeholder="Leave blank only when this WDL is not available through an Archive warp" />
+        </RadzenFormField>
+        <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+            One WDL has one Archive warp. An existing warp is reused; a new one is added to the reviewed location after rendering succeeds.
+        </RadzenText>
+    </RadzenFieldset>
+
+    <RadzenFieldset Text="@($"Search all {LocationDimensionLabel} locations")">
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.End">
+            <RadzenDropDown @bind-Value="selectedLocationId" Data="@Locations" TextProperty="Name" ValueProperty="Rowid"
+                            TValue="int?" AllowFiltering="true" AllowClear="true" Placeholder="Select a location"
+                            Style="flex: 1; min-width: 0" />
+            <RadzenButton Text="Attach" Icon="link" ButtonStyle="ButtonStyle.Primary"
+                          Disabled="@(selectedLocationId is null)" Click="@(() => Attach(selectedLocationId!.Value))" />
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenButton Text="Create new location at center" Icon="add_location_alt"
+                      ButtonStyle="ButtonStyle.Success" Click="@CreateNew" />
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    /// <summary>Gets or sets the parked job awaiting a manual location match.</summary>
+    [Parameter] public IngestionJobDto Job { get; set; } = new();
+
+    /// <summary>Gets or sets the existing locations in the job's dimension available to attach.</summary>
+    [Parameter] public IReadOnlyList<Location> Locations { get; set; } = [];
+
+    private int? selectedLocationId;
+    private string? warpName;
+
+    protected override void OnParametersSet() => warpName ??= Job.ArchiveWarpName;
+
+    private ArchiveWdlEvidence? Evidence => Job.Inspection?.ArchiveEvidence ?? Job.ArchiveEvidence;
+
+    private string DimensionLabel => Job.Dimension switch
+    {
+        "end" => "End",
+        "nether" => "Nether",
+        _ => "Overworld",
+    };
+
+    // Nether renders have no separate nether locations; they attach to overworld locations.
+    private string LocationDimensionLabel => Job.Dimension == "end" ? "End" : "Overworld";
+
+    private (int X, int Z)? Centroid
+    {
+        get
+        {
+            var dimension = Job.Inspection?.Dimensions.FirstOrDefault(entry => entry.Key == Job.Dimension);
+            return dimension is null
+                ? null
+                : LocationMatcher.Centroid(dimension.MinX, dimension.MinZ, dimension.MaxXExclusive, dimension.MaxZExclusive);
+        }
+    }
+
+    private void Attach(int locationId) => DialogService.Close(new ResolveMatchRequest { LocationId = locationId, WarpName = warpName });
+
+    private void CreateNew() => DialogService.Close(new ResolveMatchRequest { LocationId = null, WarpName = warpName });
+
+    private void Cancel() => DialogService.Close(null);
+}

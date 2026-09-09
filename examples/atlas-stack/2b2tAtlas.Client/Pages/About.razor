@@ -1,0 +1,159 @@
+@page "/about"
+<PageTitle>About Atlas</PageTitle>
+<main class="about-page">
+    <section class="about-section">
+        <h1>Atlas stack example</h1>
+        <p>A Minecraft location directory, map and preservation pipeline. This installation has its own catalog, users and storage.</p>
+        <p>Start with a world download you have permission to process, then publish its maps, source archive and history together.</p>
+        <p>Source: <a href="https://github.com/bobymicjohn/2b2tAtlas-Public-API/tree/main/examples/atlas-stack">2b2tAtlas stack</a>.</p>
+    </section>
+    <section class="about-section pipeline-section" id="ingestion-pipeline">
+        <div class="about-section-heading">
+            <span>From preserved world to public map</span>
+            <h2>How the Atlas ingestion pipeline works</h2>
+        </div>
+        <p class="pipeline-intro">
+            A world download (WDL) is a saved piece of Minecraft terrain. The Atlas preserves those saves,
+            matches them to locations, and turns them into maps you can explore in your browser.
+            Automated captures from The Archive and separately supplied historical WDLs feed the same
+            inspection and publishing process.
+        </p>
+        <ol class="pipeline-grid">
+            <li>
+                <span class="pipeline-number">1</span>
+                <div><h3>Collect the saved world</h3><p>Collectors visit warps on <a href="https://thearchive.world" target="_blank" rel="noopener noreferrer">The Archive</a> and survey outward around the build. They record terrain and coverage so interrupted jobs can reuse verified saved chunks and collect what is missing. Existing WDL files enter directly, without another Minecraft download.</p></div>
+            </li>
+            <li>
+                <span class="pipeline-number">2</span>
+                <div><h3>Check and preserve</h3><p>The pipeline checks the archive, identifies its world and dimensions, and preserves the source with a file fingerprint. Collector saves must pass a coverage audit before publication; incomplete captures stay private for repair or review. Working copies and finished renders are kept separate from preserved source files.</p></div>
+            </li>
+            <li>
+                <span class="pipeline-number">3</span>
+                <div><h3>Match the location and builders</h3><p>Warp identity, names, coordinates, dimension, and existing records help attach a save to the right place. Reviewed owner tags and naming patterns can also identify builder groups, including SpawnMason lodges and SBA builds. Ambiguous location matches pause for a human decision.</p></div>
+            </li>
+            <li>
+                <span class="pipeline-number">4</span>
+                <div><h3>Render and publish the 2D map</h3><p><a href="https://unmined.net/" target="_blank" rel="noopener noreferrer">uNmINeD</a> renders day and night views for each supported dimension in the save, with cutaway settings for the Nether. Atlas checks the tiles and their coordinates before linking the map and preserved WDL to the location.</p></div>
+            </li>
+            <li>
+                <span class="pipeline-number">5</span>
+                <div><h3>Add the interactive 3D view</h3><p>A separate queue feeds completed, source-backed renders into <a href="https://bluemap.bluecolored.de/" target="_blank" rel="noopener noreferrer">BlueMap</a>. Lighting is repaired in a disposable copy, and its saved chunk footprint is checked against the source before rendering. The 2D map and download remain available while 3D processing catches up.</p></div>
+            </li>
+            <li>
+                <span class="pipeline-number">6</span>
+                <div><h3>Build out the history</h3><p>Separate research passes connect wiki evidence, group records, screenshots, videos, and timelines to locations. Local AI helps draft sourced descriptions and attribution suggestions; moderators can review, keep, or revert them. This work continues independently of world collection and rendering.</p></div>
+            </li>
+            <li>
+                <span class="pipeline-number">7</span>
+                <div><h3>Make it useful beyond the map</h3><p>Each location brings together its available renders, Archive warps, WDLs, builder credits, history, and source links. The public <a href="/api">API and MCP server</a> make published records reusable in other projects. A location can gain new captures, a 3D view, or better historical context over time.</p></div>
+            </li>
+        </ol>
+        <details class="pipeline-details">
+            <summary>Technical details and safeguards</summary>
+            <ul>
+                <li><a href="https://github.com/thearchive-world/archive-world-downloader" target="_blank" rel="noopener noreferrer">Archive World Downloader</a> captures bounded Minecraft Java worlds from preserved Archive copies. Completeness checks apply to the surveyed capture area; they cannot recover terrain absent from the upstream save or prove a build's full historical extent.</li>
+                <li>SHA-256 fingerprints identify exact files, verify copies, and let repeated submissions reuse existing ingestion jobs. Resume checks validate saved terrain and capture identity before reusing progress.</li>
+                <li>BlueMap's lighting pass can generate neighboring chunks. Those extra records are removed, and the retained chunk set must match the source before the 3D render proceeds. Lighting and output checks also gate publication.</li>
+                <li>Group attribution starts with reviewed evidence, not an AI guess. Eligible evidence-backed suggestions may be applied automatically under the review policy; existing human group credits are preserved, and applied suggestions remain reviewable.</li>
+                <li>Historical media retains source links and attribution, with preservation copies where appropriate. Collection dates, source dates, and explicitly labeled single-player concepts provide context for what a record represents.</li>
+                <li>The API serves published records as they change. Search-friendly HTML pages and downloadable catalog exports are snapshots refreshed with site publication, so they can lag behind the interactive Atlas.</li>
+            </ul>
+        </details>
+    </section>
+</main>
+<style>
+    .about-page { box-sizing: border-box; width: min(1180px, 100%); margin: 0 auto; padding: 28px; color: var(--text-color, inherit); }
+    .about-hero { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 24px; padding: 30px; border: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.32)); border-radius: 14px; background: linear-gradient(135deg, rgba(146, 204, 82, 0.14), rgba(70, 164, 255, 0.06)); }
+    .about-hero > img { width: 82px; height: 82px; object-fit: contain; image-rendering: pixelated; }
+    .about-eyebrow, .about-section-heading > span { color: #92cc52; font-size: 0.76rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+    .about-hero h1 { margin: 3px 0 8px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; }
+    .about-hero-copy > p { max-width: 760px; margin: 0; font-size: 1.04rem; line-height: 1.55; opacity: 0.82; }
+    .about-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+    .about-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 7px 13px; border: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.38)); border-radius: 6px; color: inherit; font-weight: 700; text-decoration: none; }
+    .about-button:hover, .about-button:focus-visible { border-color: #92cc52; color: #92cc52; text-decoration: none; }
+    .about-button.primary { border-color: #6da830; background: #5b9224; color: #fff; }
+    .about-button.primary:hover, .about-button.primary:focus-visible { background: #6ca82e; color: #fff; }
+    .about-stat { min-width: 150px; padding: 18px; border-left: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.35)); text-align: center; }
+    .about-stat strong { display: block; color: #92cc52; font-size: 2rem; line-height: 1.1; }
+    .about-stat span { display: block; margin-top: 5px; font-size: 0.78rem; opacity: 0.68; }
+    .about-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+    .about-card { display: flex; gap: 15px; padding: 22px; border: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.32)); border-radius: 10px; background: var(--rz-panel-background-color, rgba(127, 127, 127, 0.06)); }
+    .about-card-wide { grid-column: 1 / -1; }
+    .about-card-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 42px; height: 42px; border-radius: 8px; background: rgba(146, 204, 82, 0.14); color: #92cc52; }
+    .about-card-icon .rzi { font-size: 24px; }
+    .about-card h2, .about-section h2 { margin: 0 0 8px; font-size: 1.2rem; }
+    .about-card p, .about-section p { margin: 0; line-height: 1.58; opacity: 0.82; }
+    .about-card p + p { margin-top: 9px; }
+    .about-card a, .about-section a:not(.about-button), .about-footer a { color: var(--highlight-color, #62b0ff); }
+    .about-muted { font-size: 0.88rem; }
+    .warning-card .about-card-icon { background: rgba(240, 173, 78, 0.14); color: #f0ad4e; }
+    .about-section { margin-top: 18px; padding: 24px; border: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.32)); border-radius: 10px; background: var(--rz-panel-background-color, rgba(127, 127, 127, 0.04)); }
+    .about-section-heading { margin-bottom: 14px; }
+    .about-section-heading h2 { margin-top: 3px; }
+    .about-link-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .about-link-card { display: flex; flex-direction: column; gap: 7px; min-width: 0; padding: 16px; border: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.32)); border-radius: 8px; color: inherit; text-decoration: none; }
+    .about-link-card:hover, .about-link-card:focus-visible { border-color: #92cc52; background: rgba(146, 204, 82, 0.07); color: inherit; text-decoration: none; }
+    .about-link-card .rzi { color: #92cc52; font-size: 24px; }
+    .about-link-card span { font-size: 0.83rem; line-height: 1.4; opacity: 0.7; }
+    .pipeline-section { background: linear-gradient(145deg, rgba(70, 164, 255, 0.075), rgba(146, 204, 82, 0.035)); }
+    .pipeline-intro { max-width: 980px; }
+    .pipeline-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0 0; padding: 0; list-style: none; counter-reset: none; }
+    .pipeline-grid li { display: flex; align-items: flex-start; gap: 13px; min-width: 0; padding: 17px; border: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.3)); border-radius: 8px; background: rgba(127, 127, 127, 0.045); }
+    .pipeline-grid li:last-child { grid-column: 1 / -1; }
+    .pipeline-number { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 8px; background: rgba(146, 204, 82, 0.16); color: #92cc52; font-weight: 900; }
+    .pipeline-grid h3 { margin: 0 0 5px; font-size: 0.98rem; }
+    .pipeline-grid p { font-size: 0.86rem; line-height: 1.5; }
+    .pipeline-details { margin-top: 16px; border-top: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.3)); padding-top: 14px; }
+    .pipeline-details summary { width: fit-content; cursor: pointer; color: #92cc52; font-weight: 800; }
+    .pipeline-details summary:hover, .pipeline-details summary:focus-visible { text-decoration: underline; }
+    .pipeline-details ul { margin: 13px 0 0; padding-left: 22px; }
+    .pipeline-details li { margin: 7px 0; font-size: 0.84rem; line-height: 1.5; opacity: 0.84; }
+    .reuse-section { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; border-color: rgba(146, 204, 82, 0.55); background: linear-gradient(135deg, rgba(146, 204, 82, 0.12), rgba(146, 204, 82, 0.03)); }
+    .reuse-mark { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 10px; background: #5b9224; color: #fff; }
+    .reuse-mark .rzi { font-size: 28px; }
+    .reuse-section h2 { margin-top: 3px; }
+    .reuse-example { margin-top: 10px !important; font-size: 0.9rem; }
+    .thanks-intro { max-width: 980px; font-size: 0.96rem; }
+    .credit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+    .credit-card { display: flex; align-items: flex-start; gap: 13px; min-width: 0; padding: 17px; border: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.3)); border-radius: 8px; background: rgba(127, 127, 127, 0.045); }
+    .credit-card.credit-featured { grid-column: 1 / -1; padding: 20px; border-color: rgba(146, 204, 82, 0.45); background: linear-gradient(120deg, rgba(146, 204, 82, 0.1), rgba(127, 127, 127, 0.035)); }
+    .credit-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 40px; height: 40px; border-radius: 8px; background: rgba(146, 204, 82, 0.14); color: #92cc52; }
+    .credit-icon .rzi { font-size: 22px; }
+    .credit-card h3 { margin: 0 0 6px; font-size: 1rem; }
+    .credit-card p { font-size: 0.88rem; line-height: 1.52; }
+    .credit-card p + p { margin-top: 9px; }
+    .credit-card .credit-source { margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.3)); }
+    .archive-join { margin-top: 16px; padding: 15px; border-radius: 8px; background: rgba(127, 127, 127, 0.08); }
+    .archive-join h4 { margin: 0 0 8px; font-size: 0.94rem; }
+    .archive-join code { color: var(--highlight-color, #62b0ff); user-select: all; overflow-wrap: anywhere; }
+    .credit-kicker { display: block; margin-bottom: 2px; color: #92cc52; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    .thanks-closing { max-width: 980px; margin-top: 18px !important; padding-top: 16px; border-top: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.3)); }
+    .about-footer { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 24px 8px 6px; font-size: 0.88rem; opacity: 0.72; }
+    .about-footer img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
+
+    @@media (max-width: 800px) {
+        .about-page { padding: 16px; }
+        .about-hero { grid-template-columns: auto minmax(0, 1fr); padding: 22px; }
+        .about-stat { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: center; gap: 7px; padding: 14px 0 0; border-top: 1px solid var(--rz-border-color, rgba(127, 127, 127, 0.35)); border-left: 0; }
+        .about-stat strong, .about-stat span { display: inline; margin: 0; }
+        .about-link-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .credit-grid { grid-template-columns: 1fr; }
+        .credit-card.credit-featured { grid-column: auto; }
+        .pipeline-grid { grid-template-columns: 1fr; }
+        .pipeline-grid li:last-child { grid-column: auto; }
+    }
+
+    @@media (max-width: 560px) {
+        .about-page { padding: 10px 8px 18px; }
+        .about-hero { grid-template-columns: 1fr; gap: 14px; padding: 18px; text-align: center; }
+        .about-hero > img { width: 64px; height: 64px; margin: 0 auto; }
+        .about-actions { justify-content: center; }
+        .about-grid, .about-link-grid { grid-template-columns: 1fr; }
+        .about-card-wide { grid-column: auto; }
+        .about-card, .about-section { padding: 17px; }
+        .credit-card, .credit-card.credit-featured { padding: 15px; }
+        .reuse-section { grid-template-columns: 1fr; }
+        .reuse-mark { width: 44px; height: 44px; }
+        .about-footer { align-items: flex-start; text-align: left; }
+    }
+</style>

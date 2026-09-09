@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "atlas_archive_coverage",
+  "version": "${version}",
+  "name": "Atlas Archive Coverage",
+  "description": "Headless, void-bounded coverage controller for permitted 2b2t Atlas Archive captures.",
+  "authors": ["2b2t Atlas"],
+  "license": "ARR",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.b2btatlas.archive.coverage.AtlasArchiveCoverageClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "fabric-api": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21"
+  }
+}

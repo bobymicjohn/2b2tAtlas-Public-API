@@ -1,0 +1,2166 @@
+@page "/location/{Id:int}"
+@using Atlas
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.JSInterop
+@inject _2b2tAtlas.Client.Services.LocationService LocationService
+@inject _2b2tAtlas.Client.Services.HighwayService HighwayService
+@inject _2b2tAtlas.Client.Services.MapRenderService MapRenderService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@implements IAsyncDisposable
+
+<PageTitle>@(location?.Name ?? "Location") - 2b2t Atlas</PageTitle>
+@if (location is not null)
+{
+    <HeadContent>
+        <meta name="description" content="@LocationMetaDescription" />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+        <link rel="canonical" href="@EntityCanonicalUrl" />
+        <link rel="alternate" type="application/json" href="@($"{Http.BaseAddress}api/locations/{location.Rowid}")" title="Location API record" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="2b2t Atlas" />
+        <meta property="og:title" content="@($"{location.Name} - {location.DimensionName} 2b2t Location")" />
+        <meta property="og:description" content="@LocationMetaDescription" />
+        <meta property="og:url" content="@EntityCanonicalUrl" />
+        <meta property="og:image" content="@LocationSocialImageUrl" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="@LocationSocialImageUrl" />
+    </HeadContent>
+}
+
+<div class="loc-page">
+    @if (loading)
+    {
+        <div class="loc-loading">
+            <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+        </div>
+    }
+    else if (location == null)
+    {
+        <RadzenCard class="loc-missing">
+            <RadzenText TextStyle="TextStyle.H5">Location not found</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1" class="rz-mt-2 rz-mb-3">
+                This location may have been removed, or the link is invalid.
+            </RadzenText>
+            <RadzenButton Text="Back to Directory" Icon="arrow_back" ButtonStyle="ButtonStyle.Primary"
+                          Click="@(() => NavigationManager.NavigateTo(""))" />
+        </RadzenCard>
+    }
+    else
+    {
+        <div class="loc-header">
+            <RadzenButton Icon="arrow_back" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                          Click="@GoBack" title="Back" />
+            <div class="loc-title">
+                <h1>@location.Name</h1>
+                <RadzenBadge BadgeStyle="@DimBadge(location.Dimension)" Text="@location.DimensionName" />
+            </div>
+            @if (location.Dimension != 2)
+            {
+                <div class="loc-dimension-switch" role="group" aria-label="Map dimension">
+                    <button type="button" class="@(selectedMapDimension == 0 ? "active" : "")"
+                            aria-pressed="@(selectedMapDimension == 0)" @onclick="@(() => SelectMapDimension(0))">
+                        Overworld
+                    </button>
+                    <button type="button" class="@(selectedMapDimension == 1 ? "active" : "")"
+                            aria-pressed="@(selectedMapDimension == 1)" @onclick="@(() => SelectMapDimension(1))">
+                        Nether
+                    </button>
+                </div>
+            }
+            <RadzenButton Text="Open in map" Icon="map" ButtonStyle="ButtonStyle.Primary"
+                          Size="ButtonSize.Small" Click="@OpenInMap" />
+        </div>
+
+        <RadzenSplitter Orientation="Orientation.Vertical" Resize="@OnSplitterResize" class="loc-workspace">
+            <RadzenSplitterPane Size="@MainPaneSize" Min="360px" Resizable="@HasBaseRenders" BarVisible="@HasBaseRenders">
+        <RadzenSplitter Orientation="Orientation.Horizontal" Resize="@OnSplitterResize" class="loc-body loc-main-splitter">
+            <RadzenSplitterPane Size="60%" Min="360px" Resizable="true" ResizeAriaLabel="Resize map and location details">
+                <RadzenCard class="loc-map-card">
+                    <div class="loc-map-wrap">
+                        <div id="@InsetId" class="loc-inset-map @(showThreeD ? "loc-view-hidden" : "")"></div>
+                        @if (showThreeD)
+                        {
+                            <section class="loc-3d-view" aria-label="3D render view">
+                                @if (threeDRenderOptions.Count > 0)
+                                {
+                                    <div class="loc-3d-toolbar">
+                                        <span class="loc-3d-label">Loaded 3D renders</span>
+                                        <div class="loc-3d-tabs" role="tablist" aria-label="Visible 3D renders">
+                                            @foreach (var option in threeDRenderOptions)
+                                            {
+                                                <button type="button" role="tab"
+                                                        aria-selected="@(activeThreeDRenderId == option.RenderId)"
+                                                        class="@(activeThreeDRenderId == option.RenderId ? "active" : "")"
+                                                        @onclick="@(() => activeThreeDRenderId = option.RenderId)">
+                                                    @option.Label
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                    <iframe @key="ThreeDFrameKey" id="@ThreeDFrameId" class="loc-3d-frame" src="@ActiveThreeDUrl"
+                                            title="@ActiveThreeDTitle" allow="fullscreen" loading="eager"></iframe>
+                                }
+                                else
+                                {
+                                    <div class="loc-3d-empty">
+                                        <RadzenIcon Icon="view_in_ar" />
+                                        <strong>No finished 3D derivative is visible here yet</strong>
+                                        <span>Select a rendered WDL in this viewport, or return to 2D while its 3D generation is prepared.</span>
+                                    </div>
+                                }
+                            </section>
+                        }
+                        @if (mapReady)
+                        {
+                            <div class="loc-3d-control-wrap" title="@ThreeDControlTooltip">
+                                <button type="button" class="loc-ctrl loc-3d-ctrl @(showThreeD ? "active" : "")" @onclick="ToggleThreeD"
+                                        aria-pressed="@showThreeD" aria-label="@ThreeDControlTooltip"
+                                        disabled="@ThreeDControlDisabled">
+                                    <RadzenIcon Icon="view_in_ar" /><span>3D</span>
+                                </button>
+                            </div>
+                            <div class="loc-map-ctrls">
+                                @if (!showThreeD)
+                                {
+                                <button class="loc-ctrl @(showPrimaryRenderPanel ? "active" : "")" @onclick="TogglePrimaryRenderPanel"
+                                        title="Primary renders">
+                                    <RadzenIcon Icon="map" />
+                                </button>
+                                <button class="loc-ctrl @(showOthers ? "active" : "")" @onclick="ToggleOthers"
+                                        title="@(showOthers ? "Hide other locations" : "Show other locations")">
+                                    <RadzenIcon Icon="pin_drop" />
+                                </button>
+                                @if (location.Renders is { Count: > 0 })
+                                {
+                                    <button class="loc-ctrl @(showBaseRenders ? "active" : "")" @onclick="ToggleBaseRenders"
+                                            title="@(showBaseRenders ? "Hide location renders" : "Show location renders")">
+                                        <RadzenIcon Icon="layers" />
+                                    </button>
+                                }
+                                <button class="loc-ctrl @(showHighways ? "active" : "")" @onclick="ToggleHighways"
+                                        title="Highways">
+                                    <RadzenIcon Icon="route" />
+                                </button>
+                                <button class="loc-ctrl @(showAxes ? "active" : "")" @onclick="ToggleAxes"
+                                        title="Axes">
+                                    <RadzenIcon Icon="grid_3x3" />
+                                </button>
+                                <button class="loc-ctrl @(showBorders ? "active" : "")" @onclick="ToggleBorders"
+                                        title="World border">
+                                    <RadzenIcon Icon="crop_square" />
+                                </button>
+                                <button class="loc-ctrl @(showEndPortals ? "active" : "")" @onclick="ToggleEndPortals"
+                                        title="End portals">
+                                    <RadzenIcon Icon="blur_circular" />
+                                </button>
+                                <button class="loc-ctrl @(isDay ? "" : "active")" @onclick="ToggleDay"
+                                        disabled="@(!currentPrimaryRenderDayNight)"
+                                        title="@(currentPrimaryRenderDayNight ? (isDay ? "Switch to night" : "Switch to day") : "Day/night not available for active primary renders")">
+                                    <RadzenIcon Icon="@(isDay ? "dark_mode" : "light_mode")" />
+                                </button>
+                                }
+                            </div>
+
+                            @if (showPrimaryRenderPanel && !showThreeD)
+                            {
+                                <div class="loc-primary-render-panel">
+                                    <div class="loc-primary-panel-header">
+                                        <span>Primary renders</span>
+                                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                      Size="ButtonSize.Small" Click="TogglePrimaryRenderPanel" />
+                                    </div>
+                                    <div class="loc-primary-master-row">
+                                        <RadzenCheckBox @bind-Value="@showPrimaryRenders" TValue="bool"
+                                                        Change="@OnPrimaryRendersChanged" Name="locPrimaryToggle" />
+                                        <RadzenLabel Text="Show primary renders" Component="locPrimaryToggle" />
+                                        <span class="loc-primary-count">@orderedPrimaryRenders.Count</span>
+                                    </div>
+
+                                    <div class="loc-primary-section-label">Active</div>
+                                    <div class="loc-primary-order @(showPrimaryRenders ? "" : "renders-disabled")">
+                                        @if (orderedPrimaryRenders.Count == 0)
+                                        {
+                                            <div class="loc-primary-empty">No active renders</div>
+                                        }
+                                        @for (var i = 0; i < orderedPrimaryRenders.Count; i++)
+                                        {
+                                            var renderId = orderedPrimaryRenders[i];
+                                            var index = i;
+                                            <div class="loc-primary-row @(primaryRenderDraggingIndex == index ? "dragging" : "")"
+                                                 draggable="true"
+                                                 @ondragstart="() => OnPrimaryRenderDragStart(index)"
+                                                 @ondragenter="() => OnPrimaryRenderDragEnter(index)"
+                                                 @ondragover:preventDefault="true"
+                                                 @ondrop:preventDefault="true"
+                                                 @ondragend="OnPrimaryRenderDragEnd">
+                                                <RadzenIcon Icon="drag_indicator" class="loc-primary-drag" />
+                                                <span class="loc-primary-label" title="@PrimaryRenderLabel(renderId)">@PrimaryRenderLabel(renderId)</span>
+                                                <RadzenButton Icon="remove" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Text"
+                                                              Size="ButtonSize.ExtraSmall" class="loc-primary-action"
+                                                              title="@($"Remove {PrimaryRenderLabel(renderId)}")"
+                                                              Click="@(() => RemovePrimaryRender(renderId))" />
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="loc-primary-hint">Top layer is in front · drag to reorder</div>
+
+                                    <div class="loc-primary-section-label loc-primary-available-label">Available</div>
+                                    <div class="loc-primary-available">
+                                        @if (!AvailablePrimaryRenders.Any())
+                                        {
+                                            <div class="loc-primary-empty">All renders are active</div>
+                                        }
+                                        @foreach (var render in AvailablePrimaryRenders)
+                                        {
+                                            <div class="loc-primary-row">
+                                                <span class="loc-primary-label" title="@render.Label">@render.Label</span>
+                                                <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Success" Variant="Variant.Text"
+                                                              Size="ButtonSize.ExtraSmall" class="loc-primary-action"
+                                                              title="@($"Add {render.Label}")" Click="@(() => AddPrimaryRender(render.Id))" />
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                        @if (insetLocationSelected && selectedInsetLocation != null && !showThreeD)
+                        {
+                            <div class="loc-map-popup">
+                                <div class="loc-popup-header">
+                                    <span>@selectedInsetLocation.Name</span>
+                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                  Size="ButtonSize.Small" Click="@CloseInsetLocationInfo" />
+                                </div>
+
+                                <span class="loc-popup-badge">@selectedInsetLocation.DimensionName</span>
+
+                                <div class="loc-popup-coords">
+                                    @selectedInsetLocation.X, @selectedInsetLocation.Z
+                                    @if (selectedInsetLocation.Dimension == 0)
+                                    {
+                                        <span class="alt">N: @(selectedInsetLocation.X / 8), @(selectedInsetLocation.Z / 8)</span>
+                                    }
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(selectedInsetLocation.Description))
+                                {
+                                    <div class="loc-popup-desc">@DisplayText.NormalizeDescription(selectedInsetLocation.Description)</div>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(selectedInsetLocation.Tags))
+                                {
+                                    <div class="loc-popup-tags">@selectedInsetLocation.Tags</div>
+                                }
+
+                                @if (selectedInsetLocation.Warps is { Count: > 0 })
+                                {
+                                    <div class="loc-popup-section-label">Warps</div>
+                                    @foreach (var warp in selectedInsetLocation.Warps)
+                                    {
+                                        <div class="loc-popup-warp-row">
+                                            <code>/warp @warp.Name</code>
+                                            <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                          Size="ButtonSize.Small" Click="@(() => CopyText($"/warp {warp.Name}"))" title="Copy warp" />
+                                        </div>
+                                    }
+                                }
+
+                                @if (OrderedInsetRenders(selectedInsetLocation).Any())
+                                {
+                                    <div class="loc-popup-section-label">Base renders</div>
+                                    <div class="loc-popup-render-choices">
+                                        <button class="loc-popup-render-choice @(!HasSelectedInsetBaseRenders(selectedInsetLocation) ? "active" : "")"
+                                                aria-pressed="@(!HasSelectedInsetBaseRenders(selectedInsetLocation))"
+                                                @onclick="@(() => SelectInsetBaseRender(selectedInsetLocation.Rowid, null))">
+                                            Off
+                                        </button>
+                                        @foreach (var render in OrderedInsetRenders(selectedInsetLocation))
+                                        {
+                                            <div class="loc-popup-render-row">
+                                                <button class="loc-popup-render-choice @(IsInsetBaseRenderSelected(selectedInsetLocation, render.Id) ? "active" : "")"
+                                                        aria-pressed="@(IsInsetBaseRenderSelected(selectedInsetLocation, render.Id))"
+                                                        @onclick="@(() => SelectInsetBaseRender(selectedInsetLocation.Rowid, render.Id))">
+                                                    <span>@(string.IsNullOrWhiteSpace(render.Name) ? $"Render {render.Id}" : render.Name)</span>
+                                                    <small>@(string.IsNullOrWhiteSpace(render.WorldDownloadDate) ? "Date unknown" : render.WorldDownloadDate)</small>
+                                                </button>
+                                                <button type="button" class="loc-popup-render-focus"
+                                                        aria-label="Show and zoom to @(string.IsNullOrWhiteSpace(render.Name) ? $"render {render.Id}" : render.Name)"
+                                                        title="Show and zoom to this render's full footprint"
+                                                        @onclick="@(() => FocusBaseRender(selectedInsetLocation, render))">
+                                                    <RadzenIcon Icon="zoom_in" />
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="loc-popup-render-hint">Select one or more.</div>
+                                }
+
+                                <div class="loc-popup-actions">
+                                    <RadzenButton Text="Go to" Icon="my_location" ButtonStyle="ButtonStyle.Primary"
+                                                  Size="ButtonSize.Small" Click="@GoToInsetLocation" />
+                                    <RadzenButton Text="Details" Icon="open_in_new" ButtonStyle="ButtonStyle.Light"
+                                                  Size="ButtonSize.Small" Click="@OpenInsetLocationDetails" />
+                                    <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                  Size="ButtonSize.Small" Click="@CopyInsetLocationCoords" title="Copy coordinates" />
+                                    @if (!string.IsNullOrWhiteSpace(selectedInsetLocation.Wiki))
+                                    {
+                                        <a href="@selectedInsetLocation.Wiki" target="_blank" rel="noopener" class="loc-popup-link">Wiki</a>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(selectedInsetLocation.VideoUrl))
+                                    {
+                                        <a href="@selectedInsetLocation.VideoUrl" target="_blank" rel="noopener" class="loc-popup-link">Video</a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </RadzenCard>
+            </RadzenSplitterPane>
+
+            <RadzenSplitterPane Min="320px" Resizable="true">
+                <RadzenCard class="loc-info-card">
+                    <div class="loc-coords-grid">
+                        <div class="loc-coord">
+                            <span class="lc-label">X</span><span class="lc-val">@location.X</span>
+                        </div>
+                        @if (location.Y is int y)
+                        {
+                            <div class="loc-coord">
+                                <span class="lc-label">Y</span><span class="lc-val">@y</span>
+                            </div>
+                        }
+                        <div class="loc-coord">
+                            <span class="lc-label">Z</span><span class="lc-val">@location.Z</span>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(AltCoordLabel))
+                    {
+                        <div class="loc-alt-coords">
+                            <RadzenIcon Icon="swap_horiz" /> <strong>@AltCoordLabel</strong> @AltCoordText
+                        </div>
+                    }
+
+                    <div class="loc-actions">
+                        <RadzenButton Text="Copy coords" Icon="content_copy" ButtonStyle="ButtonStyle.Light"
+                                      Size="ButtonSize.Small" Click="@CopyCoords" />
+                        @if (!string.IsNullOrWhiteSpace(location.Wiki))
+                        {
+                            <RadzenButton Text="Wiki" Icon="menu_book" ButtonStyle="ButtonStyle.Light"
+                                          Size="ButtonSize.Small" Click="@(() => OpenLink(location.Wiki!))" />
+                        }
+                        @if (!string.IsNullOrWhiteSpace(location.VideoUrl))
+                        {
+                            <RadzenButton Text="Video" Icon="play_circle" ButtonStyle="ButtonStyle.Light"
+                                          Size="ButtonSize.Small" Click="@(() => OpenLink(location.VideoUrl!))" />
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(location.Description))
+                    {
+                        <div class="loc-section">
+                            <div class="loc-section-title">Description</div>
+                            <p class="loc-desc">@DisplayText.NormalizeDescription(location.Description)</p>
+                        </div>
+                    }
+
+                    @if (location.Groups is { Count: > 0 })
+                    {
+                        <div class="loc-section">
+                            <div class="loc-section-title">Built by</div>
+                            <div class="loc-groups">
+                                @foreach (var group in location.Groups.OrderBy(group => group.GroupName))
+                                {
+                                    <a class="loc-group-link" href="@(string.IsNullOrWhiteSpace(group.GroupInteractiveUrl) ? $"group/{group.GroupId}" : group.GroupInteractiveUrl)"
+                                       style="--group-color: @(string.IsNullOrWhiteSpace(group.Color) ? "#4da3ff" : group.Color)">
+                                        @if (!string.IsNullOrWhiteSpace(group.LogoUrl))
+                                        {
+                                            <img src="@group.LogoUrl" alt="" loading="lazy" onerror="this.style.display='none'" />
+                                        }
+                                        <span>@group.GroupName</span><small>@group.Role</small>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(location.Tags))
+                    {
+                        <div class="loc-section">
+                            <div class="loc-section-title">Tags</div>
+                            <div class="loc-tags">
+                                @foreach (var tag in location.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                                {
+                                    <span class="loc-tag">@tag</span>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (location.Warps is { Count: > 0 })
+                    {
+                        <div class="loc-section">
+                            <div class="loc-section-title">Archive warps (@location.Warps.Count)</div>
+                            @foreach (var w in location.Warps)
+                            {
+                                <div class="warp-row">
+                                    <a href="@(string.IsNullOrWhiteSpace(w.ApiUrl) ? $"http://127.0.0.1:5297/api/warps/{w.Id}" : w.ApiUrl)"
+                                       target="_blank" rel="noopener" title="Open this warp's public API record"><code>/warp @w.Name</code></a>
+                                    @if (w.IsSinglePlayerConcept)
+                                    {
+                                        <span class="loc-concept-badge" title="Preserved single-player concept; not a live 2b2t snapshot">Singleplayer concept</span>
+                                    }
+                                    <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                  Size="ButtonSize.Small" Click="@(() => CopyText($"/warp {w.Name}"))" title="Copy warp" />
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (location.Attachments is { Count: > 0 })
+                    {
+                        <div class="loc-section">
+                            <div class="loc-section-title">Attachments (@location.Attachments.Count)</div>
+                            <div class="loc-gallery">
+                                @foreach (var a in location.Attachments)
+                                {
+                                    <AttachmentCard @key="a.Id" Item="a" />
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="loc-meta">Added @location.DateAddedUtc.ToString("MMM d, yyyy") · ID @location.Rowid</div>
+                </RadzenCard>
+            </RadzenSplitterPane>
+        </RadzenSplitter>
+            </RadzenSplitterPane>
+
+            <RadzenSplitterPane Size="@RenderPaneSize" Min="@RenderPaneMin" Max="360px"
+                                Resizable="@HasBaseRenders" BarVisible="@HasBaseRenders">
+                @if (HasBaseRenders)
+                {
+                    <RadzenCard class="loc-render-panel">
+                        <div class="loc-section-title">@MapDimensionLabel renders (@OrderedRenders.Count())</div>
+                        <div class="loc-render-hint">Select any combination. The latest render is selected by default.</div>
+                        <div class="loc-renders">
+                            <button type="button" class="loc-render loc-render-off @(selectedRenderIds.Count == 0 ? "active" : "")"
+                                    aria-pressed="@(selectedRenderIds.Count == 0)"
+                                    @onclick="@(() => SelectLocationRender(null))">
+                                <strong>Off</strong>
+                            </button>
+                            @foreach (var r in OrderedRenders)
+                            {
+                                var renderIsSelected = showBaseRenders && selectedRenderIds.Contains(r.Id);
+                                var renderDownloadUrl = r.ArchiveWarp?.WorldDownloadUrl ?? r.WorldDownloadUrl;
+                                var renderDownloadLocationName = r.IsSinglePlayerConcept
+                                    ? $"{location?.Name} singleplayer concept"
+                                    : location?.Name;
+                                var renderDownloadName = r.ArchiveWarp is { } sourceWarp
+                                    ? DownloadFileNames.WorldDownload(renderDownloadLocationName, sourceWarp.Id)
+                                    : DownloadFileNames.RenderWorldDownload(renderDownloadLocationName, r.Id);
+                                <div class="loc-render @(renderIsSelected ? "active" : "")">
+                                    <button type="button" class="loc-render-select"
+                                            aria-pressed="@renderIsSelected"
+                                            @onclick="@(() => SelectLocationRender(r.Id))">
+                                        <span class="loc-render-checkbox @(renderIsSelected ? "checked" : "")" aria-hidden="true">
+                                            <RadzenIcon Icon="@(renderIsSelected ? "check" : "")" />
+                                        </span>
+                                        <span class="loc-render-selection-copy">
+                                            <strong>@(string.IsNullOrWhiteSpace(r.Name) ? r.Scale : r.Name)</strong>
+                                            @if (r.IsSinglePlayerConcept)
+                                            {
+                                                <span class="loc-concept-badge">Singleplayer concept — not live 2b2t</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(r.WorldDownloadDate))
+                                            {
+                                                <span class="loc-render-date">@r.WorldDownloadDate</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(r.Description))
+                                            {
+                                                <span class="loc-render-desc">@DisplayText.NormalizeDescription(r.Description)</span>
+                                            }
+                                        </span>
+                                    </button>
+                                    <div class="loc-render-provenance">
+                                        <div class="loc-render-provenance-head">
+                                            <span class="loc-render-source">@RenderSourceLabel(r.Source)</span>
+                                            <a class="loc-resource-api" href="@(string.IsNullOrWhiteSpace(r.ApiUrl) ? $"http://127.0.0.1:5297/api/renders/{r.Id}" : r.ApiUrl)"
+                                               target="_blank" rel="noopener">Data</a>
+                                            <RadzenButton Text="Zoom" Icon="zoom_in" ButtonStyle="ButtonStyle.Light"
+                                                          Variant="Variant.Text" Size="ButtonSize.Small"
+                                                          Click="@(() => FocusBaseRender(location!, r))"
+                                                          title="Show and zoom to this render's full footprint" />
+                                        </div>
+                                        @if (r.ArchiveWarp is { } warp)
+                                        {
+                                            <div class="loc-render-warp">
+                                                <code>/warp @warp.Name</code>
+                                                <div class="loc-render-warp-actions">
+                                                    <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                                  Size="ButtonSize.Small"
+                                                                  Click="@(() => CopyRenderWarp(warp.Name))" title="Copy this render's warp" />
+                                                    @if (!string.IsNullOrWhiteSpace(renderDownloadUrl))
+                                                    {
+                                                        <a class="loc-wdl-download" href="@renderDownloadUrl"
+                                                           download="@renderDownloadName"
+                                                           title="Download the preserved source world for this render"
+                                                           aria-label="Download source WDL for @r.Name">
+                                                            <RadzenIcon Icon="download" /><span>WDL</span>
+                                                        </a>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (!string.IsNullOrWhiteSpace(renderDownloadUrl))
+                                        {
+                                            <div class="loc-render-warp">
+                                                <span>Preserved source WDL</span>
+                                                <div class="loc-render-warp-actions">
+                                                    <a class="loc-wdl-download" href="@renderDownloadUrl"
+                                                       download="@renderDownloadName"
+                                                       title="Download the preserved source world used for this render"
+                                                       aria-label="Download source WDL for @r.Name">
+                                                        <RadzenIcon Icon="download" /><span>WDL</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            @if (!OrderedRenders.Any())
+                            {
+                                <div class="loc-render-empty">No @MapDimensionLabel.ToLowerInvariant() renders for this location.</div>
+                            }
+                        </div>
+                    </RadzenCard>
+                }
+            </RadzenSplitterPane>
+        </RadzenSplitter>
+
+    }
+</div>
+
+@code {
+    /// <summary>The location's row id from the route.</summary>
+    [Parameter] public int Id { get; set; }
+
+    private const string InsetId = "loc-inset-map";
+    private Location? location;
+    private bool loading = true;
+    private IJSObjectReference? mapModule;
+    private DotNetObjectReference<LocationDetail>? mapDotNetRef;
+    private bool mapReady;
+    private bool HasBaseRenders => location?.Renders is { Count: > 0 };
+    private string MainPaneSize => HasBaseRenders ? "72%" : "100%";
+    private string RenderPaneSize => HasBaseRenders ? "28%" : "0px";
+    private string RenderPaneMin => HasBaseRenders ? "140px" : "0px";
+
+    // Inset-map layer toggles (mirror the main map's defaults).
+    private List<Location>? allLocations;
+    private List<Location> displayedLocations = [];
+    private Location? selectedInsetLocation;
+    private bool insetLocationSelected;
+    private int? ignoredInsetSelectionIndex;
+    private readonly Dictionary<int, HashSet<int>> insetBaseRenderIds = [];
+    private bool showOthers;
+    private bool showHighways = true;
+    private bool showAxes = true;
+    private bool showBorders = true;
+    private bool showEndPortals;
+    private bool showBaseRenders = true;
+    private bool showThreeD;
+    private readonly List<ThreeDRenderOption> threeDRenderOptions = [];
+    private int? activeThreeDRenderId;
+    private readonly HashSet<int> selectedRenderIds = [];
+    private bool isDay = true;
+    private bool showPrimaryRenderPanel;
+    private bool showPrimaryRenders = true;
+    private bool currentPrimaryRenderDayNight = true;
+    private List<PrimaryRenderInfo> primaryRenderOptions = [];
+    private List<string> orderedPrimaryRenders = [];
+    private int primaryRenderDraggingIndex = -1;
+    private int selectedMapDimension;
+    private IEnumerable<PrimaryRenderInfo> AvailablePrimaryRenders =>
+        primaryRenderOptions.Where(render => !orderedPrimaryRenders.Contains(render.Id));
+
+    private string DimName => selectedMapDimension switch { 1 => "nether", 2 => "end", _ => "overworld" };
+    private string MapDimensionLabel => selectedMapDimension switch { 1 => "Nether", 2 => "End", _ => "Overworld" };
+    private ThreeDRenderOption? ActiveThreeDRender =>
+        threeDRenderOptions.FirstOrDefault(option => option.RenderId == activeThreeDRenderId);
+    private string? ActiveThreeDUrl => ActiveThreeDRender is { } option
+        ? $"{option.Url}?atlas-controls=1"
+        : null;
+    private string ThreeDFrameKey => $"render-{activeThreeDRenderId}";
+    private string ThreeDFrameId => $"{InsetId}-bluemap";
+    private string ActiveThreeDTitle => threeDRenderOptions.FirstOrDefault(option => option.RenderId == activeThreeDRenderId)?.Label is { } label
+        ? $"3D view of {label}" : "3D location render";
+    private bool HasSelectedBlueMapRender
+    {
+        get
+        {
+            if (location is null) return false;
+            var sourceLocations = displayedLocations.Count > 0 ? displayedLocations : [location];
+            return sourceLocations.Any(sourceLocation =>
+                insetBaseRenderIds.TryGetValue(sourceLocation.Rowid, out var selectedIds) &&
+                (sourceLocation.Renders ?? []).Any(render =>
+                    selectedIds.Contains(render.Id) &&
+                    render.Dimension == selectedMapDimension &&
+                    !string.IsNullOrWhiteSpace(render.BlueMapPath)));
+        }
+    }
+    private bool CanEnterThreeD => showBaseRenders && HasSelectedBlueMapRender;
+    private bool ThreeDControlDisabled => !showThreeD && !CanEnterThreeD;
+    private string ThreeDControlTooltip => showThreeD
+        ? "Return to the 2D atlas"
+        : !HasSelectedBlueMapRender
+            ? "3D view unavailable: the selected render has not finished BlueMap generation yet."
+            : !showBaseRenders
+                ? "3D view unavailable: show a location render first."
+                : "View visible selected renders in 3D";
+
+    private string EntityCanonicalUrl => $"https://atlas.example/entities/locations/{Id}/";
+
+    private string LocationSocialImageUrl =>
+        location?.Attachments.FirstOrDefault(attachment => IsImageUrl(attachment.Path))?.Path ??
+        location?.Renders.FirstOrDefault(render => !string.IsNullOrWhiteSpace(render.PreviewImagePath))?.PreviewImagePath ??
+        "https://atlas.example/Images/banner_web.png";
+
+    private string LocationMetaDescription
+    {
+        get
+        {
+            if (location is null) return "Documented 2b2t location in the public 2b2t Atlas.";
+            var context = $"{location.Name} is a documented 2b2t {location.DimensionName} location at X {location.X}, Z {location.Z}.";
+            var description = string.IsNullOrWhiteSpace(location.Description)
+                ? context
+                : $"{context} {DisplayText.CompactDescription(location.Description)}";
+            return description.Length <= 160 ? description : $"{description[..157].TrimEnd()}...";
+        }
+    }
+
+    private string AltCoordLabel => location?.Dimension switch
+    {
+        0 => "Nether:",
+        1 => "Overworld:",
+        _ => ""
+    };
+
+    private string AltCoordText => location?.Dimension switch
+    {
+        0 => $"{location.X / 8}, {location.Z / 8}",
+        1 => $"{location.X * 8}, {location.Z * 8}",
+        _ => ""
+    };
+
+    /// <summary>Reloads the route-selected location and resets its base-render set to the latest capture when <see cref="Id"/> changes.</summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        location = await LocationService.GetLocationAsync(Id);
+        selectedMapDimension = DefaultMapDimension();
+        showThreeD = false;
+        threeDRenderOptions.Clear();
+        activeThreeDRenderId = null;
+        SelectLatestLocationRender();
+        insetBaseRenderIds.Clear();
+        if (location is not null)
+            insetBaseRenderIds[location.Rowid] = [.. selectedRenderIds];
+        selectedInsetLocation = null;
+        insetLocationSelected = false;
+        showBaseRenders = selectedRenderIds.Count > 0;
+        loading = false;
+    }
+
+    /// <summary>Imports and initializes the inset browser map once, registers world renders, and loads its location and highway overlays.</summary>
+    /// <param name="firstRender">Whether this is the component's first completed render.</param>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (location == null || mapReady) return;
+        mapReady = true;
+        try
+        {
+            mapModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", MapModuleAsset.Url);
+            mapDotNetRef ??= DotNetObjectReference.Create(this);
+            await mapModule.InvokeVoidAsync("setApiBase", Http.BaseAddress?.ToString());
+            var worldRenders = await MapRenderService.GetPublishedAsync();
+            if (worldRenders.Count > 0)
+                await mapModule.InvokeVoidAsync("registerWorldRenders", worldRenders);
+            await mapModule.InvokeVoidAsync("initialize", InsetId, DimName, isDay, mapDotNetRef);
+            await RefreshPrimaryRenders();
+
+            await LoadLocationRenders();
+            await ApplyLocationSet(focus: true);
+            var highways = await HighwayService.GetHighwaysAsync();
+            if (highways.Count > 0)
+                await mapModule.InvokeVoidAsync("loadHighways", InsetId, highways);
+            await mapModule.InvokeVoidAsync("setHighways", InsetId, showHighways);
+            await mapModule.InvokeVoidAsync("setAxes", InsetId, showAxes);
+            await mapModule.InvokeVoidAsync("setBorders", InsetId, showBorders);
+
+            // Re-render so the overlay control buttons appear now the map is ready.
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Inset map failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Loads either just this location (default) or every location (when
+    /// "other locations" is enabled). Only re-centres the view when
+    /// <paramref name="focus"/> is true (initial load); toggles preserve the
+    /// user's current pan/zoom and just re-highlight this location.
+    /// </summary>
+    private async Task ApplyLocationSet(bool focus)
+    {
+        if (mapModule == null || location == null) return;
+
+        List<Location> set;
+        if (showOthers)
+        {
+            allLocations ??= await LocationService.GetLocationsAsync();
+            var found = allLocations.FindIndex(l => l.Rowid == location.Rowid);
+            // Ensure this location is present even if the list endpoint omits it.
+            set = found >= 0 ? allLocations : new List<Location>(allLocations) { location };
+        }
+        else
+        {
+            set = new List<Location> { location };
+        }
+
+        var focusIndex = set.FindIndex(l => l.Rowid == location.Rowid);
+        if (focusIndex < 0) focusIndex = 0;
+        displayedLocations = set;
+        selectedInsetLocation = null;
+        insetLocationSelected = false;
+        ignoredInsetSelectionIndex = focusIndex;
+
+        var payload = set
+            .Select((l, i) => new { index = i, name = l.Name, x = l.X, z = l.Z, dimension = l.Dimension, description = DisplayText.NormalizeDescription(l.Description) })
+            .ToArray();
+
+        await mapModule.InvokeVoidAsync("loadLocations", InsetId, payload);
+        await mapModule.InvokeVoidAsync("setLocations", InsetId, true);
+        await mapModule.InvokeVoidAsync("setEndPortals", InsetId, showEndPortals);
+        if (focus)
+            await mapModule.InvokeVoidAsync("focusLocation", InsetId, focusIndex, 7);
+        else
+            await mapModule.InvokeVoidAsync("highlightLocation", InsetId, focusIndex);
+    }
+
+    private async Task ToggleOthers()
+    {
+        showOthers = !showOthers;
+        await ApplyLocationSet(focus: false);
+        await LoadLocationRenders();
+    }
+
+    private void TogglePrimaryRenderPanel() => showPrimaryRenderPanel = !showPrimaryRenderPanel;
+
+    private async Task RefreshPrimaryRenders()
+    {
+        if (mapModule == null) return;
+        var result = await mapModule.InvokeAsync<PrimaryRendersResult>("getRenders", InsetId);
+        primaryRenderOptions = result.Renders;
+        orderedPrimaryRenders = result.Current.ToList();
+        UpdatePrimaryRenderCapabilities();
+    }
+
+    private async Task AddPrimaryRender(string renderId)
+    {
+        if (!orderedPrimaryRenders.Contains(renderId)) orderedPrimaryRenders.Insert(0, renderId);
+        await ApplyPrimaryRenders();
+    }
+
+    private async Task RemovePrimaryRender(string renderId)
+    {
+        orderedPrimaryRenders.Remove(renderId);
+        await ApplyPrimaryRenders();
+    }
+
+    private async Task OnPrimaryRendersChanged(bool value)
+    {
+        showPrimaryRenders = value;
+        await ApplyPrimaryRenders();
+    }
+
+    private async Task ApplyPrimaryRenders()
+    {
+        if (mapModule == null) return;
+        await mapModule.InvokeVoidAsync("setRenders", InsetId,
+            showPrimaryRenders ? orderedPrimaryRenders : Array.Empty<string>());
+        UpdatePrimaryRenderCapabilities();
+    }
+
+    private void UpdatePrimaryRenderCapabilities()
+    {
+        currentPrimaryRenderDayNight =
+            showPrimaryRenders && orderedPrimaryRenders.Any(renderId =>
+                primaryRenderOptions.FirstOrDefault(render => render.Id == renderId)?.DayNight == true) ||
+            showBaseRenders && (location?.Renders ?? []).Any(render => selectedRenderIds.Contains(render.Id) && render.HasDayNight);
+    }
+
+    private void OnPrimaryRenderDragStart(int index) => primaryRenderDraggingIndex = index;
+
+    private void OnPrimaryRenderDragEnter(int index)
+    {
+        if (primaryRenderDraggingIndex < 0 || primaryRenderDraggingIndex == index ||
+            index < 0 || index >= orderedPrimaryRenders.Count) return;
+        var renderId = orderedPrimaryRenders[primaryRenderDraggingIndex];
+        orderedPrimaryRenders.RemoveAt(primaryRenderDraggingIndex);
+        orderedPrimaryRenders.Insert(index, renderId);
+        primaryRenderDraggingIndex = index;
+    }
+
+    private async Task OnPrimaryRenderDragEnd()
+    {
+        if (primaryRenderDraggingIndex < 0) return;
+        primaryRenderDraggingIndex = -1;
+        await ApplyPrimaryRenders();
+    }
+
+    private string PrimaryRenderLabel(string renderId) =>
+        primaryRenderOptions.FirstOrDefault(render => render.Id == renderId)?.Label ?? renderId;
+
+    private async Task OnSplitterResize(RadzenSplitterResizeEventArgs args)
+    {
+        if (mapModule != null)
+            await mapModule.InvokeVoidAsync("invalidateSize", InsetId);
+    }
+
+    private async Task LoadLocationRenders()
+    {
+        if (mapModule == null || location == null) return;
+        var sourceLocations = displayedLocations.Count > 0 ? displayedLocations : [location];
+        var renders = sourceLocations
+            .SelectMany(sourceLocation => (sourceLocation.Renders ?? [])
+                .Where(render => insetBaseRenderIds.TryGetValue(sourceLocation.Rowid, out var selectedIds) &&
+                    selectedIds.Contains(render.Id) && !string.IsNullOrWhiteSpace(render.TilesPath))
+                .OrderBy(render => render.WorldDownloadDate)
+                .ThenBy(render => render.Id)
+                .Select(render => new
+                {
+                    id = render.Id,
+                    locationId = sourceLocation.Rowid,
+                    tilesPath = render.TilesPath,
+                    x = sourceLocation.X,
+                    z = sourceLocation.Z,
+                    scale = render.Scale,
+                    dimension = render.Dimension,
+                    name = render.Name,
+                    date = render.WorldDownloadDate,
+                    minX = render.MinX,
+                    minZ = render.MinZ,
+                    maxXExclusive = render.MaxXExclusive,
+                    maxZExclusive = render.MaxZExclusive,
+                    maxNativeZoom = render.MaxNativeZoom,
+                    coordinateScheme = render.CoordinateScheme,
+                    hasDayNight = render.HasDayNight,
+                }))
+            .ToArray();
+        await mapModule.InvokeVoidAsync("loadBaseRenders", InsetId, renders);
+        await mapModule.InvokeVoidAsync("setBaseRenders", InsetId, showBaseRenders);
+        if (showThreeD)
+            await RefreshThreeDOptions();
+    }
+
+    private async Task ToggleThreeD()
+    {
+        if (!showThreeD && !CanEnterThreeD) return;
+        showThreeD = !showThreeD;
+        if (showThreeD)
+            await RefreshThreeDOptions();
+        else if (mapModule is not null)
+            await mapModule.InvokeVoidAsync("invalidateSize", InsetId);
+    }
+
+    private async Task RefreshThreeDOptions()
+    {
+        threeDRenderOptions.Clear();
+        if (mapModule is null || location is null || !showBaseRenders) return;
+
+        var visibleIds = await mapModule.InvokeAsync<int[]>("getVisibleBaseRenderIds", InsetId);
+        var visible = visibleIds.ToHashSet();
+        var sourceLocations = displayedLocations.Count > 0 ? displayedLocations : [location];
+        foreach (var sourceLocation in sourceLocations)
+        {
+            if (!insetBaseRenderIds.TryGetValue(sourceLocation.Rowid, out var selectedIds)) continue;
+            foreach (var render in (sourceLocation.Renders ?? [])
+                .Where(render => visible.Contains(render.Id) && selectedIds.Contains(render.Id) &&
+                    render.Dimension == selectedMapDimension && !string.IsNullOrWhiteSpace(render.BlueMapPath))
+                .OrderByDescending(render => render.WorldDownloadDate).ThenByDescending(render => render.Id))
+            {
+                var url = new Uri(Http.BaseAddress!, render.BlueMapPath!.TrimStart('/')).ToString();
+                var date = string.IsNullOrWhiteSpace(render.WorldDownloadDate) ? null : $" ({render.WorldDownloadDate})";
+                threeDRenderOptions.Add(new ThreeDRenderOption(
+                    render.Id, $"{sourceLocation.Name}{date}", url));
+            }
+        }
+
+        if (!threeDRenderOptions.Any(option => option.RenderId == activeThreeDRenderId))
+            activeThreeDRenderId = threeDRenderOptions.FirstOrDefault()?.RenderId;
+    }
+
+    private async Task ToggleBaseRenders()
+    {
+        showBaseRenders = !showBaseRenders;
+        if (mapModule != null)
+            await mapModule.InvokeVoidAsync("setBaseRenders", InsetId, showBaseRenders);
+        UpdatePrimaryRenderCapabilities();
+        StateHasChanged();
+    }
+
+    private IEnumerable<Atlas.Locations.Render> OrderedRenders =>
+        (location?.Renders ?? [])
+            .Where(render => render.Dimension == selectedMapDimension)
+            .OrderByDescending(render => render.WorldDownloadDate)
+            .ThenByDescending(render => render.Id);
+
+    private int DefaultMapDimension()
+    {
+        if (location is null) return 0;
+        if ((location.Renders ?? []).Any(render => render.Dimension == location.Dimension))
+            return location.Dimension;
+        return (location.Renders ?? [])
+            .OrderByDescending(render => render.WorldDownloadDate)
+            .ThenByDescending(render => render.Id)
+            .Select(render => render.Dimension)
+            .FirstOrDefault(location.Dimension);
+    }
+
+    private async Task SelectMapDimension(int dimension)
+    {
+        if (location is null || dimension == selectedMapDimension ||
+            dimension is < 0 or > 2 || location.Dimension == 2 && dimension != 2)
+            return;
+
+        selectedMapDimension = dimension;
+        SelectLatestLocationRender();
+        insetBaseRenderIds.Clear();
+        insetBaseRenderIds[location.Rowid] = [.. selectedRenderIds];
+        showBaseRenders = selectedRenderIds.Count > 0;
+        if (mapModule is not null)
+        {
+            await mapModule.InvokeVoidAsync("setDimension", InsetId, DimName);
+            await RefreshPrimaryRenders();
+            await LoadLocationRenders();
+            await ApplyLocationSet(focus: true);
+            await mapModule.InvokeVoidAsync("setEndPortals", InsetId, showEndPortals);
+        }
+        UpdatePrimaryRenderCapabilities();
+        StateHasChanged();
+    }
+
+    private async Task SelectLocationRender(int? renderId)
+    {
+        if (renderId is null)
+            selectedRenderIds.Clear();
+        else if (!selectedRenderIds.Add(renderId.Value))
+            selectedRenderIds.Remove(renderId.Value);
+
+        if (location is not null)
+            insetBaseRenderIds[location.Rowid] = [.. selectedRenderIds];
+        showBaseRenders = selectedRenderIds.Count > 0;
+        await LoadLocationRenders();
+        UpdatePrimaryRenderCapabilities();
+    }
+
+    private void SelectLatestLocationRender()
+    {
+        selectedRenderIds.Clear();
+        var latestRenderId = OrderedRenders.FirstOrDefault()?.Id;
+        if (latestRenderId is not null)
+            selectedRenderIds.Add(latestRenderId.Value);
+    }
+
+    private IEnumerable<Atlas.Locations.Render> OrderedInsetRenders(Location selectedLocation) =>
+        (selectedLocation.Renders ?? [])
+            .Where(render => render.Dimension == selectedMapDimension)
+            .OrderByDescending(render => render.WorldDownloadDate)
+            .ThenByDescending(render => render.Id);
+
+    private bool HasSelectedInsetBaseRenders(Location selectedLocation) =>
+        insetBaseRenderIds.TryGetValue(selectedLocation.Rowid, out var renderIds) && renderIds.Count > 0;
+
+    private bool IsInsetBaseRenderSelected(Location selectedLocation, int renderId) =>
+        insetBaseRenderIds.TryGetValue(selectedLocation.Rowid, out var renderIds) && renderIds.Contains(renderId);
+
+    private async Task SelectInsetBaseRender(int locationId, int? renderId)
+    {
+        if (!insetBaseRenderIds.TryGetValue(locationId, out var renderIds))
+        {
+            renderIds = [];
+            insetBaseRenderIds[locationId] = renderIds;
+        }
+
+        if (renderId is null)
+            renderIds.Clear();
+        else if (!renderIds.Add(renderId.Value))
+            renderIds.Remove(renderId.Value);
+
+        if (location?.Rowid == locationId)
+        {
+            selectedRenderIds.Clear();
+            selectedRenderIds.UnionWith(renderIds);
+        }
+        showBaseRenders = insetBaseRenderIds.Values.Any(selectedIds => selectedIds.Count > 0);
+        await LoadLocationRenders();
+        UpdatePrimaryRenderCapabilities();
+    }
+
+    private async Task FocusBaseRender(Location renderLocation, Atlas.Locations.Render render)
+    {
+        if (mapModule is null) return;
+        if (!insetBaseRenderIds.TryGetValue(renderLocation.Rowid, out var renderIds))
+        {
+            renderIds = [];
+            insetBaseRenderIds[renderLocation.Rowid] = renderIds;
+        }
+        renderIds.Add(render.Id);
+        if (location?.Rowid == renderLocation.Rowid)
+        {
+            selectedRenderIds.Clear();
+            selectedRenderIds.UnionWith(renderIds);
+        }
+        showBaseRenders = true;
+        await LoadLocationRenders();
+        UpdatePrimaryRenderCapabilities();
+
+        await mapModule.InvokeAsync<bool>("focusBaseRender", InsetId, new
+        {
+            id = render.Id,
+            locationId = renderLocation.Rowid,
+            x = renderLocation.X,
+            z = renderLocation.Z,
+            scale = render.Scale,
+            dimension = render.Dimension,
+            minX = render.MinX,
+            minZ = render.MinZ,
+            maxXExclusive = render.MaxXExclusive,
+            maxZExclusive = render.MaxZExclusive,
+        });
+    }
+
+    [JSInvokable]
+    public async Task OnLocationSelected(int index)
+    {
+        if (ignoredInsetSelectionIndex == index)
+        {
+            ignoredInsetSelectionIndex = null;
+            return;
+        }
+        ignoredInsetSelectionIndex = null;
+        if (index < 0 || index >= displayedLocations.Count) return;
+        selectedInsetLocation = displayedLocations[index];
+        insetLocationSelected = true;
+        if (!insetBaseRenderIds.ContainsKey(selectedInsetLocation.Rowid))
+        {
+            var latestRenderId = OrderedInsetRenders(selectedInsetLocation).FirstOrDefault()?.Id;
+            insetBaseRenderIds[selectedInsetLocation.Rowid] = latestRenderId is null ? [] : [latestRenderId.Value];
+            if (latestRenderId is not null)
+            {
+                showBaseRenders = true;
+                await LoadLocationRenders();
+                UpdatePrimaryRenderCapabilities();
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void OnLocationDeselected()
+    {
+        insetLocationSelected = false;
+        selectedInsetLocation = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CloseInsetLocationInfo()
+    {
+        insetLocationSelected = false;
+        selectedInsetLocation = null;
+        if (mapModule is not null)
+            await mapModule.InvokeVoidAsync("clearLocationSelection", InsetId);
+    }
+
+    private async Task GoToInsetLocation()
+    {
+        if (mapModule is null || selectedInsetLocation is null) return;
+        var x = selectedInsetLocation.X;
+        var z = selectedInsetLocation.Z;
+        if (selectedInsetLocation.Dimension == 0 && selectedMapDimension == 1)
+        {
+            x /= 8;
+            z /= 8;
+        }
+        else if (selectedInsetLocation.Dimension == 1 && selectedMapDimension == 0)
+        {
+            x *= 8;
+            z *= 8;
+        }
+        await mapModule.InvokeVoidAsync("goToCoords", InsetId, (double)x, (double)z, 8);
+    }
+
+    private async Task CopyInsetLocationCoords()
+    {
+        if (selectedInsetLocation is not null)
+            await CopyText($"{selectedInsetLocation.X} {selectedInsetLocation.Z}");
+    }
+
+    private void OpenInsetLocationDetails()
+    {
+        if (selectedInsetLocation is null) return;
+        if (selectedInsetLocation.Rowid == Id)
+        {
+            insetLocationSelected = false;
+            return;
+        }
+        NavigationManager.NavigateTo($"location/{selectedInsetLocation.Rowid}", forceLoad: true);
+    }
+
+    private async Task ToggleHighways()
+    {
+        showHighways = !showHighways;
+        if (mapModule != null) await mapModule.InvokeVoidAsync("setHighways", InsetId, showHighways);
+    }
+
+    private async Task ToggleAxes()
+    {
+        showAxes = !showAxes;
+        if (mapModule != null) await mapModule.InvokeVoidAsync("setAxes", InsetId, showAxes);
+    }
+
+    private async Task ToggleBorders()
+    {
+        showBorders = !showBorders;
+        if (mapModule != null) await mapModule.InvokeVoidAsync("setBorders", InsetId, showBorders);
+    }
+
+    private async Task ToggleEndPortals()
+    {
+        showEndPortals = !showEndPortals;
+        if (mapModule != null) await mapModule.InvokeVoidAsync("setEndPortals", InsetId, showEndPortals);
+    }
+
+    private async Task ToggleDay()
+    {
+        if (!currentPrimaryRenderDayNight) return;
+        isDay = !isDay;
+        if (mapModule != null) await mapModule.InvokeVoidAsync("setTimeOfDay", InsetId, isDay);
+    }
+
+    /// <summary>Returns to the previous page (falls back to the directory).</summary>
+    private void GoBack() => NavigationManager.NavigateTo("");
+
+    /// <summary>Opens the full map centered on this location.</summary>
+    private void OpenInMap()
+    {
+        if (location is null) return;
+        var x = location.X;
+        var z = location.Z;
+        if (location.Dimension == 0 && selectedMapDimension == 1)
+        {
+            x /= 8;
+            z /= 8;
+        }
+        else if (location.Dimension == 1 && selectedMapDimension == 0)
+        {
+            x *= 8;
+            z *= 8;
+        }
+        NavigationManager.NavigateTo(
+            $"map?dimension={DimName}&x={x}&z={z}&zoom=8");
+    }
+
+    /// <summary>Badge style for a dimension.</summary>
+    private BadgeStyle DimBadge(int dim) => dim switch
+    {
+        1 => BadgeStyle.Danger,
+        2 => BadgeStyle.Warning,
+        _ => BadgeStyle.Success
+    };
+
+    private record PrimaryRenderInfo(string Id, string Label, bool DayNight);
+    private sealed record ThreeDRenderOption(int RenderId, string Label, string Url);
+
+    private record PrimaryRendersResult(List<string> Current, bool DayNight, List<PrimaryRenderInfo> Renders);
+
+    private async Task CopyCoords()
+    {
+        if (location != null) await CopyText($"{location.X} {location.Z}");
+    }
+
+    private async Task CopyText(string text) =>
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+
+    private Task CopyRenderWarp(string warpName) => CopyText($"/warp {warpName}");
+
+    private static string RenderSourceLabel(string? source) => source switch
+    {
+        "archive-collector" => "Archive collector",
+        "manual-upload" => "Manual upload",
+        "wdl-ingestion" => "WDL ingestion",
+        "legacy" => "Legacy render",
+        _ => "Render source unknown",
+    };
+
+    private async Task OpenLink(string url) =>
+        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+
+    private static bool IsImageUrl(string? value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)) return false;
+        var extension = Path.GetExtension(uri.AbsolutePath);
+        return extension.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".gif", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".webp", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".avif", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Disposes the inset Leaflet map and its imported browser module when the component is removed.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (mapModule != null)
+            {
+                await mapModule.InvokeVoidAsync("dispose", InsetId);
+                await mapModule.DisposeAsync();
+            }
+            mapDotNetRef?.Dispose();
+        }
+        catch (JSDisconnectedException) { /* circuit already gone */ }
+    }
+}
+
+<style>
+    .loc-page {
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .loc-loading,
+    .loc-missing {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+        text-align: center;
+        gap: 8px;
+    }
+
+    .loc-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+        flex: 0 0 auto;
+    }
+
+    .loc-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1 1 auto;
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+
+    .loc-title h1 {
+        margin: 0;
+        font-size: 1.6rem;
+        overflow-wrap: anywhere;
+    }
+
+    .loc-dimension-switch {
+        display: inline-flex;
+        padding: 3px;
+        gap: 2px;
+        border: 1px solid var(--rz-base-600);
+        border-radius: 9px;
+        background: var(--rz-base-900);
+    }
+
+    .loc-dimension-switch button {
+        border: 0;
+        border-radius: 6px;
+        padding: 6px 11px;
+        color: var(--rz-text-secondary-color);
+        background: transparent;
+        cursor: pointer;
+        font: inherit;
+        font-size: .82rem;
+        font-weight: 600;
+    }
+
+    .loc-dimension-switch button:hover {
+        color: var(--rz-text-color);
+        background: var(--rz-base-700);
+    }
+
+    .loc-dimension-switch button.active {
+        color: var(--rz-on-primary);
+        background: var(--rz-primary);
+    }
+
+    .loc-map-card,
+    .loc-info-card {
+        height: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+
+    .loc-workspace {
+        flex: 1 1 auto;
+        height: 0;
+        min-height: 480px;
+        border: 0;
+        background: transparent;
+    }
+
+    .loc-workspace > .rz-splitter-pane,
+    .loc-main-splitter > .rz-splitter-pane {
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .loc-main-splitter {
+        height: 100%;
+        border: 0;
+        background: transparent;
+    }
+
+    .loc-map-card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .loc-info-card {
+        overflow: auto;
+    }
+
+    .loc-inset-map {
+        height: 100%;
+        min-height: 320px;
+        width: 100%;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #12151c;
+    }
+
+    .loc-inset-map.loc-view-hidden {
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .loc-3d-view {
+        position: absolute;
+        inset: 0;
+        z-index: 450;
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 6px;
+        background: #090b10;
+    }
+
+    .loc-3d-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 6px 58px 6px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, .12);
+        background: var(--rz-base-background-color, #171a21);
+    }
+
+    .loc-3d-label {
+        flex: 0 0 auto;
+        color: var(--rz-text-secondary-color, #aeb6c2);
+        font-size: .78rem;
+        font-weight: 650;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .loc-3d-tabs {
+        display: flex;
+        min-width: 0;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .loc-3d-tabs button {
+        flex: 0 0 auto;
+        max-width: 260px;
+        overflow: hidden;
+        padding: 5px 9px;
+        border: 1px solid rgba(255, 255, 255, .14);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, .05);
+        color: var(--rz-text-color, #e6e9ef);
+        font-size: .78rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+    .loc-3d-tabs button.active {
+        border-color: #ffab40;
+        background: rgba(255, 171, 64, .18);
+        color: #ffd7a2;
+    }
+
+    .loc-3d-frame {
+        width: 100%;
+        min-height: 0;
+        flex: 1 1 auto;
+        border: 0;
+        background: #090b10;
+    }
+
+    .loc-3d-empty {
+        display: flex;
+        height: 100%;
+        box-sizing: border-box;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 9px;
+        padding: 32px;
+        color: var(--rz-text-secondary-color, #aeb6c2);
+        text-align: center;
+    }
+
+    .loc-3d-empty .rzi { color: #ffab40; font-size: 42px; }
+    .loc-3d-empty strong { color: var(--rz-text-color, #e6e9ef); }
+
+    .loc-map-wrap {
+        position: relative;
+        width: 100%;
+        min-height: 0;
+        flex: 1 1 auto;
+    }
+
+    .loc-map-popup {
+        position: absolute;
+        top: 12px;
+        left: 52px;
+        z-index: 1000;
+        box-sizing: border-box;
+        width: 300px;
+        max-height: calc(100% - 24px);
+        overflow-y: auto;
+        padding: 10px 12px;
+        border: 1px solid #ffd24a;
+        border-radius: 8px;
+        background: var(--rz-base-background-color, #171a21);
+        color: var(--rz-text-color, #e6e9ef);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .loc-popup-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-weight: 700;
+    }
+
+    .loc-popup-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: var(--rz-base-300);
+        font-size: 0.72rem;
+    }
+
+    .loc-popup-coords {
+        margin: 8px 0;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .loc-popup-coords .alt {
+        margin-left: 8px;
+        color: #e0736f;
+    }
+
+    .loc-popup-desc {
+        margin: 6px 0;
+        font-size: 0.85rem;
+        opacity: 0.92;
+        white-space: pre-line;
+    }
+
+    .loc-popup-tags {
+        margin-bottom: 6px;
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+
+    .loc-popup-section-label {
+        margin: 8px 0 3px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .loc-popup-warp-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .loc-popup-warp-row code {
+        overflow: hidden;
+        padding: 2px 5px;
+        border-radius: 4px;
+        background: var(--rz-base-300);
+        font-size: 0.75rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .loc-popup-render-choices {
+        display: grid;
+        gap: 4px;
+    }
+
+    .loc-popup-render-choice {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+        padding: 6px 8px;
+        border: 1px solid var(--rz-base-400);
+        border-radius: 6px;
+        background: var(--rz-base-200);
+        color: var(--rz-text-color, #e6e9ef);
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .loc-popup-render-choice:hover { background: var(--rz-base-300); }
+    .loc-popup-render-choice.active { border-color: #ffd24a; box-shadow: inset 3px 0 #ffd24a; }
+    .loc-popup-render-choice span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .loc-popup-render-choice small { flex: 0 0 auto; opacity: 0.75; }
+
+    .loc-popup-render-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .loc-popup-render-row .loc-popup-render-choice {
+        border-radius: 6px 0 0 6px;
+    }
+
+    .loc-popup-render-focus {
+        display: grid;
+        width: 34px;
+        place-items: center;
+        border: 1px solid var(--rz-base-400);
+        border-left: 0;
+        border-radius: 0 6px 6px 0;
+        background: var(--rz-base-200);
+        color: var(--rz-text-color, #e6e9ef);
+        cursor: pointer;
+    }
+
+    .loc-popup-render-focus:hover { background: var(--rz-base-300); }
+
+    .loc-popup-render-hint,
+    .loc-render-hint {
+        color: var(--rz-text-secondary-color);
+        font-size: .75rem;
+        line-height: 1.3;
+    }
+
+    .loc-popup-render-hint { margin-top: 4px; }
+    .loc-render-hint { margin: -2px 0 8px; }
+
+    .loc-popup-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .loc-popup-link {
+        padding: 0 4px;
+        color: #4da3ff;
+        font-size: 0.85rem;
+        text-decoration: none;
+    }
+
+    .loc-map-ctrls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 500;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .loc-ctrl {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(23, 26, 33, 0.92);
+        color: #e6e9ef;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+        transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .loc-ctrl:hover {
+        background: rgba(40, 45, 56, 0.95);
+    }
+
+    .loc-ctrl.active {
+        background: #ffab40;
+        color: #1a1a1a;
+        border-color: #ffab40;
+    }
+
+    .loc-ctrl:disabled {
+        opacity: 0.42;
+        cursor: default;
+    }
+
+    .loc-ctrl .rzi,
+    .loc-ctrl .notranslate {
+        font-size: 19px;
+    }
+
+    .loc-3d-control-wrap {
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        z-index: 500;
+    }
+
+    .loc-3d-ctrl {
+        width: 46px;
+        gap: 2px;
+        font-size: .72rem;
+        font-weight: 750;
+    }
+
+    .loc-primary-render-panel {
+        position: absolute;
+        top: 10px;
+        right: 52px;
+        z-index: 501;
+        box-sizing: border-box;
+        width: min(290px, calc(100% - 70px));
+        max-height: calc(100% - 20px);
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid var(--rz-base-400);
+        border-radius: 8px;
+        background: var(--rz-base-background-color, #171a21);
+        color: var(--rz-text-color, #e6e9ef);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .loc-primary-panel-header,
+    .loc-primary-master-row,
+    .loc-primary-row {
+        display: flex;
+        align-items: center;
+    }
+
+    .loc-primary-panel-header {
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-weight: 700;
+    }
+
+    .loc-primary-master-row {
+        gap: 8px;
+        margin-bottom: 7px;
+    }
+
+    .loc-primary-count {
+        margin-left: auto;
+        min-width: 22px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: var(--rz-base-200);
+        text-align: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .loc-primary-section-label {
+        margin: 4px 4px 3px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        opacity: 0.7;
+    }
+
+    .loc-primary-available-label {
+        margin-top: 9px;
+    }
+
+    .loc-primary-order {
+        padding: 4px 2px;
+        border: 1px solid var(--rz-base-400);
+        border-radius: 6px;
+        transition: opacity 0.15s ease;
+    }
+
+    .loc-primary-order.renders-disabled {
+        opacity: 0.5;
+    }
+
+    .loc-primary-row {
+        gap: 8px;
+        min-height: 30px;
+        padding: 3px 6px;
+        border-radius: 4px;
+    }
+
+    .loc-primary-order .loc-primary-row {
+        cursor: grab;
+        user-select: none;
+    }
+
+    .loc-primary-row.dragging {
+        opacity: 0.5;
+        background: var(--rz-base-200);
+    }
+
+    .loc-primary-drag {
+        flex: 0 0 auto;
+        font-size: 18px;
+        opacity: 0.5;
+    }
+
+    .loc-primary-label {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 0.8rem;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .loc-primary-action {
+        flex: 0 0 auto;
+    }
+
+    .loc-primary-hint,
+    .loc-primary-empty {
+        padding: 3px 6px 1px;
+        font-size: 0.7rem;
+        opacity: 0.6;
+    }
+
+    .loc-primary-available {
+        max-height: 190px;
+        overflow-y: auto;
+        padding-top: 3px;
+        border-top: 1px solid var(--rz-base-400);
+    }
+
+    .loc-coords-grid {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .loc-coord {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 74px;
+        padding: 8px 12px;
+        border: 1px solid var(--rz-border, #d0d5dd);
+        border-radius: 8px;
+    }
+
+    .lc-label {
+        font-size: 0.7rem;
+        opacity: 0.6;
+        letter-spacing: 0.08em;
+    }
+
+    .lc-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .loc-alt-coords {
+        margin-top: 10px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        opacity: 0.85;
+    }
+
+    .loc-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    .loc-section {
+        margin-top: 16px;
+    }
+
+    .loc-section-title {
+        font-weight: 700;
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+        opacity: 0.85;
+    }
+
+    .loc-desc {
+        margin: 0;
+        line-height: 1.5;
+        white-space: pre-line;
+    }
+
+    .loc-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .loc-tag {
+        background: var(--rz-info-lighter, rgba(77, 163, 255, 0.15));
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+    }
+
+    .warp-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 2px 0;
+    }
+
+    .warp-row code {
+        font-size: 0.8rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .loc-concept-badge {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        padding: 2px 7px;
+        border: 1px solid color-mix(in srgb, #c084fc 58%, transparent);
+        border-radius: 999px;
+        color: color-mix(in srgb, #e9d5ff 88%, var(--rz-text-color));
+        background: color-mix(in srgb, #7e22ce 22%, transparent);
+        font-size: .68rem;
+        font-weight: 750;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    .loc-meta {
+        margin-top: 16px;
+        font-size: 0.75rem;
+        opacity: 0.6;
+    }
+
+    .loc-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr));
+        align-items: start;
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .loc-renders {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+    .loc-render-panel {
+        height: 100%;
+        min-width: 0;
+        overflow: auto;
+        box-sizing: border-box;
+    }
+
+    .loc-render {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        padding: 0;
+        border: 1px solid var(--rz-border, #d0d5dd);
+        border-radius: 8px;
+        background: var(--rz-base-background-color, transparent);
+        color: inherit;
+        text-align: left;
+        white-space: normal;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .loc-render:hover { border-color: var(--rz-primary); }
+    .loc-render.active { border-color: var(--rz-primary); box-shadow: inset 3px 0 var(--rz-primary); }
+    .loc-render-off { padding: 10px 12px; cursor: pointer; }
+
+    .loc-render-select {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        align-items: start;
+        gap: 9px;
+        width: 100%;
+        padding: 10px 12px 8px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .loc-render-checkbox {
+        display: grid;
+        place-items: center;
+        width: 21px;
+        height: 21px;
+        margin-top: 1px;
+        border: 2px solid var(--rz-text-secondary-color, #8b94a3);
+        border-radius: 4px;
+        background: rgba(127,127,127,.08);
+        color: #fff;
+        transition: background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+    }
+
+    .loc-render-checkbox.checked {
+        border-color: var(--rz-primary);
+        background: var(--rz-primary);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--rz-primary) 22%, transparent);
+    }
+
+    .loc-render-checkbox .rzi { font-size: 16px; font-weight: 800; }
+    .loc-render-selection-copy { display: grid; min-width: 0; gap: 2px; }
+
+    .loc-groups { display: flex; flex-wrap: wrap; gap: 8px; }
+    .loc-group-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 10px 5px 6px;
+        color: inherit;
+        text-decoration: none;
+        border: 1px solid color-mix(in srgb, var(--group-color) 55%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--group-color) 13%, transparent);
+    }
+    .loc-group-link:hover { background: color-mix(in srgb, var(--group-color) 24%, transparent); }
+    .loc-group-link img { width: 24px; height: 24px; border-radius: 50%; object-fit: contain; background: rgba(0,0,0,.18); }
+    .loc-group-link small { opacity: .68; font-size: .68rem; }
+    .loc-resource-api { font-size: .72rem; color: var(--rz-link-color); }
+
+    .loc-render-provenance {
+        display: grid;
+        gap: 5px;
+        padding: 7px 10px 8px;
+        border-top: 1px solid var(--rz-base-300);
+    }
+
+    .loc-render-provenance-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .loc-render-source {
+        color: var(--rz-text-secondary-color);
+        font-size: .73rem;
+    }
+
+    .loc-render-warp {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .loc-render-warp code {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: .72rem;
+    }
+
+    .loc-render-warp-actions {
+        display: inline-flex;
+        align-items: center;
+        flex: 0 0 auto;
+        gap: 2px;
+    }
+
+    .loc-wdl-download {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 28px;
+        padding: 3px 7px;
+        border: 1px solid color-mix(in srgb, var(--rz-link-color) 55%, transparent);
+        border-radius: 5px;
+        color: var(--rz-link-color);
+        font-size: .7rem;
+        font-weight: 700;
+        line-height: 1;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .loc-wdl-download:hover, .loc-wdl-download:focus-visible {
+        background: color-mix(in srgb, var(--rz-link-color) 12%, transparent);
+        border-color: var(--rz-link-color);
+    }
+
+    .loc-wdl-download .rzi { font-size: 15px; }
+
+    .loc-render-date {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.78rem;
+        opacity: 0.6;
+    }
+
+    .loc-render-desc {
+        font-size: 0.82rem;
+        opacity: 0.8;
+        margin-top: 4px;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        white-space: pre-line;
+    }
+
+    .loc-render-empty {
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        color: var(--rz-text-secondary-color);
+        font-size: .85rem;
+    }
+
+    @@media (max-width: 720px) {
+        .loc-page {
+            overflow-y: auto;
+        }
+
+        .loc-header {
+            flex-wrap: wrap;
+        }
+
+        .loc-title {
+            flex: 1 1 calc(100% - 52px);
+        }
+
+        .loc-dimension-switch {
+            margin-left: 46px;
+        }
+
+        .loc-primary-render-panel {
+            left: 58px;
+            right: 52px;
+            width: auto;
+        }
+
+        .loc-map-popup {
+            top: 10px;
+            left: 8px;
+            right: 52px;
+            width: auto;
+            max-height: calc(100% - 20px);
+        }
+
+        .loc-workspace.rz-splitter,
+        .loc-main-splitter.rz-splitter {
+            display: block;
+            height: auto;
+            min-height: 0;
+            flex: none;
+        }
+
+        .loc-workspace > .rz-splitter-pane,
+        .loc-main-splitter > .rz-splitter-pane {
+            width: 100% !important;
+            min-width: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible;
+        }
+
+        .loc-workspace > .rz-splitter-bar,
+        .loc-main-splitter > .rz-splitter-bar {
+            display: none;
+        }
+
+        .loc-render-panel {
+            height: auto;
+            margin-top: 12px;
+            overflow: visible;
+        }
+
+        .loc-map-card {
+            height: 360px;
+            margin-bottom: 12px;
+        }
+
+        .loc-inset-map {
+            min-height: 0;
+        }
+
+        .loc-3d-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 4px;
+            padding-right: 60px;
+        }
+
+    }
+</style>

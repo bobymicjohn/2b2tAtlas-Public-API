@@ -1,0 +1,256 @@
+@using Atlas
+@using Atlas.Locations
+@using Radzen
+@using Radzen.Blazor
+@using System.Linq
+@inject DialogService DialogService
+@inject NavigationManager NavigationManager
+
+<RadzenStack Gap="1rem">
+    <!-- Header with Location Name -->
+    <RadzenCard>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <div>
+                <RadzenText TextStyle="TextStyle.H4" class="rz-mb-0">@Location.Name</RadzenText>
+                <RadzenBadge BadgeStyle="@GetDimensionBadgeStyle(Location.Dimension)"
+                             Text="@Location.DimensionName" class="rz-mt-1" />
+            </div>
+            <div class="rz-text-align-right">
+                <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                    ID: @Location.Rowid
+                </RadzenText>
+                <br />
+                <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                    Added: @Location.DateAddedUtc.ToString("MMM dd, yyyy")
+                </RadzenText>
+            </div>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenRow Gap="1rem">
+        <!-- Left Column - Basic Info -->
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">
+                    <RadzenIcon Icon="info" class="rz-me-1" /> Basic Information
+                </RadzenText>
+
+                @if (!string.IsNullOrEmpty(Location.Description))
+                {
+                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-1">Description:</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-3" Style="white-space: pre-line">@DisplayText.NormalizeDescription(Location.Description)</RadzenText>
+                }
+
+                <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-1">Coordinates:</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-3">
+                    <code>X: @Location.X, Y: @(Location.Y ?? 64), Z: @Location.Z</code>
+                </RadzenText>
+
+                @if (!string.IsNullOrEmpty(Location.Wiki))
+                {
+                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-1">Wiki:</RadzenText>
+                    <RadzenLink Path="@Location.Wiki" Text="@Location.Wiki" Target="_blank" class="rz-mb-3" />
+                    <br />
+                }
+
+                @if (!string.IsNullOrEmpty(Location.VideoUrl))
+                {
+                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-1">Video:</RadzenText>
+                    <RadzenLink Path="@Location.VideoUrl" Text="@Location.VideoUrl" Target="_blank" class="rz-mb-3" />
+                    <br />
+                }
+
+                @if (Location.EndDimension)
+                {
+                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="End Dimension Location" class="rz-mt-2" />
+                }
+            </RadzenCard>
+        </RadzenColumn>
+
+        <!-- Right Column - Warps and Related Data -->
+        <RadzenColumn Size="12" SizeMD="6">
+            <!-- Warps -->
+            <RadzenCard class="rz-mb-3">
+                <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">
+                    <RadzenIcon Icon="location_on" class="rz-me-1" /> Warps (@(Location.Warps?.Count ?? 0))
+                </RadzenText>
+
+                @if (Location.Warps?.Any() == true)
+                {
+                    <RadzenDataList Data="@Location.Warps" TItem="Warp">
+                        <Template Context="warp">
+                            <RadzenCard Style="margin-bottom: 0.5rem; padding: 0.75rem;">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <div>
+                                        <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-0">@warp.Name</RadzenText>
+                                        <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                                            Added: @warp.TimeAdded.ToString("MMM dd, yyyy")
+                                        </RadzenText>
+                                    </div>
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@($"ID: {warp.Id}")" />
+                                </RadzenStack>
+                            </RadzenCard>
+                        </Template>
+                    </RadzenDataList>
+                }
+                else
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="false" Size="AlertSize.Small">
+                        No warps associated with this location.
+                    </RadzenAlert>
+                }
+            </RadzenCard>
+
+            <!-- Attachments -->
+            <RadzenCard class="rz-mb-3">
+                <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">
+                    <RadzenIcon Icon="attachment" class="rz-me-1" /> Attachments (@(Location.Attachments?.Count ?? 0))
+                </RadzenText>
+
+                @if (Location.Attachments?.Any() == true)
+                {
+                    <RadzenDataList Data="@Location.Attachments" TItem="Atlas.Locations.Attachment">
+                        <Template Context="attachment">
+                            <RadzenCard Style="margin-bottom: 0.5rem; padding: 0.75rem;">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <div>
+                                        <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-0">@attachment.FileName</RadzenText>
+                                        <RadzenLink Path="@attachment.Path" Text="@attachment.Path" Target="_blank" />
+                                        @if (!string.IsNullOrEmpty(attachment.DateAddedUtc))
+                                        {
+                                            <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                                                Added: @attachment.DateAddedUtc
+                                            </RadzenText>
+                                        }
+                                    </div>
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@($"ID: {attachment.Id}")" />
+                                </RadzenStack>
+                            </RadzenCard>
+                        </Template>
+                    </RadzenDataList>
+                }
+                else
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="false" Size="AlertSize.Small">
+                        No attachments associated with this location.
+                    </RadzenAlert>
+                }
+            </RadzenCard>
+
+            <!-- Renders -->
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">
+                    <RadzenIcon Icon="3d_rotation" class="rz-me-1" /> Renders (@(Location.Renders?.Count ?? 0))
+                </RadzenText>
+
+                @if (Location.Renders?.Any() == true)
+                {
+                    <RadzenDataList Data="@Location.Renders" TItem="Atlas.Locations.Render">
+                        <Template Context="render">
+                            <RadzenCard Style="margin-bottom: 0.5rem; padding: 0.75rem;">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <div>
+                                        <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-0">
+                                            @(!string.IsNullOrEmpty(render.Name) ? render.Name : $"Render #{render.Id}")
+                                        </RadzenText>
+                                        @if (!string.IsNullOrEmpty(render.Description))
+                                        {
+                                            <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary" Style="white-space: pre-line">
+                                                @DisplayText.NormalizeDescription(render.Description)
+                                            </RadzenText>
+                                        }
+                                        <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                                            Tiles Path: @render.TilesPath
+                                        </RadzenText>
+                                        <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                                            Scale: @render.Scale | Dimension: @GetDimensionName(render.Dimension)
+                                        </RadzenText>
+                                        @if (!string.IsNullOrEmpty(render.PreviewImagePath))
+                                        {
+                                            <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                                                Preview: @render.PreviewImagePath
+                                            </RadzenText>
+                                        }
+                                        @if (!string.IsNullOrEmpty(render.WorldDownloadDate))
+                                        {
+                                            <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                                                World Download: @render.WorldDownloadDate
+                                            </RadzenText>
+                                        }
+                                        @if (!string.IsNullOrEmpty(render.DateAddedUtc))
+                                        {
+                                            <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                                                Added: @render.DateAddedUtc
+                                            </RadzenText>
+                                        }
+                                    </div>
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Primary" Text="@($"ID: {render.Id}")" />
+                                </RadzenStack>
+                            </RadzenCard>
+                        </Template>
+                    </RadzenDataList>
+                }
+                else
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="false" Size="AlertSize.Small">
+                        No renders associated with this location.
+                    </RadzenAlert>
+                }
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Actions -->
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" JustifyContent="JustifyContent.End">
+        <RadzenButton Text="Open location page" Icon="open_in_new" ButtonStyle="ButtonStyle.Light"
+                      Click="@OpenLocationPage" />
+        <RadzenButton Text="Close" ButtonStyle="ButtonStyle.Primary" Click="@Close" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    /// <summary>Gets or sets the location displayed by the read-only detail dialog.</summary>
+    [Parameter] public Location Location { get; set; } = new();
+
+    /// <summary>Initializes absent related collections so the dialog can enumerate them safely.</summary>
+    protected override void OnInitialized()
+    {
+        // Initialize collections if null to prevent null reference exceptions
+        Location.Warps ??= new List<Warp>();
+        Location.Attachments ??= new List<Atlas.Locations.Attachment>();
+        Location.Renders ??= new List<Atlas.Locations.Render>();
+    }
+
+    private BadgeStyle GetDimensionBadgeStyle(int dimension)
+    {
+        return dimension switch
+        {
+            0 => BadgeStyle.Success, // Overworld - Green
+            1 => BadgeStyle.Danger,  // Nether - Red
+            2 => BadgeStyle.Warning, // End - Yellow
+            _ => BadgeStyle.Secondary
+        };
+    }
+
+    private string GetDimensionName(int dimension)
+    {
+        return dimension switch
+        {
+            0 => "Overworld",
+            1 => "Nether",
+            2 => "End",
+            _ => "Unknown"
+        };
+    }
+
+    private void Close()
+    {
+        DialogService.Close();
+    }
+
+    private void OpenLocationPage()
+    {
+        DialogService.Close();
+        NavigationManager.NavigateTo($"location/{Location.Rowid}");
+    }
+}

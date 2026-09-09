@@ -1,0 +1,574 @@
+@using Atlas.Locations
+@using Radzen
+@using Radzen.Blazor
+@using System.Text.RegularExpressions
+@using Atlas.Validation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenStack Gap="1rem">
+    <!-- Header -->
+    <RadzenCard>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <div>
+                <RadzenText TextStyle="TextStyle.H5" class="rz-mb-0">
+                    <RadzenIcon Icon="attachment" class="rz-me-2" />
+                    Manage Attachments - @Location.Name
+                </RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                    Curate self-hosted media, source pages, captions, and attribution for this location
+                </RadzenText>
+            </div>
+            <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@($"{attachments.Count} attachment{(attachments.Count == 1 ? "" : "s")}")" />
+        </RadzenStack>
+    </RadzenCard>
+
+    <!-- Quick Actions -->
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12">
+            <RadzenCard Style="height: 100%;">
+                <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">
+                    <RadzenIcon Icon="link" class="rz-me-1" />
+                    Add Link
+                </RadzenText>
+                <RadzenStack Gap="1rem">
+                    <RadzenTextBox @bind-Value="@newLinkUrl" Placeholder="Paste an HTTPS image, video, Wiki, Reddit, or archive URL"
+                                   @onkeypress="@OnLinkUrlKeyPress" Style="width: 100%;" />
+                    <RadzenButton Text="Add and describe" Icon="add_link" ButtonStyle="ButtonStyle.Success"
+                                  Click="@AddLinkFromUrl" Disabled="@string.IsNullOrWhiteSpace(newLinkUrl)"
+                                  Size="ButtonSize.Small" />
+                    <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                        For copied historical media, use the BlackPortal URL as the attachment and retain the original post or file page as its source.
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+    </RadzenRow>
+
+    <!-- Existing Attachments List -->
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">
+            <RadzenIcon Icon="list" class="rz-me-1" />
+            Current Attachments
+        </RadzenText>
+
+        @if (attachments.Any())
+        {
+            <div class="attachment-admin-list">
+                @foreach (var attachment in attachments)
+                {
+                    <article class="attachment-admin-card @(editingAttachmentId == attachment.Id ? "is-editing" : string.Empty)">
+                        @if (editingAttachmentId == attachment.Id)
+                        {
+                            <div class="attachment-edit-grid">
+                                <label class="attachment-field attachment-field-wide">
+                                    <span>Name</span>
+                                    <RadzenTextBox @bind-Value="@attachment.FileName" Style="width: 100%;"
+                                                   @onkeypress="@((args) => OnEditKeyPress(args, attachment))" />
+                                </label>
+                                <label class="attachment-field">
+                                    <span>Media type</span>
+                                    <RadzenDropDown @bind-Value="@attachment.MediaType" Data="@mediaTypes" Style="width: 100%;" />
+                                </label>
+                                <label class="attachment-field attachment-field-wide">
+                                    <span>Public attachment URL</span>
+                                    <RadzenTextBox @bind-Value="@attachment.Path" Style="width: 100%;" />
+                                </label>
+                                <label class="attachment-field attachment-field-wide">
+                                    <span>Thumbnail URL <small>optional</small></span>
+                                    <RadzenTextBox @bind-Value="@attachment.ThumbnailPath" Style="width: 100%;" />
+                                </label>
+                                <label class="attachment-field attachment-field-wide">
+                                    <span>Original source URL <small>provenance, optional</small></span>
+                                    <RadzenTextBox @bind-Value="@attachment.SourceUrl" Style="width: 100%;" />
+                                </label>
+                                <label class="attachment-field attachment-field-wide">
+                                    <span>Public caption <small>what the media shows</small></span>
+                                    <RadzenTextArea @bind-Value="@attachment.Caption" Rows="2" Style="width: 100%;" />
+                                </label>
+                                <label class="attachment-field attachment-field-wide">
+                                    <span>Attribution / license</span>
+                                    <RadzenTextArea @bind-Value="@attachment.Attribution" Rows="2" Style="width: 100%;" />
+                                </label>
+                            </div>
+                            <div class="attachment-card-actions">
+                                <RadzenButton Text="Keep changes" Icon="check" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
+                                              Click="@(() => SaveEdit(attachment))" />
+                                <RadzenButton Text="Cancel" Icon="close" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                              Click="@CancelEdit" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="attachment-card-preview">
+                                @if (!string.IsNullOrWhiteSpace(GetPreviewUrl(attachment)))
+                                {
+                                    <img src="@GetPreviewUrl(attachment)" alt="" loading="lazy" onerror="this.style.display='none'" />
+                                }
+                                else
+                                {
+                                    <RadzenIcon Icon="@GetMediaIcon(attachment)" />
+                                }
+                            </div>
+                            <div class="attachment-card-body">
+                                <div class="attachment-card-title-row">
+                                    <strong>@attachment.FileName</strong>
+                                    <RadzenBadge BadgeStyle="@GetAttachmentBadgeStyle(attachment)" Text="@GetAttachmentType(attachment)" />
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(attachment.Caption))
+                                {
+                                    <p>@attachment.Caption</p>
+                                }
+                                <RadzenLink Path="@attachment.Path" Text="@TruncateText(attachment.Path, 74)" Target="_blank" />
+                                @if (!string.IsNullOrWhiteSpace(attachment.SourceUrl))
+                                {
+                                    <small><strong>Source:</strong> <RadzenLink Path="@attachment.SourceUrl" Text="@TruncateText(attachment.SourceUrl, 64)" Target="_blank" /></small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(attachment.Attribution))
+                                {
+                                    <small><strong>Credit:</strong> @attachment.Attribution</small>
+                                }
+                            </div>
+                            <div class="attachment-card-actions">
+                                <RadzenButton Text="Edit metadata" Icon="edit" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                              Click="@(() => StartEdit(attachment))" />
+                                <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger"
+                                              Click="@(() => RemoveAttachment(attachment))" title="Remove attachment" />
+                            </div>
+                        }
+                    </article>
+                }
+            </div>
+        }
+        else
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true" Size="AlertSize.Small">
+                No attachments yet. Add some using the options above.
+            </RadzenAlert>
+        }
+    </RadzenCard>
+
+    <!-- Actions -->
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" JustifyContent="JustifyContent.End">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        <RadzenButton Text="Save Changes" ButtonStyle="ButtonStyle.Success" Click="@Save"
+                      Disabled="@(!hasChanges)" Icon="save" />
+    </RadzenStack>
+</RadzenStack>
+
+<style>
+    .attachment-admin-list { display: grid; gap: .75rem; }
+    .attachment-admin-card { display: grid; grid-template-columns: 88px minmax(0,1fr) auto; gap: .85rem; align-items: start; padding: .8rem; border: 1px solid rgba(127,127,127,.28); border-radius: 8px; background: rgba(127,127,127,.035); }
+    .attachment-admin-card.is-editing { grid-template-columns: 1fr; border-color: var(--rz-primary); }
+    .attachment-card-preview { width: 88px; height: 66px; display: grid; place-items: center; overflow: hidden; border-radius: 6px; background: rgba(127,127,127,.12); }
+    .attachment-card-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .attachment-card-preview .rzi { font-size: 1.8rem; opacity: .72; }
+    .attachment-card-body { display: grid; gap: .35rem; min-width: 0; }
+    .attachment-card-body p { margin: 0; line-height: 1.4; }
+    .attachment-card-body small { display: block; overflow-wrap: anywhere; opacity: .78; }
+    .attachment-card-title-row { display: flex; align-items: center; justify-content: space-between; gap: .65rem; }
+    .attachment-card-title-row strong { overflow-wrap: anywhere; }
+    .attachment-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem; }
+    .attachment-edit-grid { display: grid; grid-template-columns: minmax(180px,.35fr) minmax(0,1fr); gap: .7rem; }
+    .attachment-field { display: grid; gap: .25rem; font-size: .8rem; font-weight: 600; }
+    .attachment-field span small { opacity: .65; font-weight: 400; }
+    .attachment-field-wide { grid-column: 1 / -1; }
+
+    @@media (max-width: 680px) {
+        .attachment-admin-card { grid-template-columns: 64px minmax(0,1fr); }
+        .attachment-card-preview { width: 64px; height: 52px; }
+        .attachment-card-actions { grid-column: 1 / -1; justify-content: stretch; }
+        .attachment-card-actions .rz-button { flex: 1 1 auto; }
+        .attachment-edit-grid { grid-template-columns: 1fr; }
+        .attachment-field-wide { grid-column: auto; }
+    }
+</style>
+
+@code {
+    /// <summary>Gets or sets the location whose external attachment links are being edited.</summary>
+    [Parameter] public Location Location { get; set; } = new();
+
+    /// <summary>Gets or sets the callback raised with the dialog's updated attachment working set.</summary>
+    [Parameter] public EventCallback<List<Attachment>> OnAttachmentsChanged { get; set; }
+
+    private List<Attachment> attachments = new();
+    private Attachment newAttachment = new();
+    private string newLinkUrl = string.Empty;
+    private bool hasChanges = false;
+    private int editingAttachmentId = -1;
+    private Attachment? originalAttachment;
+    private readonly string[] mediaTypes = ["Image", "Video", "Wiki", "Link", "Timeline", "Article"];
+
+    /// <summary>Creates an editable copy of the location links and initializes a new link for the same location row.</summary>
+    protected override void OnInitialized()
+    {
+        // Create a working copy of attachments
+        attachments = Location.Attachments?.Select(a => new Attachment
+            {
+                Id = a.Id,
+                LocationRowid = a.LocationRowid,
+                FileName = a.FileName,
+                Path = a.Path,
+                MediaType = a.MediaType,
+                ThumbnailPath = a.ThumbnailPath,
+                SourceUrl = a.SourceUrl,
+                Caption = a.Caption,
+                Attribution = a.Attribution,
+                DateAddedUtc = a.DateAddedUtc
+            }).ToList() ?? new List<Attachment>();
+
+        newAttachment = new Attachment
+            {
+                LocationRowid = Location.Rowid,
+                DateAddedUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+    }
+
+    private async Task OnLinkUrlKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(newLinkUrl))
+        {
+            await AddLinkFromUrl();
+        }
+    }
+
+    private async Task AddLinkFromUrl()
+    {
+        if (string.IsNullOrWhiteSpace(newLinkUrl)) return;
+        if (!AttachmentLinkValidator.TryNormalizeHttps(newLinkUrl, out var normalizedUrl, out var error))
+        {
+            ShowErrorNotification(error);
+            return;
+        }
+        if (attachments.Any(a => string.Equals(a.Path, normalizedUrl, StringComparison.OrdinalIgnoreCase)))
+        {
+            ShowErrorNotification("That attachment URL is already present.");
+            return;
+        }
+        if (attachments.Count >= AttachmentLinkValidator.MaximumAttachmentsPerLocation)
+        {
+            ShowErrorNotification($"A location cannot have more than {AttachmentLinkValidator.MaximumAttachmentsPerLocation} attachments.");
+            return;
+        }
+
+        var attachment = new Attachment
+            {
+                Id = GetNextTempId(),
+                LocationRowid = Location.Rowid,
+                FileName = GenerateNameFromUrl(normalizedUrl),
+                Path = normalizedUrl,
+                MediaType = GetUrlType(normalizedUrl) switch
+                {
+                    "Image" => "Image",
+                    "Video" => "Video",
+                    "Wiki" => "Wiki",
+                    _ => "Link",
+                },
+                DateAddedUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+
+        attachments.Add(attachment);
+        hasChanges = true;
+        newLinkUrl = string.Empty;
+        StartEdit(attachment);
+
+        await ShowSuccessNotification("Link added. Add a caption, source, and credit before saving.");
+        StateHasChanged();
+    }
+
+    private string GenerateNameFromUrl(string url)
+    {
+        try
+        {
+            var uri = new Uri(url);
+            var host = uri.Host.ToLower();
+
+            if (host.Contains("youtube.com") || host.Contains("youtu.be"))
+                return $"{Location.Name} - YouTube Video";
+            else if (host.Contains("wiki"))
+                return $"{Location.Name} - Wiki Page";
+            else if (host.Contains("reddit.com"))
+                return $"{Location.Name} - Reddit Post";
+            else if (host.Contains("discord"))
+                return $"{Location.Name} - Discord Link";
+            else if (host.Contains("imgur"))
+                return $"{Location.Name} - Images";
+            else
+                return $"{Location.Name} - {char.ToUpper(host[0])}{host.Substring(1).Replace("www.", "")}";
+        }
+        catch
+        {
+            return $"{Location.Name} - Link";
+        }
+    }
+
+    private async Task AddCustomAttachment()
+    {
+        if (string.IsNullOrWhiteSpace(newAttachment.FileName) || string.IsNullOrWhiteSpace(newAttachment.Path))
+            return;
+
+        var attachment = new Attachment
+            {
+                Id = GetNextTempId(),
+                LocationRowid = newAttachment.LocationRowid,
+                FileName = newAttachment.FileName.Trim(),
+                Path = newAttachment.Path.Trim(),
+                MediaType = newAttachment.MediaType,
+                ThumbnailPath = newAttachment.ThumbnailPath,
+                SourceUrl = newAttachment.SourceUrl,
+                Caption = newAttachment.Caption,
+                Attribution = newAttachment.Attribution,
+                DateAddedUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+
+        attachments.Add(attachment);
+        hasChanges = true;
+
+        await ShowSuccessNotification($"Added attachment: {attachment.FileName}");
+        ClearNewAttachment();
+    }
+
+    private void ClearNewAttachment()
+    {
+        newAttachment = new Attachment
+            {
+                LocationRowid = Location.Rowid,
+                DateAddedUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+    }
+
+    private int GetNextTempId()
+    {
+        // Use negative IDs for new items to distinguish from existing ones
+        return attachments.Where(a => a.Id < 0).Any() ?
+               attachments.Where(a => a.Id < 0).Min(a => a.Id) - 1 : -1;
+    }
+
+    // Edit functionality
+    private void StartEdit(Attachment attachment)
+    {
+        editingAttachmentId = attachment.Id;
+        originalAttachment = new Attachment
+            {
+                Id = attachment.Id,
+                FileName = attachment.FileName,
+                Path = attachment.Path,
+                MediaType = attachment.MediaType,
+                ThumbnailPath = attachment.ThumbnailPath,
+                SourceUrl = attachment.SourceUrl,
+                Caption = attachment.Caption,
+                Attribution = attachment.Attribution,
+                LocationRowid = attachment.LocationRowid,
+                DateAddedUtc = attachment.DateAddedUtc
+            };
+    }
+
+    private void CancelEdit()
+    {
+        if (originalAttachment != null)
+        {
+            var attachment = attachments.First(a => a.Id == editingAttachmentId);
+            attachment.FileName = originalAttachment.FileName;
+            attachment.Path = originalAttachment.Path;
+            attachment.MediaType = originalAttachment.MediaType;
+            attachment.ThumbnailPath = originalAttachment.ThumbnailPath;
+            attachment.SourceUrl = originalAttachment.SourceUrl;
+            attachment.Caption = originalAttachment.Caption;
+            attachment.Attribution = originalAttachment.Attribution;
+        }
+        editingAttachmentId = -1;
+        originalAttachment = null;
+    }
+
+    private async Task SaveEdit(Attachment attachment)
+    {
+        if (string.IsNullOrWhiteSpace(attachment.FileName) || attachment.FileName.Trim().Length > 255)
+        {
+            ShowErrorNotification("Attachment name must be between 1 and 255 characters.");
+            return;
+        }
+        if (!AttachmentLinkValidator.TryNormalizeHttps(attachment.Path, out var normalizedUrl, out var error))
+        {
+            ShowErrorNotification(error);
+            return;
+        }
+        if (attachments.Any(a => a.Id != attachment.Id && string.Equals(a.Path, normalizedUrl, StringComparison.OrdinalIgnoreCase)))
+        {
+            ShowErrorNotification("That attachment URL is already present.");
+            return;
+        }
+
+        if (!TryNormalizeOptionalUrl(attachment.ThumbnailPath, out var thumbnail, out error) ||
+            !TryNormalizeOptionalUrl(attachment.SourceUrl, out var source, out error))
+        {
+            ShowErrorNotification(error);
+            return;
+        }
+        if ((attachment.Caption?.Trim().Length ?? 0) > 500 || (attachment.Attribution?.Trim().Length ?? 0) > 500)
+        {
+            ShowErrorNotification("Caption and attribution must each be 500 characters or fewer.");
+            return;
+        }
+
+        attachment.FileName = attachment.FileName.Trim();
+        attachment.Path = normalizedUrl;
+        attachment.MediaType = mediaTypes.Contains(attachment.MediaType, StringComparer.OrdinalIgnoreCase)
+            ? mediaTypes.First(type => string.Equals(type, attachment.MediaType, StringComparison.OrdinalIgnoreCase))
+            : GetUrlType(normalizedUrl) switch { "Image" => "Image", "Video" => "Video", "Wiki" => "Wiki", _ => "Link" };
+        attachment.ThumbnailPath = thumbnail;
+        attachment.SourceUrl = source;
+        attachment.Caption = NullIfWhiteSpace(attachment.Caption);
+        attachment.Attribution = NullIfWhiteSpace(attachment.Attribution);
+        hasChanges = true;
+        editingAttachmentId = -1;
+        originalAttachment = null;
+        await ShowSuccessNotification("Attachment updated.");
+        StateHasChanged();
+    }
+
+    private async Task OnEditKeyPress(KeyboardEventArgs e, Attachment attachment)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveEdit(attachment);
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelEdit();
+        }
+    }
+
+    private async Task RemoveAttachment(Attachment attachment)
+    {
+        attachments.Remove(attachment);
+        hasChanges = true;
+        await ShowSuccessNotification($"Removed attachment: {attachment.FileName}");
+        StateHasChanged();
+    }
+
+    // Utility methods
+    private bool IsUrl(string? path)
+    {
+        return AttachmentLinkValidator.TryNormalizeHttps(path, out _, out _);
+    }
+
+    private static bool TryNormalizeOptionalUrl(string? value, out string? normalized, out string error)
+    {
+        normalized = null;
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        if (!AttachmentLinkValidator.TryNormalizeHttps(value, out var url, out error)) return false;
+        normalized = url;
+        return true;
+    }
+
+    private static string? NullIfWhiteSpace(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private string GetAttachmentType(Attachment attachment) => string.IsNullOrWhiteSpace(attachment.MediaType)
+        ? GetUrlType(attachment.Path)
+        : attachment.MediaType!;
+
+    private BadgeStyle GetAttachmentBadgeStyle(Attachment attachment) => GetAttachmentType(attachment) switch
+    {
+        "Video" => BadgeStyle.Danger,
+        "Wiki" => BadgeStyle.Info,
+        "Image" => BadgeStyle.Success,
+        _ => BadgeStyle.Secondary,
+    };
+
+    private string? GetPreviewUrl(Attachment attachment)
+    {
+        if (!string.IsNullOrWhiteSpace(attachment.ThumbnailPath)) return attachment.ThumbnailPath;
+        return string.Equals(GetAttachmentType(attachment), "Image", StringComparison.OrdinalIgnoreCase)
+            ? attachment.Path
+            : null;
+    }
+
+    private string GetMediaIcon(Attachment attachment) => GetAttachmentType(attachment) switch
+    {
+        "Video" => "smart_display",
+        "Wiki" => "menu_book",
+        "Image" => "image",
+        _ => "link",
+    };
+
+    private string GetUrlType(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return "Link";
+
+        var lowerUrl = url.ToLower();
+        if (lowerUrl.Contains("youtube.com") || lowerUrl.Contains("youtu.be")) return "Video";
+        if (lowerUrl.Contains("wiki")) return "Wiki";
+        if (lowerUrl.Contains("reddit.com")) return "Reddit";
+        if (lowerUrl.Contains("discord")) return "Discord";
+        if (lowerUrl.Contains("imgur") || lowerUrl.Contains("gyazo") || lowerUrl.Contains("prnt.sc")) return "Image";
+        return "Link";
+    }
+
+    private BadgeStyle GetUrlBadgeStyle(string? url)
+    {
+        var type = GetUrlType(url);
+        return type switch
+        {
+            "Video" => BadgeStyle.Danger,
+            "Wiki" => BadgeStyle.Info,
+            "Reddit" => BadgeStyle.Warning,
+            "Discord" => BadgeStyle.Primary,
+            "Image" => BadgeStyle.Success,
+            _ => BadgeStyle.Secondary
+        };
+    }
+
+    private string TruncateText(string? text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+            return text ?? "";
+
+        return text.Substring(0, maxLength - 3) + "...";
+    }
+
+    // Dialog actions
+    private async Task Save()
+    {
+        foreach (var attachment in attachments)
+        {
+            if (!AttachmentLinkValidator.TryNormalizeHttps(attachment.Path, out _, out var error))
+            {
+                ShowErrorNotification($"{attachment.FileName}: {error}");
+                return;
+            }
+        }
+        await OnAttachmentsChanged.InvokeAsync(attachments);
+        DialogService.Close(attachments);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close();
+    }
+
+    // Notifications
+    private async Task ShowSuccessNotification(string message)
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Success",
+                Detail = message,
+                Duration = 3000
+            });
+    }
+
+    private void ShowErrorNotification(string message)
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = "Attachment not saved",
+            Detail = message,
+            Duration = 5000
+        });
+    }
+
+}

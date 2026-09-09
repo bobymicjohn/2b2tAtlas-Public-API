@@ -1,0 +1,201 @@
+@page "/groups"
+@using Atlas
+@using Group = Atlas.Group
+@using _2b2tAtlas.Client.Services
+@inject GroupService GroupService
+@inject HighwayService HighwayService
+
+<PageTitle>Groups - 2b2t Atlas</PageTitle>
+
+<div class="groups-page">
+    <div class="groups-header">
+        <RadzenText TextStyle="TextStyle.H4" class="rz-mb-1">Groups &amp; factions</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" class="rz-text-secondary">
+            Builders, infrastructure crews, factions, and historical coalitions documented on 2b2t. Open a group to explore its attributed builds and highways.
+        </RadzenText>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="groups-loading"><RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Medium" /></div>
+    }
+    else
+    {
+        <div class="groups-toolbar">
+            <input class="groups-search rz-textbox" placeholder="Search groups..."
+                   value="@search" @oninput="@(e => search = e.Value?.ToString() ?? string.Empty)" />
+            <RadzenSelectBar @bind-Value="typeFilter" TValue="string" Size="ButtonSize.Small">
+                <Items>
+                    <RadzenSelectBarItem Text="All" Value="@("all")" />
+                    <RadzenSelectBarItem Text="Build" Value="@("Build")" />
+                    <RadzenSelectBarItem Text="Highway" Value="@("Highway")" />
+                    <RadzenSelectBarItem Text="Mixed" Value="@("Mixed")" />
+                    <RadzenSelectBarItem Text="Other" Value="@("Other")" />
+                </Items>
+            </RadzenSelectBar>
+        </div>
+
+        <div class="groups-grid">
+            @foreach (var g in FilteredGroups())
+            {
+                var highways = HighwaysFor(g.Id);
+                <div class="group-card" style="border-top: 4px solid @(string.IsNullOrWhiteSpace(g.Color) ? "#4da3ff" : g.Color);">
+                    <div class="group-card-head">
+                        <a class="group-identity" href="@($"group/{g.Id}")">
+                            <span class="group-logo-shell" style="background:@(string.IsNullOrWhiteSpace(g.Color) ? "#4da3ff" : g.Color);">
+                                <span class="group-monogram">@Monogram(g.Name)</span>
+                                @if (!string.IsNullOrWhiteSpace(g.LogoUrl))
+                                {
+                                    <img class="group-logo" src="@g.LogoUrl" alt="@($"{g.Name} emblem")" loading="lazy" onerror="this.remove()" />
+                                }
+                            </span>
+                            <span class="group-title-block">
+                                <span class="group-name">@g.Name</span>
+                                @if (!string.IsNullOrWhiteSpace(g.Founded) || !string.IsNullOrWhiteSpace(g.Status))
+                                {
+                                    <span class="group-era">@(g.Founded is null ? g.Status : $"Founded {g.Founded}{(string.IsNullOrWhiteSpace(g.Status) ? "" : $" · {g.Status}")}")</span>
+                                }
+                            </span>
+                        </a>
+                        <RadzenBadge BadgeStyle="@TypeBadge(g.Type)" Text="@TypeLabel(g.Type)" />
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(g.Description))
+                    {
+                        <RadzenText TextStyle="TextStyle.Body2" class="group-desc">@DisplayText.NormalizeDescription(g.Description)</RadzenText>
+                    }
+
+                    <div class="group-meta">
+                        <a class="group-count" href="@($"group/{g.Id}#builds")"><RadzenIcon Icon="castle" /> @g.LocationCount build@(g.LocationCount == 1 ? "" : "s")</a>
+                        <a class="group-count" href="@($"group/{g.Id}#highways")"><RadzenIcon Icon="route" /> @highways.Count highway@(highways.Count == 1 ? "" : "s")</a>
+                        @if (!string.IsNullOrWhiteSpace(g.WikiUrl))
+                        {
+                            <RadzenLink Path="@g.WikiUrl" Target="_blank" class="group-wiki"><RadzenIcon Icon="open_in_new" /> Wiki</RadzenLink>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(g.WebsiteUrl))
+                        {
+                            <RadzenLink Path="@g.WebsiteUrl" Target="_blank" class="group-wiki"><RadzenIcon Icon="language" /> Website</RadzenLink>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(g.DiscordUrl))
+                        {
+                            <RadzenLink Path="@g.DiscordUrl" Target="_blank" class="group-wiki"><RadzenIcon Icon="forum" /> Discord</RadzenLink>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (!FilteredGroups().Any())
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true" AllowClose="false">No groups match your search.</RadzenAlert>
+        }
+    }
+</div>
+
+<style>
+    .groups-page { padding: 20px; max-width: 1400px; margin: 0 auto; }
+    .groups-header { margin-bottom: 16px; }
+    .groups-loading { display: flex; justify-content: center; padding: 60px; }
+    .groups-toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+    .groups-search { min-width: 240px; }
+    .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .group-card { background: var(--rz-base-background-color, #1b1e26); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; }
+    .group-card-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .group-identity { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; color: inherit; text-decoration: none; }
+    .group-logo-shell { position: relative; width: 58px; height: 58px; border-radius: 10px; flex: 0 0 58px; overflow: hidden; }
+    .group-logo, .group-monogram { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .group-logo { object-fit: contain; background: var(--rz-base-background-color, #1b1e26); }
+    .group-monogram { display: grid; place-items: center; color: #fff; font-size: 1rem; font-weight: 800; }
+    .group-title-block { min-width: 0; display: grid; gap: 3px; }
+    .group-name { font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
+    .group-identity:hover .group-name { text-decoration: underline; }
+    .group-era { font-size: .75rem; opacity: .68; }
+    .group-desc { margin: 4px 0 8px 0 !important; opacity: 0.85; white-space: pre-line; }
+    .group-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; font-size: 0.85rem; margin-bottom: 8px; }
+    .group-count { display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; }
+    a.group-count { color: inherit; text-decoration: none; }
+    .group-wiki { display: inline-flex; align-items: center; gap: 4px; }
+    .group-meta .rz-icon, .group-wiki .rz-icon { font-size: 1rem; }
+    @@media (max-width: 560px) {
+        .groups-page { padding: 10px; }
+        .groups-search { width: 100%; min-width: 0; }
+        .groups-grid { grid-template-columns: 1fr; }
+        .group-card { padding: 12px; }
+        .group-logo-shell { width: 48px; height: 48px; flex-basis: 48px; }
+    }
+</style>
+
+@code {
+    private List<Group> groups = new();
+    private List<Highway> highways = new();
+    private Dictionary<int, List<Highway>> highwaysByGroup = new();
+    private bool isLoading = true;
+    private string search = string.Empty;
+    private string typeFilter = "all";
+
+    /// <summary>Loads public groups and highways in parallel, then indexes highways by builder group for display.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var groupsTask = GroupService.GetGroupsAsync();
+        var highwaysTask = HighwayService.GetHighwaysAsync();
+        await Task.WhenAll(groupsTask, highwaysTask);
+        groups = (await groupsTask).OrderBy(g => g.Name).ToList();
+        highways = await highwaysTask;
+        foreach (var highway in highways)
+        {
+            IEnumerable<int> groupIds = highway.BuilderGroups.Count > 0
+                ? highway.BuilderGroups.Select(group => group.GroupId)
+                : highway.BuilderGroupId is int legacyGroupId ? new[] { legacyGroupId } : Array.Empty<int>();
+            foreach (var groupId in groupIds.Distinct())
+            {
+                if (!highwaysByGroup.TryGetValue(groupId, out var groupHighways))
+                    highwaysByGroup[groupId] = groupHighways = [];
+                if (groupHighways.All(item => item.Id != highway.Id)) groupHighways.Add(highway);
+            }
+        }
+        isLoading = false;
+    }
+
+    private List<Highway> HighwaysFor(int groupId) =>
+        highwaysByGroup.TryGetValue(groupId, out var list) ? list : new List<Highway>();
+
+    private IEnumerable<Group> FilteredGroups()
+    {
+        IEnumerable<Group> q = groups;
+        if (typeFilter != "all")
+            q = q.Where(g => g.Type.ToString() == typeFilter);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(g => g.Name.Contains(s, StringComparison.OrdinalIgnoreCase)
+                          || (g.Aliases?.Any(alias => alias.Contains(s, StringComparison.OrdinalIgnoreCase)) ?? false)
+                          || (g.Description?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false)
+                          || (g.Status?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false)
+                          || (g.Founded?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+        return q;
+    }
+
+    private static BadgeStyle TypeBadge(GroupType type) => type switch
+    {
+        GroupType.Build => BadgeStyle.Info,
+        GroupType.Highway => BadgeStyle.Warning,
+        GroupType.Mixed => BadgeStyle.Success,
+        _ => BadgeStyle.Light,
+    };
+
+    private static string TypeLabel(GroupType type) => type switch
+    {
+        GroupType.Build => "Builders",
+        GroupType.Highway => "Infrastructure",
+        GroupType.Mixed => "Build + infrastructure",
+        _ => "Faction / community",
+    };
+
+    private static string Monogram(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+}

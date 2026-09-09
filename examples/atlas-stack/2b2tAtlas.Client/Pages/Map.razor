@@ -1,0 +1,3426 @@
+@page "/map"
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.JSInterop
+@using Atlas
+@using System.Text
+@using System.Net.Http.Json
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject _2b2tAtlas.Client.Services.LocationService LocationService
+@inject _2b2tAtlas.Client.Services.HighwayService HighwayService
+@inject _2b2tAtlas.Client.Services.GroupService GroupService
+@inject _2b2tAtlas.Client.Services.AuthService AuthService
+@inject _2b2tAtlas.Client.Services.MapRenderService MapRenderService
+@implements IAsyncDisposable
+
+<PageTitle>Map - 2b2t Atlas</PageTitle>
+
+<div class="map-container map-theme-@MapTheme">
+    <div class="map-view">
+        <div id="map" class="map-display"></div>
+
+        @if (showCrosshairs)
+        {
+            <div class="map-crosshair"></div>
+        }
+
+        <div class="map-toolbar">
+            <button class="map-ctrl@(showSearchPanel ? " active" : "")" @onclick="ToggleSearch" title="Search & go to" aria-label="Search and go to coordinates">
+                <RadzenIcon Icon="search" />
+            </button>
+            <button class="map-ctrl@(showLayersPanel ? " active" : "")" @onclick="ToggleLayers" title="Layers" aria-label="Map layers">
+                <RadzenIcon Icon="layers" />
+            </button>
+            <button class="@HistoryControlClass" @onclick="ToggleHistory"
+                    title="World Pulse history" aria-label="Open World Pulse history">
+                <RadzenIcon Icon="history" />
+            </button>
+            <button class="map-ctrl@(measuring ? " active" : "")" @onclick="ToggleMeasure" title="Measure distance" aria-label="Measure distance">
+                <RadzenIcon Icon="straighten" />
+            </button>
+            <button class="map-ctrl@(showMarkerToolPanel ? " active" : "")" @onclick="ToggleMarkerTool" title="Place markers" aria-label="Place temporary markers">
+                <RadzenIcon Icon="add_location_alt" />
+            </button>
+            <button class="map-ctrl@(showExportPanel ? " active" : "")" @onclick="ToggleExport" title="Export waypoints" aria-label="Export waypoints">
+                <RadzenIcon Icon="download" />
+            </button>
+            @if (canEditHighways)
+            {
+                <button class="map-ctrl@(editorOpen ? " active" : "")" @onclick="ToggleHighwayEditor" title="Edit highways" aria-label="Edit highways">
+                    <RadzenIcon Icon="edit_road" />
+                </button>
+            }
+            <div class="map-ctrl-gap"></div>
+            <button class="map-ctrl@(currentRenderDayNight ? "" : " ctrl-off")" @onclick="ToggleDay"
+                    title="@(currentRenderDayNight ? (isDay ? "Switch to night" : "Switch to day") : "Day/night not available for this render")"
+                    aria-label="@(isDay ? "Switch map to night" : "Switch map to day")">
+                <RadzenIcon Icon="@(isDay ? "dark_mode" : "light_mode")" />
+            </button>
+            <button class="map-ctrl" @onclick="ToggleFullscreen" title="Fullscreen" aria-label="Toggle fullscreen map">
+                <RadzenIcon Icon="fullscreen" />
+            </button>
+        </div>
+
+        <div class="map-coords">
+            <span class="coord-main">@cursorText</span>
+            @if (!string.IsNullOrEmpty(altCoordLabel))
+            {
+                <span class="coord-alt">@altCoordLabel @altCoordText</span>
+            }
+            <button class="coord-copy" @onclick="CopyCoords" title="Copy coordinates">
+                <RadzenIcon Icon="content_copy" />
+            </button>
+            <button class="coord-copy" @onclick="ShareView" title="@(shareCopied ? "Link copied!" : "Copy a link to this view")">
+                <RadzenIcon Icon="@(shareCopied ? "check" : "share")" />
+            </button>
+        </div>
+
+        @if (showSearchPanel)
+        {
+            <div class="map-panel search-panel">
+                <div class="panel-header">
+                    <span>Search &amp; go to</span>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@(() => showSearchPanel = false)" />
+                </div>
+                <div class="goto-row">
+                    <span class="goto-field"><label>X</label><RadzenNumeric @bind-Value="@gotoX" Style="width: 100%" /></span>
+                    <span class="goto-field"><label>Z</label><RadzenNumeric @bind-Value="@gotoZ" Style="width: 100%" /></span>
+                    <RadzenButton Icon="my_location" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@GoToCoords" title="Go to coordinates" />
+                </div>
+                <input class="search-input" @bind="searchQuery" @bind:event="oninput" @bind:after="RunSearch"
+                       placeholder="Name, tag, or coordinates…" autocomplete="off" />
+                <div class="search-results">
+                    @if (searchCoordinates is { } coordinates)
+                    {
+                        <button class="search-row coordinate-result" @onclick="GoToSearchCoordinates">
+                            <div class="search-row-main">
+                                <span class="search-name">Go to coordinates</span>
+                                <span class="loc-badge">@DimensionLabel(selectedDimension)</span>
+                            </div>
+                            <div class="search-coords">@coordinates.X, @coordinates.Z</div>
+                        </button>
+                    }
+                    @if (searchResults.Count == 0 && searchCoordinates is null && !string.IsNullOrWhiteSpace(searchQuery))
+                    {
+                        <div class="search-empty">No matches</div>
+                    }
+                    @foreach (var loc in searchResults)
+                    {
+                        <div class="search-row" @onclick="@(() => GoToSearchResult(loc))">
+                            <div class="search-row-main">
+                                <span class="search-name">@loc.Name</span>
+                                <span class="loc-badge">@loc.DimensionName</span>
+                            </div>
+                            <div class="search-coords">@loc.X, @loc.Z</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (showLayersPanel)
+        {
+            <div class="map-panel layers-panel">
+                <div class="panel-header">
+                    <span>Layers</span>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@(() => showLayersPanel = false)" />
+                </div>
+                <div class="spawn-render-manager">
+                    <div class="panel-row render-master-row">
+                        <RadzenCheckBox @bind-Value="@showSpawnRenders" TValue="bool" Change="@OnSpawnRendersChanged" Name="srToggle" />
+                        <RadzenLabel Text="Spawn renders" Component="srToggle" />
+                        <span class="render-count">@orderedRenders.Count</span>
+                    </div>
+
+                    <div class="render-section-label">Active</div>
+                    <div class="render-order @(showSpawnRenders ? "" : "renders-disabled")">
+                        @if (orderedRenders.Count == 0)
+                        {
+                            <div class="render-empty">No active renders</div>
+                        }
+                        @for (int i = 0; i < orderedRenders.Count; i++)
+                        {
+                            var id = orderedRenders[i];
+                            var idx = i;
+                            <div class="render-order-row @(draggingIndex == idx ? "dragging" : "")"
+                                 draggable="true"
+                                 @ondragstart="() => OnDragStart(idx)"
+                                 @ondragenter="() => OnDragEnter(idx)"
+                                 @ondragover:preventDefault="true"
+                                 @ondrop:preventDefault="true"
+                                 @ondragend="OnDragEnd">
+                                <RadzenIcon Icon="drag_indicator" class="ro-drag" />
+                                <span class="ro-label" title="@RenderLabel(id)">@RenderLabel(id)</span>
+                                <RadzenButton Icon="remove" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Text"
+                                              Size="ButtonSize.ExtraSmall" class="render-row-action"
+                                              title="@($"Remove {RenderLabel(id)}")" Click="@(() => RemoveRender(id))" />
+                            </div>
+                        }
+                    </div>
+                    <div class="ro-hint">Top layer is in front · drag to reorder</div>
+
+                    <div class="render-section-label available-label">Available</div>
+                    <div class="render-available">
+                        @if (!AvailableRenders.Any())
+                        {
+                            <div class="render-empty">All renders are active</div>
+                        }
+                        @foreach (var render in AvailableRenders)
+                        {
+                            <div class="render-available-row">
+                                <span class="ro-label" title="@render.Label">@render.Label</span>
+                                <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Success" Variant="Variant.Text"
+                                              Size="ButtonSize.ExtraSmall" class="render-row-action"
+                                              title="@($"Add {render.Label}")" Click="@(() => AddRender(render.Id))" />
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@showBaseRenders" TValue="bool" Change="@OnBaseRendersChanged" Name="brToggle" />
+                    <RadzenLabel Text="Base renders (close-up)" Component="brToggle" />
+                </div>
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@showLocations" TValue="bool" Change="@OnLocationsChanged" Name="locToggle" />
+                    <RadzenLabel Text="Locations" Component="locToggle" />
+                </div>
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@showEndPortals" TValue="bool" Change="@OnEndPortalsChanged" Name="epToggle" />
+                    <RadzenLabel Text="End portals" Component="epToggle" />
+                </div>
+                <div class="marker-settings">
+                    <div class="render-row">
+                        <RadzenLabel Text="Marker icon" />
+                        <RadzenDropDown @bind-Value="@markerIcon" Data="@markerIconOptions"
+                                        TextProperty="Label" ValueProperty="Id" Change="@OnMarkerSettingsChanged"
+                                        Style="width: 100%; margin-top: 4px;" />
+                    </div>
+                    <div class="render-row">
+                        <RadzenLabel Text="Marker color" />
+                        <RadzenDropDown @bind-Value="@markerColor" Data="@markerColorOptions"
+                                        TextProperty="Label" ValueProperty="Id" Change="@OnMarkerSettingsChanged"
+                                        Style="width: 100%; margin-top: 4px;" />
+                    </div>
+                    <div class="slider-row">
+                        <RadzenLabel Text="@($"Opacity: {markerOpacity:0.00}")" />
+                        <input class="marker-slider" type="range" min="0.1" max="1.0" step="0.05"
+                               value="@markerOpacity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                               @onchange="OnMarkerOpacityChanged" aria-label="Marker opacity" />
+                    </div>
+                    <div class="slider-row">
+                        <RadzenLabel Text="@($"Size: {markerScale:0.00}×")" />
+                        <input class="marker-slider" type="range" min="0.5" max="1.5" step="0.05"
+                               value="@markerScale.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                               @onchange="OnMarkerScaleChanged" aria-label="Marker size" />
+                    </div>
+                </div>
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@showHighways" TValue="bool" Change="@OnHighwaysChanged" Name="hwToggle" />
+                    <RadzenLabel Text="Highways" Component="hwToggle" />
+                </div>
+                @if (showHighways)
+                {
+                    <div class="slider-row">
+                        <RadzenLabel Text="@($"Highway opacity: {highwayOpacity:0.00}")" />
+                        <input class="marker-slider" type="range" min="0.1" max="1.0" step="0.05"
+                               value="@highwayOpacity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                               @oninput="OnHighwayOpacityChanged" aria-label="Highway opacity" />
+                    </div>
+                }
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@showAxes" TValue="bool" Change="@OnAxesChanged" Name="axToggle" />
+                    <RadzenLabel Text="Axes" Component="axToggle" />
+                </div>
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@showBorders" TValue="bool" Change="@OnBordersChanged" Name="bdToggle" />
+                    <RadzenLabel Text="World borders" Component="bdToggle" />
+                </div>
+                @if (showBorders)
+                {
+                    <div class="border-legend">
+                        @if (selectedDimension == "overworld")
+                        {
+                            <span><i class="border-key overworld"></i>Overworld ±30M</span>
+                            <span><i class="border-key nether"></i>Nether ±30M (projected ±240M)</span>
+                        }
+                        else if (selectedDimension == "nether")
+                        {
+                            <span><i class="border-key overworld"></i>Overworld ±30M (projected ±3.75M)</span>
+                            <span><i class="border-key nether"></i>Nether ±30M</span>
+                        }
+                        else
+                        {
+                            <span><i class="border-key overworld"></i>End ±30M</span>
+                        }
+                    </div>
+                }
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@showSpawnRadius" TValue="bool" Change="@OnSpawnRadiusChanged" Name="spToggle" />
+                    <RadzenLabel Text="Spawn radius" Component="spToggle" />
+                </div>
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@showCrosshairs" TValue="bool" Name="chToggle" />
+                    <RadzenLabel Text="Crosshairs" Component="chToggle" />
+                </div>
+            </div>
+        }
+
+        @if (showHistoryPanel)
+        {
+            <div class="map-panel history-panel">
+                <div class="panel-header history-header">
+                    <span>World Pulse</span>
+                    <span class="history-era-badge">Nocom 2018-2021</span>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@(() => showHistoryPanel = false)" />
+                </div>
+
+                @if (nocomLoading)
+                {
+                    <div class="history-empty">Loading historical record...</div>
+                }
+                else if (nocomManifest is null)
+                {
+                    <div class="history-empty">
+                        <span>World Pulse data could not be loaded.</span>
+                        <RadzenButton Text="Retry" Icon="refresh" ButtonStyle="ButtonStyle.Info"
+                                      Size="ButtonSize.Small" Click="RetryNocomManifestAsync" />
+                    </div>
+                }
+                else
+                {
+                    <p class="history-intro">
+                        Nocom remotely tested whether chunks were loaded. This layer shows positive observations,
+                        not exact player positions.
+                    </p>
+
+                    <div class="panel-row history-master-row">
+                        <RadzenCheckBox @bind-Value="@nocomEnabled" TValue="bool" Change="@OnNocomEnabledChanged" Name="nocomToggle" />
+                        <RadzenLabel Text="Show World Pulse" Component="nocomToggle" />
+                    </div>
+
+                    <div class="history-mode" role="group" aria-label="World Pulse time range">
+                            <button class="@(nocomShowTotal ? "" : "active")" @onclick="@(() => SetNocomTotal(false))">Period</button>
+                            <button class="@(nocomShowTotal ? "active" : "")" @onclick="@(() => SetNocomTotal(true))">All time</button>
+                        </div>
+
+                        @if (!nocomShowTotal && NocomPeriods.Count > 0)
+                        {
+                            <div class="history-date-row">
+                                <div>
+                                    <strong>@CurrentNocomPeriod.Label</strong>
+                                    <span>@NocomEra(CurrentNocomPeriod.StartUtc)</span>
+                                </div>
+                                <span>@(nocomPeriodIndex + 1) / @NocomPeriods.Count</span>
+                            </div>
+                            <input class="history-slider" type="range" min="0" max="@(NocomPeriods.Count - 1)" step="1"
+                                   value="@nocomPeriodIndex" @oninput="OnNocomPeriodChanged" aria-label="Nocom observation period" />
+                            <div class="history-playback">
+                                <button @onclick="PreviousNocomPeriod" title="Previous period" aria-label="Previous period"><RadzenIcon Icon="skip_previous" /></button>
+                                <button class="play" @onclick="ToggleNocomPlayback" title="@(nocomPlaying ? "Pause" : "Play timeline")"
+                                        aria-label="@(nocomPlaying ? "Pause timeline" : "Play timeline")">
+                                    <RadzenIcon Icon="@(nocomPlaying ? "pause" : "play_arrow")" />
+                                </button>
+                                <button @onclick="NextNocomPeriod" title="Next period" aria-label="Next period"><RadzenIcon Icon="skip_next" /></button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="history-total-label">
+                                <strong>All observations</strong>
+                                <span>Full released Nocom record</span>
+                            </div>
+                        }
+
+                        <div class="history-opacity-row">
+                            <label>Color style</label>
+                        </div>
+                        <div class="history-mode history-color-mode" role="group" aria-label="World Pulse color style">
+                            <button class="@(nocomStyle == "contrast" ? "active" : "")"
+                                    @onclick="@(() => SetNocomStyle("contrast"))">High contrast</button>
+                            <button class="@(nocomStyle == "classic" ? "active" : "")"
+                                    @onclick="@(() => SetNocomStyle("classic"))">Original heat</button>
+                            <button class="@(nocomStyle == "custom" ? "active" : "")"
+                                    @onclick="@(() => SetNocomStyle("custom"))">Custom color</button>
+                        </div>
+
+                        @if (nocomStyle == "custom")
+                        {
+                            <div class="history-color-picker-row">
+                                <label for="nocomColor">Heatmap color</label>
+                                <div>
+                                    <input id="nocomColor" type="color" value="@CurrentNocomColor"
+                                           @oninput="OnNocomColorChanged" aria-label="Custom World Pulse color" />
+                                    <code>@CurrentNocomColor.ToUpperInvariant()</code>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="history-opacity-row">
+                            <label for="nocomOpacity">Layer opacity</label>
+                            <span>@Math.Round(nocomOpacity * 100)%</span>
+                        </div>
+                        <input id="nocomOpacity" class="history-slider" type="range" min="0.1" max="1" step="0.05"
+                               value="@nocomOpacity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                               @oninput="OnNocomOpacityChanged" />
+
+                    <div class="history-legend" aria-label="Observation intensity legend">
+                            <div class="@HistoryGradientClass" style="@HistoryGradientStyle"></div>
+                            @if (nocomStyle == "contrast")
+                            {
+                                <div><span>Less observed</span><span>More observed</span></div>
+                            }
+                            else
+                            {
+                                <div><span>1</span><span>100</span><span>10k</span><span>100k+</span></div>
+                            }
+                    </div>
+
+                    <details class="history-method">
+                        <summary>How to read this</summary>
+                        <p>A brighter cell means the chunk returned more positive loaded-chunk checks during the selected 30-day period.</p>
+                        <p>Scanning focused on highways, known sites, and other priorities. Dark areas may be unobserved, not empty.</p>
+                        @if (nocomStyle == "contrast")
+                        {
+                            <p>Colors show the existing qualitative density. Chunk coverage is unchanged. Below the terrain's zoom range, a small glow keeps tiny footprints visible; it is not additional observed area.</p>
+                        }
+                        <a href="https://github.com/nerdsinspace/nocom-explanation" target="_blank" rel="noopener">Original technical explanation</a>
+                    </details>
+                }
+            </div>
+        }
+
+        @if (measuring)
+        {
+            <div class="map-panel measure-panel">
+                <div class="panel-header">
+                    <span>Measure</span>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@ToggleMeasure" />
+                </div>
+                <div class="measure-total">@FormatDistance(measureBlocks)</div>
+                <div class="panel-row">
+                    <RadzenSelectBar @key="selectedDimension" @bind-Value="@measureUnit" TValue="string" Size="ButtonSize.Small">
+                        <Items>
+                            <RadzenSelectBarItem Text="@(selectedDimension == "nether" ? "Nether" : "Blocks")" Value="@("blocks")" />
+                            <RadzenSelectBarItem Text="Chunks" Value="@("chunks")" />
+                            <RadzenSelectBarItem Text="Km" Value="@("km")" />
+                            @if (selectedDimension == "overworld")
+                            {
+                                <RadzenSelectBarItem Text="Nether" Value="@("nether")" />
+                            }
+                            else if (selectedDimension == "nether")
+                            {
+                                <RadzenSelectBarItem Text="Overworld" Value="@("overworld")" />
+                            }
+                        </Items>
+                    </RadzenSelectBar>
+                </div>
+                <div class="measure-hint">@measurePointCount point(s) — click the map to add.</div>
+                <RadzenButton Text="Clear" Icon="delete" ButtonStyle="ButtonStyle.Light"
+                              Size="ButtonSize.Small" Click="@ClearMeasure" />
+            </div>
+        }
+
+        @if (showMarkerToolPanel)
+        {
+            <div class="map-panel marker-tool-panel">
+                <div class="panel-header">
+                    <span>Place markers</span>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@ToggleMarkerTool" />
+                </div>
+                <div class="render-row">
+                    <RadzenLabel Text="Icon" />
+                    <RadzenDropDown @bind-Value="@placeIcon" Data="@markerToolIcons"
+                                    TextProperty="Label" ValueProperty="Id" Change="@OnPlaceIconChanged"
+                                    Style="width: 100%; margin-top: 4px;" />
+                </div>
+                <div class="measure-hint">@customMarkerCount marker(s) — click the map to drop, drag to move, right-click to remove.</div>
+                <RadzenButton Text="Clear all" Icon="delete" ButtonStyle="ButtonStyle.Light"
+                              Size="ButtonSize.Small" Click="@ClearCustomMarkers" Disabled="@(customMarkerCount == 0)" />
+            </div>
+        }
+
+        @if (showExportPanel)
+        {
+            <div class="map-panel export-panel">
+                <div class="panel-header">
+                    <span>Export waypoints</span>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@(() => showExportPanel = false)" />
+                </div>
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="@exportAllDims" TValue="bool" Name="expAll" />
+                    <RadzenLabel Text="All dimensions" Component="expAll" />
+                </div>
+                <div class="export-count">@ExportSet().Count locations to export</div>
+                <div class="export-buttons">
+                    <RadzenButton Text="Xaero (.txt)" Icon="download" ButtonStyle="ButtonStyle.Primary"
+                                  Size="ButtonSize.Small" Click="@ExportXaero" />
+                    <RadzenButton Text="CSV" Icon="download" ButtonStyle="ButtonStyle.Light"
+                                  Size="ButtonSize.Small" Click="@ExportCsv" />
+                    <RadzenButton Text="JSON" Icon="download" ButtonStyle="ButtonStyle.Light"
+                                  Size="ButtonSize.Small" Click="@ExportJson" />
+                </div>
+                <div class="export-hint">Xaero: drop the .txt into your Xaero waypoints folder for the matching dimension.</div>
+            </div>
+        }
+
+        @if (editorOpen)
+        {
+            <div class="map-panel highway-editor-panel">
+                <div class="panel-header">
+                    <span>@(hwEditId is null ? "New highway" : "Edit highway")</span>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@CloseHighwayEditor" />
+                </div>
+
+                <div class="editor-hint">
+                    Click the map to add points. Drag a point to move it, right-click a point to remove it.
+                </div>
+                <div class="editor-path-row">
+                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@($"{editVertexCount} point(s)")" />
+                    <RadzenButton Text="Undo" Icon="undo" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                  Disabled="@(editVertexCount == 0)" Click="@UndoVertex" />
+                    <RadzenButton Text="Clear" Icon="delete" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                  Disabled="@(editVertexCount == 0)" Click="@ClearVertices" />
+                </div>
+
+                <div class="editor-field">
+                    <RadzenLabel Text="Name" />
+                    <RadzenTextBox @bind-Value="@hwName" Placeholder="e.g. My Spur Highway" class="w-100" />
+                </div>
+                <div class="editor-grid">
+                    <div class="editor-field">
+                        <RadzenLabel Text="Category" />
+                        <RadzenDropDown @bind-Value="@hwCategory" Data="@categoryOptions" class="w-100" />
+                    </div>
+                    <div class="editor-field">
+                        <RadzenLabel Text="Width" />
+                        <RadzenNumeric @bind-Value="@hwWidth" Min="1" Max="16" class="w-100" />
+                    </div>
+                    <div class="editor-field">
+                        <RadzenLabel Text="Paving" />
+                        <RadzenDropDown @bind-Value="@hwMaterial" Data="@materialOptions" class="w-100" />
+                    </div>
+                    <div class="editor-field">
+                        <RadzenLabel Text="Status" />
+                        <RadzenDropDown @bind-Value="@hwStatus" Data="@statusOptions" class="w-100" />
+                    </div>
+                    <div class="editor-field">
+                        <RadzenLabel Text="Y level" />
+                        <RadzenNumeric @bind-Value="@hwYLevel" class="w-100" />
+                    </div>
+                    <div class="editor-field">
+                        <RadzenLabel Text="Color" />
+                        <RadzenTextBox @bind-Value="@hwColor" Placeholder="#4da3ff" class="w-100" />
+                    </div>
+                </div>
+                <div class="editor-field">
+                    <RadzenLabel Text="Builder group" />
+                    <RadzenDropDown @bind-Value="@hwBuilderGroupId" Data="@groups" TextProperty="Name" ValueProperty="Id"
+                                    AllowClear="true" Placeholder="Unattributed" class="w-100" />
+                </div>
+                <div class="editor-field">
+                    <RadzenLabel Text="Builders / maintainers" />
+                    <RadzenDropDown @bind-Value="hwGroupIds" Data="@groups" TextProperty="Name" ValueProperty="Id"
+                                    Multiple="true" Chips="true" AllowClear="true" class="w-100" />
+                </div>
+                <div class="editor-grid">
+                    <div class="editor-field">
+                        <RadzenLabel Text="Clearance (blocks)" />
+                        <RadzenNumeric @bind-Value="hwHeight" Min="1" Max="1024" class="w-100" />
+                    </div>
+                    @if (hwCategory is HighwayCategory.Ring or HighwayCategory.DiamondRing)
+                    {
+                        <div class="editor-field">
+                            <RadzenLabel Text="Ring radius (dimension blocks)" />
+                            <RadzenNumeric @bind-Value="hwRingRadius" Min="1" Max="30000000" class="w-100" />
+                        </div>
+                    }
+                </div>
+                <div class="panel-row">
+                    <RadzenCheckBox @bind-Value="hwLit" TValue="bool" Name="hwLit" />
+                    <RadzenLabel Text="Lit" Component="hwLit" />
+                </div>
+                <div class="editor-checks">
+                    <div class="panel-row">
+                        <RadzenCheckBox @bind-Value="@hwPaved" TValue="bool" Name="hwPaved" />
+                        <RadzenLabel Text="Paved" Component="hwPaved" />
+                    </div>
+                    <div class="panel-row">
+                        <RadzenCheckBox @bind-Value="@hwWalls" TValue="bool" Name="hwWalls" />
+                        <RadzenLabel Text="Walls" Component="hwWalls" />
+                    </div>
+                    <div class="panel-row">
+                        <RadzenCheckBox @bind-Value="@hwEnclosed" TValue="bool" Name="hwEnclosed" />
+                        <RadzenLabel Text="Enclosed" Component="hwEnclosed" />
+                    </div>
+                    <div class="panel-row">
+                        <RadzenCheckBox @bind-Value="@hwRoof" TValue="bool" Name="hwRoof" />
+                        <RadzenLabel Text="Roof" Component="hwRoof" />
+                    </div>
+                </div>
+                <div class="editor-field">
+                    <RadzenLabel Text="Description" />
+                    <RadzenTextArea @bind-Value="@hwDescription" Rows="2" class="w-100" />
+                </div>
+                <div class="editor-field">
+                    <RadzenLabel Text="Wiki URL" />
+                    <RadzenTextBox @bind-Value="@hwWiki" class="w-100" />
+                </div>
+
+                @if (!string.IsNullOrEmpty(editorError))
+                {
+                    <div class="editor-error">@editorError</div>
+                }
+
+                <div class="editor-actions">
+                    <RadzenButton Text="@(hwEditId is null ? "Create" : "Save")" Icon="save"
+                                  ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Disabled="@((editVertexCount < 2 && hwCategory is not (HighwayCategory.Ring or HighwayCategory.DiamondRing)) || string.IsNullOrWhiteSpace(hwName) || saving)"
+                                  Click="@SaveHighway" />
+                    @if (hwEditId is not null && canDeleteHighways)
+                    {
+                        <RadzenButton Text="Delete" Icon="delete" ButtonStyle="ButtonStyle.Danger"
+                                      Size="ButtonSize.Small" Disabled="@saving" Click="@DeleteHighway" />
+                    }
+                    <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                  Click="@CloseHighwayEditor" />
+                </div>
+            </div>
+        }
+
+        @if (highwaySelected)
+        {
+            <div class="map-panel hw-info-panel">
+                <RadzenCard>
+                    <div class="rz-d-flex rz-justify-content-between rz-align-items-center">
+                        <h4 style="margin: 0;">@selectedHighwayName</h4>
+                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                      Size="ButtonSize.Small" Click="@CloseHighwayInfo" />
+                    </div>
+                    <RadzenText TextStyle="TextStyle.Body2" class="rz-mt-2 rz-mb-0">
+                        <strong>Type:</strong> @FormatCategory(selectedHighwayCategory)
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-0">
+                        <strong>Path width:</strong> @selectedHighwayWidth blocks
+                    </RadzenText>
+                    @if (!string.IsNullOrWhiteSpace(selectedHighwayMaterial))
+                    {
+                        <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-0">
+                            <strong>Paving:</strong> @selectedHighwayMaterial
+                        </RadzenText>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(selectedHighwayStatus))
+                    {
+                        <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-0">
+                            <strong>Status:</strong> @selectedHighwayStatus
+                        </RadzenText>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(selectedHighwayGroup))
+                    {
+                        <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-0">
+                            <strong>Built by:</strong> @selectedHighwayGroup
+                        </RadzenText>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(selectedHighwayDescription))
+                    {
+                        <RadzenText TextStyle="TextStyle.Body2" class="rz-mt-2 rz-mb-0">
+                            @DisplayText.NormalizeDescription(selectedHighwayDescription)
+                        </RadzenText>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(selectedHighwayWiki))
+                    {
+                        <RadzenButton Text="Wiki" Icon="menu_book" ButtonStyle="ButtonStyle.Light"
+                                      Size="ButtonSize.Small" class="rz-mt-2"
+                                      Click="@(() => OpenLink(selectedHighwayWiki!))" />
+                    }
+                    @if (canEditHighways && selectedHighwayId > 0)
+                    {
+                        <RadzenButton Text="Edit" Icon="edit" ButtonStyle="ButtonStyle.Primary"
+                                      Size="ButtonSize.Small" class="rz-mt-2 rz-ml-2"
+                                      Click="@(() => EditSelectedHighway())" />
+                    }
+                </RadzenCard>
+            </div>
+        }
+
+        @if (locationSelected && selectedLocation != null)
+        {
+            <div class="map-panel loc-info-panel">
+                <div class="panel-header">
+                    <span>@selectedLocation.Name</span>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@CloseLocationInfo" />
+                </div>
+
+                <span class="loc-badge">@selectedLocation.DimensionName</span>
+
+                <div class="loc-coords">
+                    @selectedLocation.X, @selectedLocation.Z
+                    @if (selectedLocation.Dimension == 0)
+                    {
+                        <span class="alt">N: @(selectedLocation.X / 8), @(selectedLocation.Z / 8)</span>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(selectedLocation.Description))
+                {
+                    <div class="loc-desc">@DisplayText.NormalizeDescription(selectedLocation.Description)</div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(selectedLocation.Tags))
+                {
+                    <div class="loc-tags">@selectedLocation.Tags</div>
+                }
+
+                @if (selectedLocation.Warps is { Count: > 0 })
+                {
+                    <div class="loc-section-label">Warps</div>
+                    @foreach (var w in selectedLocation.Warps)
+                    {
+                        <div class="warp-row">
+                            <code>/warp @w.Name</code>
+                            <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                          Size="ButtonSize.Small" Click="@(() => CopyWarp(w.Name))" title="Copy warp" />
+                        </div>
+                    }
+                }
+
+                @if (selectedLocation.Renders is { Count: > 0 })
+                {
+                    <div class="loc-section-label">Base renders</div>
+                    <div class="base-render-choices">
+                        <button class="base-render-choice @(!HasSelectedBaseRenders(selectedLocation) ? "active" : "")"
+                                aria-pressed="@(!HasSelectedBaseRenders(selectedLocation))"
+                                @onclick="@(() => ToggleBaseRender(selectedLocation.Rowid, null))">
+                            Off
+                        </button>
+                        @foreach (var render in OrderedLocationRenders(selectedLocation))
+                        {
+                            <div class="base-render-card @(IsBaseRenderSelected(selectedLocation, render.Id) ? "active" : "")">
+                                <button class="base-render-choice"
+                                        aria-pressed="@(IsBaseRenderSelected(selectedLocation, render.Id))"
+                                        @onclick="@(() => ToggleBaseRender(selectedLocation.Rowid, render.Id))">
+                                    <span>@(string.IsNullOrWhiteSpace(render.Name) ? $"Render {render.Id}" : render.Name)</span>
+                                    <small>@(string.IsNullOrWhiteSpace(render.WorldDownloadDate) ? "Date unknown" : render.WorldDownloadDate)</small>
+                                </button>
+                                <div class="base-render-meta">
+                                    <div class="base-render-meta-head">
+                                        <small>@RenderSourceLabel(render.Source)</small>
+                                        <RadzenButton Text="Zoom" Icon="zoom_in" ButtonStyle="ButtonStyle.Light"
+                                                      Variant="Variant.Text" Size="ButtonSize.Small"
+                                                      Click="@(() => FocusBaseRender(selectedLocation, render))"
+                                                      title="Show and zoom to this render's full footprint" />
+                                    </div>
+                                    @if (render.ArchiveWarp is { } renderWarp)
+                                    {
+                                        <div class="warp-row">
+                                            <code>/warp @renderWarp.Name</code>
+                                            <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                          Size="ButtonSize.Small" Click="@(() => CopyWarp(renderWarp.Name))"
+                                                          title="Copy this render's warp" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="base-render-hint">Select any combination. The latest render is selected by default.</div>
+                }
+
+                <div class="loc-actions">
+                    <RadzenButton Text="Go to" Icon="my_location" ButtonStyle="ButtonStyle.Primary"
+                                  Size="ButtonSize.Small" Click="@GoToSelectedLocation" />
+                    <RadzenButton Text="Details" Icon="open_in_new" ButtonStyle="ButtonStyle.Light"
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => NavigationManager.NavigateTo($"location/{selectedLocation.Rowid}"))" />
+                    <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Size="ButtonSize.Small" Click="@CopySelectedCoords" title="Copy coordinates" />
+                    @if (!string.IsNullOrWhiteSpace(selectedLocation.Wiki))
+                    {
+                        <a href="@selectedLocation.Wiki" target="_blank" rel="noopener" class="loc-link">Wiki</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(selectedLocation.VideoUrl))
+                    {
+                        <a href="@selectedLocation.VideoUrl" target="_blank" rel="noopener" class="loc-link">Video</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>Gets or sets the current layout theme index used for map panels and controls.</summary>
+    [CascadingParameter] public int ThemeIndex { get; set; }
+    private string MapTheme => ThemeIndex == 1 ? "dark" : "light";
+
+    private string selectedDimension = "overworld";
+    private bool isDay = true;
+    private double gotoX = 0;
+    private double gotoZ = 0;
+
+    // Overlay visibility
+    private bool showHighways = true;
+    private double highwayOpacity = 0.3;
+    private bool showAxes = true;
+    private bool showBorders = true;
+    private bool showSpawnRadius;
+    private bool showCrosshairs;
+    private bool showLocations = true;
+    private bool showEndPortals = false;
+    private bool showBaseRenders = true;
+    private bool showLayersPanel;
+    private bool showHistoryPanel;
+    private string HistoryControlClass => $"map-ctrl{(showHistoryPanel ? " active" : "")}{(nocomEnabled ? " history-on" : "")}";
+
+    // Nocom World Pulse
+    private const string NocomTileBase = "https://tiles.atlas.example/AtlasTiles/Nocom/v2";
+    private const string NocomOriginalTileBase = "https://tiles.atlas.example/AtlasTiles/Nocom/v1";
+    private const string NocomManifestVersion = "20260908-contrast-v2";
+    private NocomManifest? nocomManifest;
+    private bool nocomLoading = true;
+    private bool nocomEnabled;
+    private bool nocomShowTotal;
+    private bool nocomPlaying;
+    private int nocomPlaybackGeneration;
+    private int nocomPeriodIndex;
+    private double nocomOpacity = 0.85;
+    private string nocomStyle = "contrast";
+    private readonly Dictionary<string, string> nocomColors = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["overworld"] = "#ffe600",
+        ["nether"] = "#00e5ff",
+        ["end"] = "#ff3ee2"
+    };
+    private List<NocomPeriod> NocomPeriods { get; set; } = new();
+    private NocomPeriod CurrentNocomPeriod => NocomPeriods.Count == 0
+        ? new NocomPeriod("", "No period", DateTimeOffset.MinValue)
+        : NocomPeriods[Math.Clamp(nocomPeriodIndex, 0, NocomPeriods.Count - 1)];
+    private string CurrentNocomColor => nocomColors.TryGetValue(selectedDimension, out var color) ? color : "#00e5ff";
+    private string HistoryGradientClass => $"history-gradient{(nocomStyle == "custom" ? " history-gradient--custom" : "")}";
+    private string? HistoryGradientStyle => nocomStyle == "custom"
+        ? $"background: linear-gradient(90deg, #101417, {CurrentNocomColor});"
+        : nocomStyle == "contrast"
+            ? "background: linear-gradient(90deg, #786dff, #a152ff 32%, #ff3bd4 64%, #fff3fb);"
+            : null;
+
+    // Marker appearance
+    private string markerIcon = "circles";
+    private string markerColor = "dimension";
+    private double markerOpacity = 0.9;
+    private double markerScale = 1.0;
+
+    private readonly List<MarkerOption> markerIconOptions = new()
+    {
+        new("circles", "Circles"),
+        new("markers", "Pins"),
+        new("mansions", "Mansions"),
+        new("gapples", "Gapples"),
+        new("banner", "Banner"),
+    };
+
+    private readonly List<MarkerOption> markerColorOptions = new()
+    {
+        new("dimension", "Dimension default"),
+        new("random", "Random"),
+        new("black", "Black"), new("blue", "Blue"), new("brown", "Brown"),
+        new("cyan", "Cyan"), new("gray", "Gray"), new("green", "Green"),
+        new("lightblue", "Light Blue"), new("lightgray", "Light Gray"),
+        new("lime", "Lime"), new("magenta", "Magenta"), new("orange", "Orange"),
+        new("pink", "Pink"), new("purple", "Purple"), new("red", "Red"),
+        new("white", "White"), new("yellow", "Yellow"),
+    };
+
+    // Cursor readout
+    private int cursorX;
+    private int cursorZ;
+    private string cursorText = "0, 0";
+    private string altCoordLabel = "Nether:";
+    private string altCoordText = "0, 0";
+
+    // Measure tool
+    private bool measuring;
+    private string measureUnit = "blocks";
+    private int measureBlocks;
+    private int measurePointCount;
+    private bool disposed;
+
+    // Custom marker tool
+    private bool showMarkerToolPanel;
+    private string placeIcon = "star";
+    private int customMarkerCount;
+
+    private readonly List<MarkerOption> markerToolIcons = new()
+    {
+        new("star", "Star"),
+        new("mansion", "Mansion"),
+        new("gapple", "Gapple"),
+        new("diamond", "Diamond"),
+        new("monument", "Monument"),
+        new("banner", "Banner"),
+    };
+
+    // Highway selection
+    private bool highwaySelected;
+    private string selectedHighwayName = "";
+    private string selectedHighwayCategory = "";
+    private int selectedHighwayWidth;
+    private int selectedHighwayId;
+    private string? selectedHighwayMaterial;
+    private string? selectedHighwayStatus;
+    private string? selectedHighwayDescription;
+    private string? selectedHighwayWiki;
+    private string? selectedHighwayGroup;
+
+    // Groups (builder attribution)
+    private List<Atlas.Group> groups = new();
+    private Dictionary<int, string> groupById = new();
+
+    // Highway editor state
+    private bool canEditHighways;
+    private bool canDeleteHighways;
+    private bool editorOpen;
+    private int editVertexCount;
+    private int? hwEditId;
+    private bool saving;
+    private string? editorError;
+    private string hwName = "";
+    private HighwayCategory hwCategory = HighwayCategory.Custom;
+    private int hwWidth = 4;
+    private PavingMaterial hwMaterial = PavingMaterial.Unknown;
+    private HighwayStatus hwStatus = HighwayStatus.Unknown;
+    private int? hwYLevel;
+    private bool hwPaved;
+    private bool hwWalls;
+    private bool hwEnclosed;
+    private bool hwRoof;
+    private string? hwColor;
+    private string? hwDescription;
+    private string? hwWiki;
+    private int? hwBuilderGroupId;
+    private Highway? hwOriginal;
+    private IEnumerable<int> hwGroupIds = Array.Empty<int>();
+    private int? hwRingRadius;
+    private int? hwHeight;
+    private bool hwLit;
+    private readonly IEnumerable<HighwayCategory> categoryOptions = Enum.GetValues<HighwayCategory>();
+    private readonly IEnumerable<PavingMaterial> materialOptions = Enum.GetValues<PavingMaterial>();
+    private readonly IEnumerable<HighwayStatus> statusOptions = Enum.GetValues<HighwayStatus>();
+
+    // Location selection
+    private List<Location> allLocations = new();
+    private Location? selectedLocation;
+    private bool locationSelected;
+    private readonly Dictionary<int, HashSet<int>> selectedBaseRenderIds = new();
+
+    // Search
+    private bool showSearchPanel;
+    private string searchQuery = "";
+    private List<Location> searchResults = new();
+    private (int X, int Z)? searchCoordinates;
+
+    // Export
+    private bool showExportPanel;
+    private bool exportAllDims;
+
+    // Renders (named world-download tile layers)
+    private List<RenderInfo> renderOptions = new();
+    private List<string> orderedRenders = new();
+    private bool showSpawnRenders = true;
+    private bool currentRenderDayNight = true;
+    private IEnumerable<RenderInfo> AvailableRenders =>
+        renderOptions.Where(r => !orderedRenders.Contains(r.Id));
+
+    private const string MapContainerId = "map";
+    private const int OverworldPrimaryRenderMin = -512_000;
+    private const int OverworldPrimaryRenderMaxExclusive = 512_000;
+    private const long OtherDimensionDefaultRadius = 100_000;
+    private IJSObjectReference? mapModule;
+    private DotNetObjectReference<Map>? selfRef;
+    private bool initialized;
+
+    private readonly List<DimensionOption> dimensionOptions = new()
+    {
+        new("overworld", "Overworld"),
+        new("nether", "Nether"),
+        new("end", "End")
+    };
+
+    /// <summary>On first render, subscribes to route changes and imports and initializes the browser map module.</summary>
+    /// <param name="firstRender">Whether this is the component's first completed render.</param>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Honor ?dimension= deep links (e.g. /map?dimension=nether) and react to nav.
+        selectedDimension = DimensionFromUri();
+        NavigationManager.LocationChanged += OnLocationChanged;
+
+        await InitializeMap();
+    }
+
+    /// <summary>Reads the target dimension from the current URL query.</summary>
+    private string DimensionFromUri(string? uri = null)
+    {
+        var q = new Uri(uri ?? NavigationManager.Uri).Query;
+        if (q.Contains("dimension=nether")) return "nether";
+        if (q.Contains("dimension=end")) return "end";
+        return "overworld";
+    }
+
+    /// <summary>Switches the map dimension when the URL changes (sidebar Overworld/Nether/End).</summary>
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (disposed || !IsMapUri(e.Location)) return;
+        _ = InvokeAsync(() => HandleMapLocationChangedAsync(e.Location));
+    }
+
+    private bool IsMapUri(string uri)
+    {
+        var relative = NavigationManager.ToBaseRelativePath(uri);
+        var path = relative.Split('?', '#')[0].Trim('/');
+        return string.Equals(path, "map", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task HandleMapLocationChangedAsync(string uri)
+    {
+        var dim = DimensionFromUri(uri);
+        var module = mapModule;
+        if (disposed || dim == selectedDimension || !initialized || module == null) return;
+
+        try
+        {
+            if (editorOpen) await CloseHighwayEditor();
+            selectedDimension = dim;
+            measureUnit = "blocks";
+            await module.InvokeVoidAsync("setDimension", MapContainerId, selectedDimension);
+            await RefreshRenders(module);
+            RefreshNocomPeriods();
+            await ApplyNocomLayerAsync();
+            if (disposed) return;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (ObjectDisposedException) when (disposed) { }
+        catch (JSDisconnectedException) when (disposed) { }
+    }
+
+    private async Task InitializeMap()
+    {
+        try
+        {
+            mapModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", MapModuleAsset.Url);
+            selfRef = DotNetObjectReference.Create(this);
+            // Point the 2b2t.place tile proxy at the API origin (frontend is a different host in prod).
+            await mapModule.InvokeVoidAsync("setApiBase", Http.BaseAddress?.ToString());
+            // Register ingest-published world renders before init so they appear in the picker.
+            var worldRenders = await MapRenderService.GetPublishedAsync();
+            if (worldRenders.Count > 0)
+                await mapModule.InvokeVoidAsync("registerWorldRenders", worldRenders);
+            await mapModule.InvokeVoidAsync("initialize", MapContainerId, selectedDimension, isDay, selfRef);
+            initialized = true;
+            await LoadNocomManifestAsync();
+            await LoadLocationsAsync();
+            await LoadHighwaysAsync();
+            await LoadHighwayPermissionsAsync();
+            await RefreshRenders();
+
+            // Apply the overlays that are enabled by default.
+            if (showHighways)
+            {
+                await mapModule.InvokeVoidAsync("setHighways", MapContainerId, true);
+                await mapModule.InvokeVoidAsync("setHighwayOpacity", MapContainerId, highwayOpacity);
+            }
+            if (showAxes) await mapModule.InvokeVoidAsync("setAxes", MapContainerId, true);
+            if (showBorders) await mapModule.InvokeVoidAsync("setBorders", MapContainerId, true);
+            await ApplyNocomLayerAsync();
+
+            // Honor a shared deep link (?x=&z=&zoom=) as the initial view.
+            await ApplyViewFromUri();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to initialize map: {ex.Message}");
+        }
+    }
+
+    private async Task OnDimensionChanged()
+    {
+        if (initialized && mapModule != null)
+        {
+            await mapModule.InvokeVoidAsync("setDimension", MapContainerId, selectedDimension);
+            await RefreshRenders();
+            RefreshNocomPeriods();
+            await ApplyNocomLayerAsync();
+        }
+    }
+
+    private async Task OnTimeChanged()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setTimeOfDay", MapContainerId, isDay);
+    }
+
+    /// <summary>Toggles day/night from the map control button.</summary>
+    private async Task ToggleDay()
+    {
+        if (!currentRenderDayNight) return;
+        isDay = !isDay;
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setTimeOfDay", MapContainerId, isDay);
+    }
+
+    /// <summary>Refreshes the render manager for the current dimension.</summary>
+    private async Task RefreshRenders(IJSObjectReference? module = null)
+    {
+        module ??= mapModule;
+        if (disposed || module == null) return;
+        var result = await module.InvokeAsync<RendersResult>("getRenders", MapContainerId);
+        if (disposed) return;
+        renderOptions = result.Renders;
+        orderedRenders = result.Current.ToList();
+        if (!showSpawnRenders)
+            await module.InvokeVoidAsync("setRenders", MapContainerId, Array.Empty<string>());
+        UpdateRenderCapabilities();
+        StateHasChanged();
+    }
+
+    private async Task AddRender(string id)
+    {
+        if (!orderedRenders.Contains(id)) orderedRenders.Insert(0, id);
+        await ApplyRenders();
+    }
+
+    private async Task RemoveRender(string id)
+    {
+        orderedRenders.Remove(id);
+        await ApplyRenders();
+    }
+
+    private async Task OnSpawnRendersChanged(bool value)
+    {
+        showSpawnRenders = value;
+        await ApplyRenders();
+    }
+
+    /// <summary>Pushes the current render stack (top-to-bottom) to the map.</summary>
+    private async Task ApplyRenders()
+    {
+        if (initialized && mapModule != null)
+        {
+            await mapModule.InvokeVoidAsync("setRenders", MapContainerId,
+                showSpawnRenders ? orderedRenders : Array.Empty<string>());
+            UpdateRenderCapabilities();
+            StateHasChanged();
+        }
+    }
+
+    private void UpdateRenderCapabilities()
+    {
+        currentRenderDayNight =
+            showSpawnRenders && orderedRenders.Any(id =>
+                renderOptions.FirstOrDefault(r => r.Id == id)?.DayNight == true) ||
+            showBaseRenders && allLocations.Any(location =>
+                selectedBaseRenderIds.TryGetValue(location.Rowid, out var selectedIds) &&
+                (location.Renders ?? []).Any(render => selectedIds.Contains(render.Id) && render.HasDayNight));
+    }
+
+    private int draggingIndex = -1;
+
+    /// <summary>Begins dragging a render row in the reorder list.</summary>
+    private void OnDragStart(int i) => draggingIndex = i;
+
+    /// <summary>Live-reorders the stack as the dragged row passes over another.</summary>
+    private void OnDragEnter(int i)
+    {
+        if (draggingIndex < 0 || draggingIndex == i || i < 0 || i >= orderedRenders.Count) return;
+        var item = orderedRenders[draggingIndex];
+        orderedRenders.RemoveAt(draggingIndex);
+        orderedRenders.Insert(i, item);
+        draggingIndex = i;
+    }
+
+    /// <summary>Commits the reordered stack to the map when the drag ends.</summary>
+    private async Task OnDragEnd()
+    {
+        if (draggingIndex < 0) return;
+        draggingIndex = -1;
+        await ApplyRenders();
+    }
+
+    /// <summary>Label for a render id (falls back to the id).</summary>
+    private string RenderLabel(string id) => renderOptions.FirstOrDefault(r => r.Id == id)?.Label ?? id;
+
+    private async Task GoToCoords()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("goToCoords", MapContainerId, gotoX, gotoZ, 7);
+    }
+
+    /// <summary>Loads location markers from the API and pushes them to the map.</summary>
+    private async Task LoadLocationsAsync()
+    {
+        if (mapModule == null) return;
+        allLocations = await LocationService.GetLocationsAsync();
+        var payload = allLocations
+            .Select((l, i) => new { index = i, name = l.Name, x = l.X, z = l.Z, dimension = l.Dimension, description = DisplayText.NormalizeDescription(l.Description) })
+            .ToList();
+        await mapModule.InvokeVoidAsync("loadLocations", MapContainerId, payload);
+        if (showLocations)
+            await mapModule.InvokeVoidAsync("setLocations", MapContainerId, true);
+
+        foreach (var location in allLocations.Where(location =>
+                     location.Renders is { Count: > 0 } && !ShouldDefaultBaseRenderOff(location)))
+            selectedBaseRenderIds.TryAdd(location.Rowid, [OrderedLocationRenders(location).First().Id]);
+        await RefreshBaseRendersAsync();
+    }
+
+    private static bool ShouldDefaultBaseRenderOff(Location location)
+    {
+        if (location.Dimension == 0)
+        {
+            return location.X >= OverworldPrimaryRenderMin && location.X < OverworldPrimaryRenderMaxExclusive &&
+                location.Z >= OverworldPrimaryRenderMin && location.Z < OverworldPrimaryRenderMaxExclusive;
+        }
+
+        var x = (long)location.X;
+        var z = (long)location.Z;
+        return (x * x) + (z * z) <= OtherDimensionDefaultRadius * OtherDimensionDefaultRadius;
+    }
+
+    private async Task RefreshBaseRendersAsync()
+    {
+        if (mapModule == null) return;
+        // Each location defaults to its newest capture, but users may compare any combination.
+        // Load older captures first so the newest selected capture remains visually on top.
+        var renders = allLocations
+            .SelectMany(location => (location.Renders ?? new())
+                .Where(render => selectedBaseRenderIds.TryGetValue(location.Rowid, out var selectedIds) && selectedIds.Contains(render.Id))
+                .OrderBy(render => render.WorldDownloadDate)
+                .ThenBy(render => render.Id)
+                .Select(render => new
+            {
+                id = render.Id,
+                locationId = location.Rowid,
+                tilesPath = render.TilesPath,
+                x = location.X,
+                z = location.Z,
+                scale = render.Scale,
+                dimension = render.Dimension,
+                name = render.Name,
+                date = render.WorldDownloadDate,
+                minX = render.MinX,
+                minZ = render.MinZ,
+                maxXExclusive = render.MaxXExclusive,
+                maxZExclusive = render.MaxZExclusive,
+                maxNativeZoom = render.MaxNativeZoom,
+                coordinateScheme = render.CoordinateScheme,
+                hasDayNight = render.HasDayNight
+            }))
+            .Where(r => !string.IsNullOrEmpty(r.tilesPath))
+            .ToList();
+        await mapModule.InvokeVoidAsync("loadBaseRenders", MapContainerId, renders);
+        await mapModule.InvokeVoidAsync("setBaseRenders", MapContainerId, showBaseRenders);
+        UpdateRenderCapabilities();
+    }
+
+    private static IEnumerable<Atlas.Locations.Render> OrderedLocationRenders(Location location) =>
+        (location.Renders ?? new()).OrderByDescending(render => render.WorldDownloadDate).ThenByDescending(render => render.Id);
+
+    private bool HasSelectedBaseRenders(Location location) =>
+        selectedBaseRenderIds.TryGetValue(location.Rowid, out var renderIds) && renderIds.Count > 0;
+
+    private bool IsBaseRenderSelected(Location location, int renderId) =>
+        selectedBaseRenderIds.TryGetValue(location.Rowid, out var renderIds) && renderIds.Contains(renderId);
+
+    private bool EnsureLatestBaseRenderSelected(Location location)
+    {
+        if (selectedBaseRenderIds.ContainsKey(location.Rowid)) return false;
+        var latestRenderId = OrderedLocationRenders(location).FirstOrDefault()?.Id;
+        if (latestRenderId is null) return false;
+        selectedBaseRenderIds[location.Rowid] = [latestRenderId.Value];
+        return true;
+    }
+
+    private async Task ToggleBaseRender(int locationId, int? renderId)
+    {
+        if (!selectedBaseRenderIds.TryGetValue(locationId, out var renderIds))
+        {
+            renderIds = [];
+            selectedBaseRenderIds[locationId] = renderIds;
+        }
+
+        if (renderId is null)
+            renderIds.Clear();
+        else if (!renderIds.Add(renderId.Value))
+            renderIds.Remove(renderId.Value);
+
+        await RefreshBaseRendersAsync();
+        UpdateRenderCapabilities();
+    }
+
+    private async Task FocusBaseRender(Location renderLocation, Atlas.Locations.Render render)
+    {
+        if (mapModule is null) return;
+        if (!selectedBaseRenderIds.TryGetValue(renderLocation.Rowid, out var renderIds))
+        {
+            renderIds = [];
+            selectedBaseRenderIds[renderLocation.Rowid] = renderIds;
+        }
+        if (renderIds.Add(render.Id) || !showBaseRenders)
+        {
+            showBaseRenders = true;
+            await RefreshBaseRendersAsync();
+        }
+
+        await mapModule.InvokeAsync<bool>("focusBaseRender", MapContainerId, new
+        {
+            id = render.Id,
+            locationId = renderLocation.Rowid,
+            x = renderLocation.X,
+            z = renderLocation.Z,
+            scale = render.Scale,
+            dimension = render.Dimension,
+            minX = render.MinX,
+            minZ = render.MinZ,
+            maxXExclusive = render.MaxXExclusive,
+            maxZExclusive = render.MaxZExclusive,
+        });
+    }
+
+    /// <summary>Loads highways from the API and pushes them to the map (falls back to the built-in set on failure).</summary>
+    private async Task LoadHighwaysAsync()
+    {
+        if (mapModule == null) return;
+        // Load groups first so highways can carry a resolved builder-group name.
+        groups = await GroupService.GetGroupsAsync();
+        groupById = groups.ToDictionary(g => g.Id, g => g.Name);
+
+        var highways = await HighwayService.GetHighwaysAsync();
+        if (highways.Count == 0) return; // keep the JS built-in fallback
+        foreach (var h in highways)
+            if (string.IsNullOrWhiteSpace(h.BuilderGroupName) && h.BuilderGroupId is int gid && groupById.TryGetValue(gid, out var gname))
+                h.BuilderGroupName = gname;
+        await mapModule.InvokeVoidAsync("loadHighways", MapContainerId, highways);
+    }
+
+    /// <summary>Toggles location markers.</summary>
+    /// <param name="value">True to show markers, false to hide them.</param>
+    private async Task OnLocationsChanged(bool value)
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setLocations", MapContainerId, value);
+    }
+
+    /// <summary>Toggles the dedicated End Portal marker layer.</summary>
+    /// <param name="value">True to show End Portal markers, false to hide them.</param>
+    private async Task OnEndPortalsChanged(bool value)
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setEndPortals", MapContainerId, value);
+    }
+
+    /// <summary>Pushes the current marker appearance (icon/color/opacity/scale) to the map.</summary>
+    private async Task OnMarkerSettingsChanged()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setMarkerSettings", MapContainerId,
+                new { icon = markerIcon, color = markerColor, opacity = markerOpacity, scale = markerScale });
+    }
+
+    private async Task OnMarkerOpacityChanged(ChangeEventArgs args)
+    {
+        if (double.TryParse(args.Value?.ToString(), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var value))
+        {
+            markerOpacity = Math.Clamp(value, 0.1, 1.0);
+            await OnMarkerSettingsChanged();
+        }
+    }
+
+    private async Task OnMarkerScaleChanged(ChangeEventArgs args)
+    {
+        if (double.TryParse(args.Value?.ToString(), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var value))
+        {
+            markerScale = Math.Clamp(value, 0.5, 1.5);
+            await OnMarkerSettingsChanged();
+        }
+    }
+
+    /// <summary>Toggles the base-render overlays (data-driven per-location renders).</summary>
+    /// <param name="value">True to show base renders, false to hide them.</param>
+    private async Task OnBaseRendersChanged(bool value)
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setBaseRenders", MapContainerId, value);
+        UpdateRenderCapabilities();
+        StateHasChanged();
+    }
+
+    /// <summary>Toggles the world-border square overlay.</summary>
+    /// <param name="value">True to show the border, false to hide it.</param>
+    private async Task OnBordersChanged(bool value)
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setBorders", MapContainerId, value);
+    }
+
+    /// <summary>Toggles the 2048-block spawn radius circle.</summary>
+    /// <param name="value">True to show the circle, false to hide it.</param>
+    private async Task OnSpawnRadiusChanged(bool value)
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setSpawnRadius", MapContainerId, value);
+    }
+
+    /// <summary>Turns the measure tool on/off.</summary>
+    private async Task ToggleMeasure()
+    {
+        measuring = !measuring;
+        if (measuring && showMarkerToolPanel)
+        {
+            showMarkerToolPanel = false;
+            if (initialized && mapModule != null)
+                await mapModule.InvokeVoidAsync("setPlaceMarkerMode", MapContainerId, false);
+        }
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setMeasureMode", MapContainerId, measuring);
+        if (!measuring) { measureBlocks = 0; measurePointCount = 0; }
+    }
+
+    /// <summary>Clears all measure points.</summary>
+    private async Task ClearMeasure()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("clearMeasure", MapContainerId);
+    }
+
+    /// <summary>Invoked from JS as the measure path changes.</summary>
+    /// <param name="blocks">Total path length in blocks.</param>
+    /// <param name="points">Number of points placed.</param>
+    [JSInvokable]
+    public void OnMeasureUpdated(int blocks, int points)
+    {
+        measureBlocks = blocks;
+        measurePointCount = points;
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Toggles the custom-marker placement tool (mutually exclusive with Measure).</summary>
+    private async Task ToggleMarkerTool()
+    {
+        showMarkerToolPanel = !showMarkerToolPanel;
+        if (showMarkerToolPanel && measuring)
+        {
+            measuring = false;
+            measureBlocks = 0;
+            measurePointCount = 0;
+            if (initialized && mapModule != null)
+                await mapModule.InvokeVoidAsync("setMeasureMode", MapContainerId, false);
+        }
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setPlaceMarkerMode", MapContainerId, showMarkerToolPanel);
+    }
+
+    /// <summary>Sets the icon type used for newly-placed custom markers.</summary>
+    private async Task OnPlaceIconChanged()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setCustomIcon", MapContainerId, placeIcon);
+    }
+
+    /// <summary>Removes all placed custom markers.</summary>
+    private async Task ClearCustomMarkers()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("clearCustomMarkers", MapContainerId);
+    }
+
+    /// <summary>Invoked from JS when the custom-marker set changes.</summary>
+    /// <param name="count">Number of custom markers currently placed.</param>
+    [JSInvokable]
+    public void OnCustomMarkersChanged(int count)
+    {
+        customMarkerCount = count;
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Copies the current cursor coordinates to the clipboard.</summary>
+    private async Task CopyCoords()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", $"{cursorX} {cursorZ}");
+    }
+
+    /// <summary>Opens a URL in a new browser tab.</summary>
+    private async Task OpenLink(string url) =>
+        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+
+    private bool shareCopied;
+
+    /// <summary>Copies a deep link to the current dimension/center/zoom to the clipboard.</summary>
+    private async Task ShareView()
+    {
+        if (!initialized || mapModule == null) return;
+        var view = await mapModule.InvokeAsync<ViewState?>("getView", MapContainerId);
+        if (view == null) return;
+        var baseUri = NavigationManager.BaseUri.TrimEnd('/');
+        var url = $"{baseUri}/map?dimension={selectedDimension}&x={view.X}&z={view.Z}&zoom={view.Zoom.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", url);
+        shareCopied = true;
+        StateHasChanged();
+        await Task.Delay(1800);
+        shareCopied = false;
+        StateHasChanged();
+    }
+
+    /// <summary>Applies the <c>x</c>, <c>z</c>, and <c>zoom</c> query values as the initial view when present.</summary>
+    private async Task ApplyViewFromUri()
+    {
+        if (mapModule == null) return;
+        var query = new Uri(NavigationManager.Uri).Query.TrimStart('?');
+        var pairs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var pair = part.Split('=', 2);
+            if (pair.Length == 2 && !pairs.ContainsKey(pair[0]))
+                pairs[pair[0]] = Uri.UnescapeDataString(pair[1]);
+        }
+
+        if (!pairs.TryGetValue("x", out var xs) || !int.TryParse(xs, out var x)) return;
+        if (!pairs.TryGetValue("z", out var zs) || !int.TryParse(zs, out var z)) return;
+        double? zoom = pairs.TryGetValue("zoom", out var zoomStr)
+            && double.TryParse(zoomStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var zv)
+            && double.IsFinite(zv) ? Math.Clamp(zv, -8, 10) : null;
+        await mapModule.InvokeVoidAsync("goToCoords", MapContainerId, x, z, zoom);
+    }
+
+    /// <summary>The current viewport center + zoom returned from JS.</summary>
+    private record ViewState(int X, int Z, double Zoom);
+
+    /// <summary>Toggles fullscreen mode for the map view.</summary>
+    private async Task ToggleFullscreen()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("toggleFullscreen", MapContainerId);
+    }
+
+    /// <summary>Formats the measure total in the selected unit.</summary>
+    /// <param name="blocks">Total distance in blocks.</param>
+    /// <returns>The formatted distance string.</returns>
+    private string FormatDistance(int blocks) => measureUnit switch
+    {
+        "chunks" => $"{blocks / 16.0:N1} chunks",
+        "km" => $"{blocks / 1000.0:N2} km",
+        "nether" => $"{blocks / 8.0:N0} nether blocks",
+        "overworld" => $"{blocks * 8.0:N0} overworld blocks",
+        _ => selectedDimension == "nether"
+            ? $"{blocks:N0} nether blocks"
+            : $"{blocks:N0} blocks"
+    };
+
+    /// <summary>Toggles the 2b2t highway network overlay on the map.</summary>
+    /// <param name="value">True to show highways, false to hide them.</param>
+    private async Task OnHighwaysChanged(bool value)
+    {
+        if (initialized && mapModule != null)
+        {
+            await mapModule.InvokeVoidAsync("setHighways", MapContainerId, value);
+            if (value)
+                await mapModule.InvokeVoidAsync("setHighwayOpacity", MapContainerId, highwayOpacity);
+        }
+    }
+
+    private async Task OnHighwayOpacityChanged(ChangeEventArgs args)
+    {
+        if (double.TryParse(args.Value?.ToString(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var value))
+            highwayOpacity = Math.Clamp(value, 0.1, 1.0);
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setHighwayOpacity", MapContainerId, highwayOpacity);
+    }
+
+    /// <summary>Toggles the X/Z axis lines through spawn.</summary>
+    /// <param name="value">True to show the axes, false to hide them.</param>
+    private async Task OnAxesChanged(bool value)
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setAxes", MapContainerId, value);
+    }
+
+    /// <summary>Invoked from JS when a highway is clicked; opens the info panel.</summary>
+    /// <param name="sel">The selected highway's display details.</param>
+    [JSInvokable]
+    public void OnHighwaySelected(HighwaySelection sel)
+    {
+        selectedHighwayId = sel.Id;
+        selectedHighwayName = sel.Name;
+        selectedHighwayCategory = sel.Type;
+        selectedHighwayWidth = sel.Width;
+        selectedHighwayMaterial = sel.Material;
+        selectedHighwayStatus = sel.Status;
+        selectedHighwayDescription = sel.Description;
+        selectedHighwayWiki = sel.Wiki;
+        selectedHighwayGroup = sel.BuilderGroup;
+        locationSelected = false;
+        highwaySelected = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Details passed from JS when a highway is selected.</summary>
+    public record HighwaySelection(int Id, string Name, string Type, int Width, string? Material, string? Status, string? BuilderGroup, string? Description, string? Wiki);
+
+    /// <summary>Invoked from JS whenever the edit path's vertex count changes.</summary>
+    [JSInvokable]
+    public void OnEditPathChanged(int count)
+    {
+        editVertexCount = count;
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Invoked from JS when the highway selection is cleared.</summary>
+    [JSInvokable]
+    public void OnHighwayDeselected()
+    {
+        highwaySelected = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Invoked from JS when a location marker is clicked; opens the detail panel.</summary>
+    /// <param name="index">The index of the location in the loaded list.</param>
+    [JSInvokable]
+    public async Task OnLocationSelected(int index)
+    {
+        if (index >= 0 && index < allLocations.Count)
+        {
+            selectedLocation = allLocations[index];
+            locationSelected = true;
+            highwaySelected = false;
+            if (EnsureLatestBaseRenderSelected(selectedLocation))
+                await RefreshBaseRendersAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    /// <summary>Invoked from JS when the location selection is cleared.</summary>
+    [JSInvokable]
+    public void OnLocationDeselected()
+    {
+        locationSelected = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Closes the location detail panel and clears the map selection.</summary>
+    private async Task CloseLocationInfo()
+    {
+        locationSelected = false;
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("clearLocationSelection", MapContainerId);
+    }
+
+    /// <summary>Centers the map on the selected location.</summary>
+    private async Task GoToSelectedLocation()
+    {
+        if (selectedLocation != null && initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("goToCoords", MapContainerId, (double)selectedLocation.X, (double)selectedLocation.Z, 8);
+    }
+
+    /// <summary>Copies the selected location's coordinates.</summary>
+    private async Task CopySelectedCoords()
+    {
+        if (selectedLocation != null)
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", $"{selectedLocation.X} {selectedLocation.Z}");
+    }
+
+    /// <summary>Copies a /warp command for the given warp name.</summary>
+    /// <param name="warpName">The warp name.</param>
+    private async Task CopyWarp(string? warpName)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", $"/warp {warpName}");
+    }
+
+    private static string RenderSourceLabel(string? source) => source switch
+    {
+        "archive-collector" => "Archive collector",
+        "manual-upload" => "Manual upload",
+        "wdl-ingestion" => "WDL ingestion",
+        "legacy" => "Legacy render",
+        _ => "Render source unknown",
+    };
+
+    /// <summary>Opens/closes the search panel (mutually exclusive with the other panels).</summary>
+    private void ToggleSearch()
+    {
+        showSearchPanel = !showSearchPanel;
+        if (showSearchPanel) { showLayersPanel = false; showHistoryPanel = false; showExportPanel = false; }
+    }
+
+    /// <summary>Opens/closes the layers panel (mutually exclusive with the other panels).</summary>
+    private void ToggleLayers()
+    {
+        showLayersPanel = !showLayersPanel;
+        if (showLayersPanel) { showSearchPanel = false; showHistoryPanel = false; showExportPanel = false; }
+    }
+
+    private void ToggleHistory()
+    {
+        showHistoryPanel = !showHistoryPanel;
+        if (showHistoryPanel) { showSearchPanel = false; showLayersPanel = false; showExportPanel = false; }
+    }
+
+    private async Task LoadNocomManifestAsync()
+    {
+        nocomLoading = true;
+        nocomManifest = null;
+        Exception? lastError = null;
+        try
+        {
+            using var publicHttp = new HttpClient();
+            var urls = new[]
+            {
+                $"{NocomTileBase}/manifest.json?v={NocomManifestVersion}",
+                $"{NocomTileBase}/manifest.json?v={NocomManifestVersion}&retry={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}"
+            };
+            foreach (var url in urls)
+            {
+                try
+                {
+                    nocomManifest = await publicHttp.GetFromJsonAsync<NocomManifest>(url);
+                    if (nocomManifest is not null) break;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                }
+            }
+
+            if (nocomManifest is null)
+                throw lastError ?? new InvalidOperationException("The World Pulse manifest response was empty.");
+
+            RefreshNocomPeriods();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Nocom manifest unavailable: {ex.Message}");
+            nocomManifest = null;
+        }
+        finally
+        {
+            nocomLoading = false;
+        }
+    }
+
+    private void RefreshNocomPeriods()
+    {
+        NocomPeriods = (nocomManifest?.Frames ?? new())
+                .Where(frame => frame.Dimension == selectedDimension)
+                .OrderBy(frame => frame.PeriodStartUtc)
+                .Select(frame => new NocomPeriod(frame.Key, frame.Label, frame.PeriodStartUtc))
+                .ToList();
+        nocomPeriodIndex = Math.Max(0, NocomPeriods.Count - 1);
+    }
+
+    private async Task RetryNocomManifestAsync()
+    {
+        await LoadNocomManifestAsync();
+        await ApplyNocomLayerAsync();
+    }
+
+    private async Task ApplyNocomLayerAsync()
+    {
+        if (!initialized || mapModule is null) return;
+        if (!nocomEnabled || nocomManifest is null)
+        {
+            await mapModule.InvokeVoidAsync("clearNocom", MapContainerId);
+            return;
+        }
+
+        NocomLayer? layer;
+        if (nocomShowTotal)
+        {
+            layer = nocomManifest.Totals.FirstOrDefault(item => item.Dimension == selectedDimension);
+        }
+        else
+        {
+            var period = CurrentNocomPeriod.Key;
+            layer = nocomManifest.Frames.FirstOrDefault(item => item.Dimension == selectedDimension && item.Key == period);
+        }
+
+        if (layer is null)
+        {
+            await mapModule.InvokeVoidAsync("clearNocom", MapContainerId);
+            return;
+        }
+
+        var tileBase = nocomStyle == "contrast" ? NocomTileBase : NocomOriginalTileBase;
+        var url = $"{tileBase}/{layer.UrlTemplate}?v={NocomManifestVersion}";
+        await mapModule.InvokeVoidAsync("setNocomLayer", MapContainerId, url, layer.MaxNativeUrlZoom, nocomOpacity, nocomStyle, CurrentNocomColor);
+    }
+
+    private async Task OnNocomEnabledChanged(bool value)
+    {
+        nocomEnabled = value;
+        await ApplyNocomLayerAsync();
+    }
+
+    private async Task SetNocomTotal(bool total)
+    {
+        nocomShowTotal = total;
+        if (total) StopNocomPlayback();
+        await ApplyNocomLayerAsync();
+    }
+
+    private async Task OnNocomPeriodChanged(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), out var index))
+            nocomPeriodIndex = Math.Clamp(index, 0, Math.Max(0, NocomPeriods.Count - 1));
+        await ApplyNocomLayerAsync();
+    }
+
+    private async Task OnNocomOpacityChanged(ChangeEventArgs args)
+    {
+        if (double.TryParse(args.Value?.ToString(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var value))
+            nocomOpacity = Math.Clamp(value, 0.1, 1);
+        await ApplyNocomLayerAsync();
+    }
+
+    private async Task SetNocomStyle(string style)
+    {
+        nocomStyle = style is "custom" or "classic" ? style : "contrast";
+        await ApplyNocomLayerAsync();
+    }
+
+    private async Task OnNocomColorChanged(ChangeEventArgs args)
+    {
+        var color = args.Value?.ToString()?.Trim();
+        if (color is null || color.Length != 7 || color[0] != '#' ||
+            !int.TryParse(color.AsSpan(1), System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out _))
+            return;
+        nocomColors[selectedDimension] = color.ToLowerInvariant();
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setNocomColor", MapContainerId, CurrentNocomColor);
+    }
+
+    private async Task PreviousNocomPeriod()
+    {
+        StopNocomPlayback();
+        if (NocomPeriods.Count > 0)
+            nocomPeriodIndex = (nocomPeriodIndex - 1 + NocomPeriods.Count) % NocomPeriods.Count;
+        await ApplyNocomLayerAsync();
+    }
+
+    private async Task NextNocomPeriod()
+    {
+        StopNocomPlayback();
+        await AdvanceNocomPeriodAsync();
+    }
+
+    private void ToggleNocomPlayback()
+    {
+        if (nocomPlaying)
+        {
+            StopNocomPlayback();
+            return;
+        }
+        if (NocomPeriods.Count == 0) return;
+        nocomPlaying = true;
+        var generation = ++nocomPlaybackGeneration;
+        _ = PlayNocomAsync(generation);
+    }
+
+    private async Task PlayNocomAsync(int generation)
+    {
+        while (!disposed && nocomPlaying && generation == nocomPlaybackGeneration)
+        {
+            await Task.Delay(1_100);
+            if (disposed || !nocomPlaying || generation != nocomPlaybackGeneration) break;
+            await InvokeAsync(async () =>
+            {
+                await AdvanceNocomPeriodAsync();
+                StateHasChanged();
+            });
+        }
+    }
+
+    private async Task AdvanceNocomPeriodAsync()
+    {
+        if (NocomPeriods.Count == 0) return;
+        nocomPeriodIndex = (nocomPeriodIndex + 1) % NocomPeriods.Count;
+        await ApplyNocomLayerAsync();
+    }
+
+    private void StopNocomPlayback()
+    {
+        nocomPlaying = false;
+        nocomPlaybackGeneration++;
+    }
+
+    private static string NocomEra(DateTimeOffset date) => date < new DateTimeOffset(2019, 11, 1, 0, 0, 0, TimeSpan.Zero)
+        ? "Spiral scanning era"
+        : date < new DateTimeOffset(2020, 3, 1, 0, 0, 0, TimeSpan.Zero)
+            ? "Rate-limit transition"
+            : "Adaptive tracking era";
+
+    /// <summary>Runs a ranked search over the loaded locations as the query changes.</summary>
+    private void RunSearch()
+    {
+        var q = (searchQuery ?? "").Trim().ToLowerInvariant();
+        searchCoordinates = ParseCoordinates(q);
+        if (q.Length == 0) { searchResults = new(); return; }
+        searchResults = allLocations
+            .Select(l => (loc: l, score: ScoreLocation(l, q)))
+            .Where(t => t.score > 0)
+            .OrderByDescending(t => t.score)
+            .ThenBy(t => t.loc.Name)
+            .Take(40)
+            .Select(t => t.loc)
+            .ToList();
+    }
+
+    private static (int X, int Z)? ParseCoordinates(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return null;
+        var values = System.Text.RegularExpressions.Regex.Matches(query, @"-?\d+")
+            .Select(match => int.TryParse(match.Value, out var value) ? (int?)value : null)
+            .Where(value => value.HasValue)
+            .Select(value => value!.Value)
+            .ToArray();
+        if (values.Length == 2) return (values[0], values[1]);
+        if (values.Length == 3 && query.Contains("/tp", StringComparison.OrdinalIgnoreCase))
+            return (values[0], values[2]);
+        return null;
+    }
+
+    private async Task GoToSearchCoordinates()
+    {
+        if (searchCoordinates is not { } coordinates || mapModule is null) return;
+        await mapModule.InvokeVoidAsync("goToCoords", MapContainerId, coordinates.X, coordinates.Z, 8);
+        showSearchPanel = false;
+    }
+
+    private static string DimensionLabel(string dimension) => dimension switch
+    {
+        "nether" => "Nether",
+        "end" => "End",
+        _ => "Overworld"
+    };
+
+    /// <summary>Scores a location against a lowercase query (name-weighted, like the old Fuse config).</summary>
+    /// <param name="l">The location to score.</param>
+    /// <param name="q">The lowercase query.</param>
+    /// <returns>A relevance score; 0 means no match.</returns>
+    private static int ScoreLocation(Location l, string q)
+    {
+        int score = 0;
+        var name = (l.Name ?? "").ToLowerInvariant();
+        if (name == q) score += 100;
+        else if (name.StartsWith(q)) score += 60;
+        else if (name.Contains(q)) score += 40;
+        if ((l.Tags ?? "").ToLowerInvariant().Contains(q)) score += 20;
+        if ((l.Description ?? "").ToLowerInvariant().Contains(q)) score += 10;
+        if ($"{l.X} {l.Z}".Contains(q) || $"{l.X},{l.Z}".Contains(q)) score += 15;
+        return score;
+    }
+
+    /// <summary>Flies to a search result, switching dimension if needed, and selects its marker.</summary>
+    /// <param name="loc">The chosen location.</param>
+    private async Task GoToSearchResult(Location loc)
+    {
+        if (!initialized || mapModule == null) return;
+
+        // Switch dimension if the result lives elsewhere.
+        var dim = loc.Dimension switch { 2 => "end", 1 => "nether", _ => "overworld" };
+        if (dim != selectedDimension)
+        {
+            selectedDimension = dim;
+            await mapModule.InvokeVoidAsync("setDimension", MapContainerId, selectedDimension);
+            await RefreshRenders();
+            RefreshNocomPeriods();
+            await ApplyNocomLayerAsync();
+            NavigationManager.NavigateTo($"map?dimension={dim}");
+        }
+
+        // Ensure markers are visible so the target can be focused.
+        if (!showLocations)
+        {
+            showLocations = true;
+            await mapModule.InvokeVoidAsync("setLocations", MapContainerId, true);
+        }
+
+        var idx = allLocations.IndexOf(loc);
+        var found = await mapModule.InvokeAsync<bool>("focusLocation", MapContainerId, idx, 8);
+        if (!found)
+        {
+            await mapModule.InvokeVoidAsync("goToCoords", MapContainerId, (double)loc.X, (double)loc.Z, 8);
+            selectedLocation = loc;
+            locationSelected = true;
+            highwaySelected = false;
+            if (EnsureLatestBaseRenderSelected(loc))
+                await RefreshBaseRendersAsync();
+        }
+
+        showSearchPanel = false;
+    }
+
+    /// <summary>Opens/closes the export panel (mutually exclusive with other left panels).</summary>
+    private void ToggleExport()
+    {
+        showExportPanel = !showExportPanel;
+        if (showExportPanel) { showSearchPanel = false; showLayersPanel = false; showHistoryPanel = false; }
+    }
+
+    /// <summary>The current dimension as its integer index (0=Overworld, 1=Nether, 2=End).</summary>
+    private int CurrentDimIndex() => selectedDimension switch { "nether" => 1, "end" => 2, _ => 0 };
+
+    /// <summary>The set of locations to export, honoring the all-dimensions scope toggle.</summary>
+    private List<Location> ExportSet() =>
+        exportAllDims ? allLocations : allLocations.Where(l => l.Dimension == CurrentDimIndex()).ToList();
+
+    /// <summary>Exports waypoints in Xaero's Minimap format (single .txt for the matching dimension).</summary>
+    private async Task ExportXaero()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("#");
+        sb.AppendLine("#Exported from 2b2t Atlas");
+        foreach (var l in ExportSet())
+        {
+            var name = (l.Name ?? "loc").Replace(':', ' ').Replace('\n', ' ').Replace('\r', ' ').Trim();
+            if (name.Length == 0) name = "loc";
+            var initial = name.Substring(0, 1).ToUpperInvariant();
+            var y = l.Y ?? 64;
+            sb.AppendLine($"waypoint:{name}:{initial}:{l.X}:{y}:{l.Z}:6:false:0:gui.xaero_default:true:0:0:false");
+        }
+        var scope = exportAllDims ? "all" : selectedDimension;
+        await JSRuntime.InvokeVoidAsync("downloadTextFile", $"atlas-xaero-{scope}.txt", "text/plain", sb.ToString());
+    }
+
+    /// <summary>Exports the selected locations as CSV.</summary>
+    private async Task ExportCsv()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("name,x,y,z,dimension,tags,description");
+        foreach (var l in ExportSet())
+            sb.AppendLine(string.Join(",", CsvField(l.Name), l.X, l.Y?.ToString() ?? "", l.Z,
+                CsvField(l.DimensionName), CsvField(l.Tags), CsvField(DisplayText.CompactDescription(l.Description))));
+        await JSRuntime.InvokeVoidAsync("downloadTextFile", "atlas-locations.csv", "text/csv", sb.ToString());
+    }
+
+    /// <summary>Exports the selected locations as indented JSON.</summary>
+    private async Task ExportJson()
+    {
+        var data = ExportSet().Select(l => new { l.Name, l.X, l.Y, l.Z, dimension = l.DimensionName, l.Tags, l.Description, l.Wiki, l.VideoUrl });
+        var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        await JSRuntime.InvokeVoidAsync("downloadTextFile", "atlas-locations.json", "application/json", json);
+    }
+
+    /// <summary>Escapes a value for a CSV field.</summary>
+    /// <param name="value">The raw value.</param>
+    /// <returns>The quoted, escaped CSV field.</returns>
+    private static string CsvField(string? value) => "\"" + (value ?? "").Replace("\"", "\"\"") + "\"";
+
+    /// <summary>Closes the highway info panel and clears the map selection.</summary>
+    private async Task CloseHighwayInfo()
+    {
+        highwaySelected = false;
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("clearHighwaySelection", MapContainerId);
+    }
+
+    // ---- Highway editor ----
+
+    /// <summary>Loads the current user's highway permissions to gate the editor UI.</summary>
+    private async Task LoadHighwayPermissionsAsync()
+    {
+        var user = await AuthService.GetCurrentUserAsync();
+        var perms = user?.Permissions ?? new List<string>();
+        canEditHighways = perms.Contains(Permissions.HighwaysCreate) || perms.Contains(Permissions.HighwaysEdit);
+        canDeleteHighways = perms.Contains(Permissions.HighwaysDelete);
+    }
+
+    /// <summary>Opens/closes the highway editor for creating a new highway.</summary>
+    private async Task ToggleHighwayEditor()
+    {
+        if (editorOpen) { await CloseHighwayEditor(); return; }
+        // Close conflicting tools.
+        if (measuring) await ToggleMeasure();
+        if (showMarkerToolPanel) await ToggleMarkerTool();
+        ResetEditorForm(null);
+        editorOpen = true;
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setHighwayEditMode", MapContainerId, true);
+    }
+
+    /// <summary>Closes the editor and exits map edit mode.</summary>
+    private async Task CloseHighwayEditor()
+    {
+        editorOpen = false;
+        editVertexCount = 0;
+        editorError = null;
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("setHighwayEditMode", MapContainerId, false);
+    }
+
+    /// <summary>Loads the selected highway into the editor for editing.</summary>
+    private async Task EditSelectedHighway()
+    {
+        if (selectedHighwayId <= 0) return;
+        var hw = await HighwayService.GetHighwayAsync(selectedHighwayId);
+        if (hw == null) return;
+
+        highwaySelected = false;
+        if (mapModule != null) await mapModule.InvokeVoidAsync("clearHighwaySelection", MapContainerId);
+
+        ResetEditorForm(hw);
+        editorOpen = true;
+        if (initialized && mapModule != null)
+        {
+            await mapModule.InvokeVoidAsync("setHighwayEditMode", MapContainerId, true, (int)hw.Dimension);
+            var points = hw.Points.Select(p => new { x = p.X, z = p.Z }).ToArray();
+            await mapModule.InvokeVoidAsync("setEditPath", MapContainerId, points);
+        }
+    }
+
+    /// <summary>Resets the editor form from a highway (or blank for a new one).</summary>
+    private void ResetEditorForm(Highway? hw)
+    {
+        hwOriginal = hw;
+        hwGroupIds = hw?.BuilderGroups.Select(g => g.GroupId).ToArray() ?? Array.Empty<int>();
+        hwRingRadius = hw?.RingRadius;
+        hwHeight = hw?.Height;
+        hwLit = hw?.Lit ?? false;
+        hwEditId = hw?.Id;
+        hwName = hw?.Name ?? "";
+        hwCategory = hw?.Category ?? HighwayCategory.Custom;
+        hwWidth = hw?.Width ?? 4;
+        hwMaterial = hw?.PavingMaterial ?? PavingMaterial.Unknown;
+        hwStatus = hw?.Status ?? HighwayStatus.Unknown;
+        hwYLevel = hw?.YLevel;
+        hwPaved = hw?.Paved ?? false;
+        hwWalls = hw?.Walls ?? false;
+        hwEnclosed = hw?.Enclosed ?? false;
+        hwRoof = hw?.IsRoofHighway ?? false;
+        hwColor = hw?.Color;
+        hwDescription = hw?.Description;
+        hwWiki = hw?.WikiUrl;
+        hwBuilderGroupId = hw?.BuilderGroupId;
+        editorError = null;
+    }
+
+    /// <summary>Removes the last drawn vertex.</summary>
+    private async Task UndoVertex()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("undoEditVertex", MapContainerId);
+    }
+
+    /// <summary>Clears all drawn vertices.</summary>
+    private async Task ClearVertices()
+    {
+        if (initialized && mapModule != null)
+            await mapModule.InvokeVoidAsync("clearEditPath", MapContainerId);
+    }
+
+    /// <summary>Saves the drawn highway (create or update) via the API.</summary>
+    private async Task SaveHighway()
+    {
+        if (mapModule == null) return;
+        saving = true;
+        editorError = null;
+        try
+        {
+            var pts = await mapModule.InvokeAsync<List<PointDto>>("getEditPath", MapContainerId);
+            if (pts.Count < 2 && hwCategory is not (HighwayCategory.Ring or HighwayCategory.DiamondRing)) { editorError = "Draw at least two points."; return; }
+
+            var dto = new Highway
+            {
+                Id = hwEditId ?? 0,
+                EditVersion = hwOriginal?.EditVersion,
+                Slug = hwOriginal?.Slug ?? "",
+                RingRadius = hwRingRadius,
+                Height = hwHeight,
+                Lit = hwLit,
+                VideoUrl = hwOriginal?.VideoUrl,
+                DisplayWeight = hwOriginal?.DisplayWeight,
+                LengthBlocks = hwOriginal?.LengthBlocks,
+                LastVerifiedUtc = hwOriginal?.LastVerifiedUtc,
+                ReviewStatus = hwOriginal?.ReviewStatus ?? ReviewStatus.Approved,
+                BuilderGroups = hwGroupIds.Select(id => hwOriginal?.BuilderGroups.FirstOrDefault(g => g.GroupId == id)
+                    ?? new HighwayGroupAttribution { GroupId = id, Role = "Maintainer" }).ToList(),
+                Name = hwName.Trim(),
+                Dimension = hwOriginal?.Dimension ?? selectedDimension switch
+                {
+                    "end" => Dimension.End,
+                    "overworld" => Dimension.Overworld,
+                    _ => Dimension.Nether,
+                },
+                Category = hwCategory,
+                Points = pts.Select(p => new HighwayPoint(p.X, p.Z)).ToList(),
+                Width = hwWidth,
+                PavingMaterial = hwMaterial,
+                Status = hwStatus,
+                YLevel = hwYLevel,
+                Paved = hwPaved,
+                Walls = hwWalls,
+                Enclosed = hwEnclosed,
+                IsRoofHighway = hwRoof,
+                Color = string.IsNullOrWhiteSpace(hwColor) ? null : hwColor,
+                Description = string.IsNullOrWhiteSpace(hwDescription) ? null : hwDescription,
+                WikiUrl = string.IsNullOrWhiteSpace(hwWiki) ? null : hwWiki,
+                BuilderGroupId = hwBuilderGroupId,
+                Visibility = hwOriginal?.Visibility ?? HighwayVisibility.Public,
+            };
+
+            var result = hwEditId is null
+                ? await HighwayService.CreateAsync(dto)
+                : await HighwayService.UpdateAsync(hwEditId.Value, dto);
+
+            if (!result.Ok)
+            {
+                editorError = result.Error ?? "Save failed.";
+                return;
+            }
+
+            await CloseHighwayEditor();
+            await LoadHighwaysAsync(); // refresh the map with the new/updated highway
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    /// <summary>Deletes the highway being edited.</summary>
+    private async Task DeleteHighway()
+    {
+        if (hwEditId is null) return;
+        saving = true;
+        try
+        {
+            var ok = await HighwayService.DeleteAsync(hwEditId.Value);
+            if (!ok) { editorError = "Delete failed (permission?)."; return; }
+            await CloseHighwayEditor();
+            await LoadHighwaysAsync();
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    /// <summary>A point returned from the JS edit path.</summary>
+    private record PointDto(int X, int Z);
+
+    /// <summary>Maps a highway category key to a friendly label for display.</summary>
+    /// <param name="category">The raw category key from the map data.</param>
+    /// <returns>A human-readable category label.</returns>
+    private static string FormatCategory(string category) => category switch
+    {
+        "axis" => "Axis highway",
+        "diagonal" => "Diagonal highway",
+        "ring" => "Ring road",
+        "diamond" => "Diamond ring road",
+        "star" => "Nether Star ring road",
+        "grid" => "50k grid road",
+        _ => "Highway"
+    };
+
+    /// <summary>Invoked from JS on mouse move to report the block coordinates under the cursor.</summary>
+    /// <param name="x">The block X coordinate.</param>
+    /// <param name="z">The block Z coordinate.</param>
+    [JSInvokable]
+    public void UpdateCoordinates(int x, int z)
+    {
+        cursorX = x;
+        cursorZ = z;
+        cursorText = $"{x}, {z}";
+        if (selectedDimension == "nether")
+        {
+            altCoordLabel = "OVW:";
+            altCoordText = $"{x * 8}, {z * 8}";
+        }
+        else if (selectedDimension == "overworld")
+        {
+            altCoordLabel = "Nether:";
+            altCoordText = $"{x / 8}, {z / 8}";
+        }
+        else
+        {
+            altCoordLabel = "";
+            altCoordText = "";
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Stops route handling and asks the browser map module to release the Leaflet map, event handlers, and .NET callback reference.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        StopNocomPlayback();
+        initialized = false;
+        NavigationManager.LocationChanged -= OnLocationChanged;
+        var module = mapModule;
+        mapModule = null;
+        try
+        {
+            if (module != null)
+            {
+                await module.InvokeVoidAsync("dispose", MapContainerId);
+                await module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException) { /* circuit already gone */ }
+        catch (ObjectDisposedException) { /* module already disposed */ }
+        selfRef?.Dispose();
+    }
+
+    private record DimensionOption(string Value, string Text);
+
+    private record MarkerOption(string Id, string Label);
+
+    private record RenderInfo(string Id, string Label, bool DayNight);
+
+    private record RendersResult(List<string> Current, bool DayNight, List<RenderInfo> Renders);
+
+    private record NocomPeriod(string Key, string Label, DateTimeOffset StartUtc);
+
+    private sealed class NocomManifest
+    {
+        public List<NocomFrame> Frames { get; set; } = new();
+        public List<NocomTotal> Totals { get; set; } = new();
+    }
+
+    private abstract class NocomLayer
+    {
+        public string Dimension { get; set; } = "";
+        public int MaxNativeUrlZoom { get; set; }
+        public string UrlTemplate { get; set; } = "";
+    }
+
+    private sealed class NocomFrame : NocomLayer
+    {
+        public string Key { get; set; } = "";
+        public string Label { get; set; } = "";
+        public DateTimeOffset PeriodStartUtc { get; set; }
+    }
+
+    private sealed class NocomTotal : NocomLayer { }
+}
+
+<style>
+    .map-container {
+        /* The layout already subtracts its header and outer margins. */
+        height: 100%;
+        min-height: 0;
+        position: relative;
+    }
+
+    /* Per-theme surface variables for the floating controls + panels */
+    .map-theme-dark {
+        --panel-bg: #0f1116;
+        --panel-fg: #f0f2f5;
+        --panel-border: #2a2f3a;
+        --panel-input-bg: #171a21;
+        --panel-muted: rgba(255, 255, 255, 0.08);
+        --panel-badge: #2a2f3a;
+        --ctrl-bg: #12151c;
+        --ctrl-fg: #e6e9ee;
+        --ctrl-hover: #1c2430;
+        --ctrl-active: #4da3ff;
+    }
+
+    .map-theme-light {
+        --panel-bg: #ffffff;
+        --panel-fg: #1a2230;
+        --panel-border: #d7dbe0;
+        --panel-input-bg: #f1f3f5;
+        --panel-muted: rgba(0, 0, 0, 0.05);
+        --panel-badge: #e7ebf0;
+        --ctrl-bg: #ffffff;
+        --ctrl-fg: #2a3242;
+        --ctrl-hover: #eef1f4;
+        --ctrl-active: #2f7fe0;
+    }
+
+    .map-view {
+        position: relative;
+        height: 100%;
+        min-height: 0;
+    }
+
+    .map-display {
+        position: absolute;
+        inset: 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #1a1a1a;
+    }
+
+    /* Leaflet-style floating tool controls (top-right) */
+    .map-toolbar {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 1100;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: calc(100% - 24px);
+        overflow-y: auto;
+    }
+
+    .map-ctrl {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        background: var(--ctrl-bg);
+        color: var(--ctrl-fg);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .map-ctrl:hover {
+        background: var(--ctrl-hover);
+    }
+
+    .map-ctrl i {
+        font-size: 22px;
+        line-height: 1;
+    }
+
+    .map-ctrl.active {
+        background: var(--ctrl-active);
+        border-color: var(--ctrl-active);
+        color: #fff;
+    }
+
+    .map-ctrl.ctrl-off {
+        opacity: 0.4;
+        cursor: default;
+    }
+
+    .map-ctrl-gap {
+        height: 8px;
+    }
+
+    /* Coordinate readout chip (bottom-left) */
+    .map-coords {
+        position: absolute;
+        left: 12px;
+        bottom: 28px;
+        z-index: 1100;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 6px 5px 11px;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        color: var(--panel-fg);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    .map-coords .coord-alt {
+        color: #e0736f;
+    }
+
+    .map-coords .coord-copy {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border: none;
+        border-radius: 6px;
+        background: var(--panel-muted);
+        color: var(--panel-fg);
+        cursor: pointer;
+    }
+
+    .map-coords .coord-copy:hover {
+        background: var(--ctrl-hover);
+    }
+
+    .map-coords .coord-copy i {
+        font-size: 16px;
+    }
+
+    /* Go-to coordinates row inside the search panel */
+    .goto-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .goto-field {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .goto-field label {
+        display: block;
+        font-size: 0.72rem;
+        opacity: 0.7;
+        margin-bottom: 2px;
+    }
+
+    /* Center crosshair overlay */
+    .map-crosshair {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 900;
+    }
+
+    .map-crosshair::before,
+    .map-crosshair::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        background: rgba(255, 255, 255, 0.65);
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
+    }
+
+    .map-crosshair::before {
+        width: 2px;
+        height: 46px;
+        transform: translate(-50%, -50%);
+    }
+
+    .map-crosshair::after {
+        width: 46px;
+        height: 2px;
+        transform: translate(-50%, -50%);
+    }
+
+    /* Floating panels */
+    .map-panel {
+        position: absolute;
+        z-index: 1000;
+        box-sizing: border-box;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        color: var(--panel-fg);
+        padding: 10px 12px;
+    }
+
+    .map-panel label,
+    .map-panel h4,
+    .map-panel strong,
+    .map-panel .rz-card {
+        color: var(--panel-fg) !important;
+    }
+
+    /* Form controls follow the panel surface via variables (readable in both themes) */
+    .map-panel .rz-dropdown,
+    .map-panel .rz-multiselect,
+    .map-panel .rz-inputtext,
+    .map-panel input.rz-inputtext,
+    .map-panel .rz-lookup {
+        background-color: var(--panel-input-bg) !important;
+        border-color: var(--panel-border) !important;
+        color: var(--panel-fg) !important;
+    }
+
+    .map-panel .rz-dropdown .rz-dropdown-label,
+    .map-panel .rz-dropdown-label,
+    .map-panel .rz-inputtext,
+    .map-panel .rz-dropdown-trigger,
+    .map-panel .rz-dropdown-trigger .rz-dropdown-trigger-icon {
+        color: var(--panel-fg) !important;
+    }
+
+    .layers-panel {
+        top: 12px;
+        right: 64px;
+        width: 290px;
+        max-height: calc(100% - 24px);
+        overflow-y: auto;
+    }
+
+    .history-panel {
+        top: 12px;
+        right: 64px;
+        width: 330px;
+        max-height: calc(100% - 24px);
+        overflow-y: auto;
+        border-color: rgba(34, 211, 238, 0.65);
+    }
+
+    .map-ctrl.history-on::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22d3ee;
+        box-shadow: 0 0 7px #22d3ee;
+    }
+
+    .map-ctrl.history-on {
+        position: relative;
+    }
+
+    .history-header {
+        gap: 8px;
+    }
+
+    .history-era-badge {
+        margin-left: auto;
+        padding: 2px 7px;
+        border: 1px solid rgba(34, 211, 238, 0.45);
+        border-radius: 10px;
+        color: #22d3ee;
+        font-size: 0.68rem;
+        white-space: nowrap;
+    }
+
+    .history-intro {
+        margin: 8px 0 12px;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        opacity: 0.86;
+    }
+
+    .history-master-row {
+        padding: 8px;
+        border-radius: 6px;
+        background: var(--panel-muted);
+        font-weight: 700;
+    }
+
+    .history-mode {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        margin: 12px 0;
+        padding: 3px;
+        border-radius: 7px;
+        background: var(--panel-muted);
+    }
+
+    .history-mode button,
+    .history-playback button {
+        min-height: 32px;
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        color: var(--panel-fg);
+        cursor: pointer;
+    }
+
+    .history-mode button.active {
+        background: var(--ctrl-bg);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        color: #22d3ee;
+        font-weight: 700;
+    }
+
+    .history-color-mode {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 4px;
+    }
+
+    .history-color-mode button {
+        font-size: 0.78rem;
+    }
+
+    .history-color-picker-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin: 6px 0 10px;
+        font-size: 0.78rem;
+    }
+
+    .history-color-picker-row > div {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .history-color-picker-row input[type="color"] {
+        width: 42px;
+        height: 30px;
+        padding: 2px;
+        border: 1px solid var(--panel-border);
+        border-radius: 5px;
+        background: var(--ctrl-bg);
+        cursor: pointer;
+    }
+
+    .history-color-picker-row code {
+        color: var(--panel-fg);
+        font-size: 0.7rem;
+    }
+
+    .history-date-row,
+    .history-opacity-row,
+    .history-total-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0 5px;
+        font-size: 0.78rem;
+    }
+
+    .history-date-row div,
+    .history-total-label {
+        min-width: 0;
+    }
+
+    .history-date-row strong,
+    .history-total-label strong,
+    .history-date-row span,
+    .history-total-label span {
+        display: block;
+    }
+
+    .history-date-row div > span,
+    .history-total-label span {
+        margin-top: 2px;
+        opacity: 0.65;
+        font-size: 0.7rem;
+    }
+
+    .history-slider {
+        width: 100%;
+        accent-color: #22d3ee;
+    }
+
+    .history-playback {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin: 4px 0 12px;
+    }
+
+    .history-playback button {
+        width: 38px;
+        background: var(--panel-muted);
+    }
+
+    .history-playback button.play {
+        background: #22d3ee;
+        color: #071317;
+    }
+
+    .history-gradient {
+        height: 8px;
+        margin-top: 12px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #22d3ee, #facc15 62%, #ef4444);
+    }
+
+    .history-gradient--custom {
+        transition: background 100ms ease-out;
+    }
+
+    .history-legend > div:last-child {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 3px;
+        font-size: 0.65rem;
+        opacity: 0.72;
+    }
+
+    .history-method {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--panel-border);
+        font-size: 0.76rem;
+        line-height: 1.4;
+    }
+
+    .history-method summary {
+        cursor: pointer;
+        font-weight: 700;
+    }
+
+    .history-method p {
+        margin: 8px 0;
+        opacity: 0.78;
+    }
+
+    .history-method a {
+        color: #22d3ee;
+    }
+
+    .history-notice,
+    .history-empty {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 6px;
+        background: var(--panel-muted);
+        font-size: 0.8rem;
+    }
+
+    .history-empty {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .measure-panel {
+        bottom: 28px;
+        right: 12px;
+        width: 280px;
+    }
+
+    .marker-tool-panel {
+        bottom: 28px;
+        right: 12px;
+        width: 244px;
+    }
+
+    /* Keep the unit select bar inside the panel and readable in every theme.
+       Radzen 11 renders RadzenSelectBar as .rz-selectbar with .rz-button children. */
+    .measure-panel .rz-selectbar {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+        border-radius: 6px;
+    }
+
+    .measure-panel .rz-selectbar .rz-button {
+        flex: 1 1 0;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 5px 2px !important;
+        font-size: 0.72rem;
+        background: var(--panel-input-bg) !important;
+        color: var(--panel-fg) !important;
+        border-color: var(--panel-border) !important;
+    }
+
+    .measure-panel .rz-selectbar .rz-button:hover {
+        background: var(--ctrl-hover) !important;
+        color: var(--panel-fg) !important;
+    }
+
+    /* Selected unit — high-contrast amber, readable regardless of app theme */
+    .measure-panel .rz-selectbar .rz-button.rz-state-active {
+        background: #ffab40 !important;
+        color: #1a1a1a !important;
+        border-color: #ffab40 !important;
+        font-weight: 700;
+    }
+
+    .hw-info-panel {
+        top: 12px;
+        left: 52px;
+        width: 300px;
+        border-color: #4da3ff;
+        max-height: calc(100% - 104px);
+        overflow-y: auto;
+    }
+
+    .hw-info-panel .rz-card {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .loc-info-panel {
+        top: 12px;
+        left: 52px;
+        width: 300px;
+        border-color: #ffd24a;
+        max-height: calc(100% - 104px);
+        overflow-y: auto;
+    }
+
+    .loc-badge {
+        display: inline-block;
+        background: var(--panel-badge);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.72rem;
+    }
+
+    .loc-coords {
+        font-family: 'JetBrains Mono', monospace;
+        margin: 8px 0;
+    }
+
+    .loc-coords .alt {
+        color: #e0736f;
+        margin-left: 8px;
+    }
+
+    .loc-desc {
+        font-size: 0.85rem;
+        margin: 6px 0;
+        opacity: 0.92;
+        white-space: pre-line;
+    }
+
+    .loc-tags {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        margin-bottom: 6px;
+    }
+
+    .loc-section-label {
+        font-weight: 700;
+        font-size: 0.8rem;
+        margin: 8px 0 3px;
+    }
+
+    .base-render-choices {
+        display: grid;
+        gap: 4px;
+    }
+
+    .base-render-choice {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+        padding: 6px 8px;
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+        background: var(--panel-input-bg);
+        color: var(--panel-fg);
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .base-render-choice:hover { background: var(--ctrl-hover); }
+    .base-render-choice.active { border-color: #ffd24a; box-shadow: inset 3px 0 #ffd24a; }
+    .base-render-choice span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .base-render-choice small { flex: 0 0 auto; opacity: 0.75; }
+
+    .base-render-card {
+        overflow: hidden;
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+        background: var(--panel-input-bg);
+    }
+
+    .base-render-card.active { border-color: #ffd24a; box-shadow: inset 3px 0 #ffd24a; }
+    .base-render-card .base-render-choice { border: 0; border-radius: 0; }
+
+    .base-render-meta {
+        display: grid;
+        gap: 3px;
+        padding: 4px 7px;
+        border-top: 1px solid var(--panel-border);
+        color: var(--panel-fg);
+        opacity: .78;
+    }
+
+    .base-render-meta-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .base-render-hint {
+        margin-top: 5px;
+        color: var(--panel-muted);
+        font-size: .72rem;
+        line-height: 1.25;
+    }
+
+    .warp-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .warp-row code {
+        font-size: 0.75rem;
+        background: var(--panel-muted);
+        padding: 2px 5px;
+        border-radius: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .loc-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .loc-link {
+        color: #4da3ff;
+        font-size: 0.85rem;
+        text-decoration: none;
+        padding: 0 4px;
+    }
+
+    /* Search panel */
+    .search-panel {
+        top: 12px;
+        right: 64px;
+        width: 300px;
+        max-height: calc(100% - 24px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .search-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 7px 9px;
+        border-radius: 6px;
+        border: 1px solid var(--panel-border);
+        background: var(--panel-input-bg);
+        color: var(--panel-fg);
+        font-size: 0.9rem;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--ctrl-active);
+    }
+
+    .search-results {
+        margin-top: 8px;
+        overflow-y: auto;
+    }
+
+    .search-row {
+        padding: 6px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .search-row:hover {
+        background: rgba(77, 163, 255, 0.15);
+    }
+
+    .search-row-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .search-name {
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .search-coords {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.78rem;
+        opacity: 0.75;
+    }
+
+    .search-empty {
+        opacity: 0.6;
+        padding: 8px 4px;
+        font-size: 0.85rem;
+    }
+
+    /* Export panel */
+    .export-panel {
+        top: 12px;
+        right: 64px;
+        width: 262px;
+    }
+
+    .export-count {
+        font-size: 0.85rem;
+        opacity: 0.8;
+        margin: 6px 0 8px;
+    }
+
+    .export-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .export-hint {
+        font-size: 0.75rem;
+        opacity: 0.65;
+        margin-top: 8px;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .panel-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 3px 0;
+    }
+
+    .border-legend {
+        display: grid;
+        gap: 4px;
+        margin: 0 0 5px 28px;
+        color: var(--panel-muted);
+        font-size: 0.72rem;
+    }
+
+    .border-legend span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .border-key {
+        width: 18px;
+        border-top: 2px dashed;
+    }
+
+    .border-key.overworld { border-color: #ff5252; }
+    .border-key.nether { border-color: #ffb300; }
+
+    .render-row {
+        margin-bottom: 8px;
+    }
+
+    .spawn-render-manager {
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+        padding: 8px;
+        margin-bottom: 8px;
+        background: rgba(128, 128, 128, 0.04);
+    }
+
+    .render-master-row {
+        margin-bottom: 7px;
+        padding: 0;
+    }
+
+    .render-count {
+        margin-left: auto;
+        min-width: 22px;
+        text-align: center;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: var(--panel-muted);
+        color: var(--panel-fg);
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .render-section-label {
+        margin: 4px 4px 3px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        opacity: 0.7;
+    }
+
+    .available-label {
+        margin-top: 9px;
+    }
+
+    .render-order {
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+        padding: 4px 2px;
+        transition: opacity 0.15s ease;
+    }
+
+    .render-order.renders-disabled {
+        opacity: 0.5;
+    }
+
+    .render-order-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        cursor: grab;
+        user-select: none;
+    }
+
+    .render-order-row:active {
+        cursor: grabbing;
+    }
+
+    .render-order-row.dragging {
+        opacity: 0.5;
+        background: var(--panel-muted);
+    }
+
+    .ro-drag {
+        opacity: 0.5;
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+
+    .ro-label {
+        flex: 1 1 auto;
+        font-size: 0.8rem;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+        min-width: 0;
+    }
+
+    .ro-hint {
+        font-size: 0.7rem;
+        opacity: 0.6;
+        padding: 3px 6px 1px;
+    }
+
+    .render-available {
+        border-top: 1px solid var(--panel-border);
+        max-height: 190px;
+        overflow-y: auto;
+        padding-top: 3px;
+    }
+
+    .render-available-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 30px;
+        padding: 2px 4px 2px 8px;
+        border-radius: 4px;
+    }
+
+    .render-available-row:hover {
+        background: var(--panel-muted);
+    }
+
+    .render-row-action {
+        flex: 0 0 28px;
+        width: 28px;
+        height: 28px;
+        min-width: 28px !important;
+        padding: 0 !important;
+    }
+
+    .render-empty {
+        padding: 7px 8px;
+        font-size: 0.78rem;
+        opacity: 0.6;
+    }
+
+    .marker-settings {
+        border-top: 1px solid var(--panel-border);
+        margin: 6px 0;
+        padding-top: 8px;
+    }
+
+    .slider-row {
+        margin: 4px 0 10px;
+        font-size: 0.85rem;
+    }
+
+    .marker-slider {
+        display: block;
+        width: 100%;
+        height: 32px;
+        margin-top: 2px;
+        accent-color: #ffab40;
+        cursor: pointer;
+        touch-action: pan-y;
+    }
+
+    /* Leaflet divIcon markers (pins/mansions/gapples/end portals) */
+    .atlas-marker-wrap {
+        background: transparent;
+        border: none;
+    }
+
+    .atlas-svg-marker {
+        display: block;
+        cursor: pointer;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+    }
+
+    .atlas-svg-marker.sel {
+        filter: drop-shadow(0 0 5px #fff);
+    }
+
+    /* Measure tool: draggable point handles + per-segment distance labels */
+    .atlas-measure-pt {
+        background: #fff;
+        border: 2px solid #ffab40;
+        border-radius: 50%;
+        box-sizing: border-box;
+        cursor: move;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+    }
+
+    .atlas-edit-vertex {
+        background: #ffd24a;
+        border: 2px solid #7a5b00;
+        border-radius: 3px;
+        box-sizing: border-box;
+        cursor: move;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+    }
+
+    .highway-editor-panel {
+        top: 12px;
+        right: 64px;
+        width: 300px;
+        max-height: calc(100% - 24px);
+        overflow-y: auto;
+    }
+
+    .highway-editor-panel .editor-hint {
+        font-size: 0.72rem;
+        opacity: 0.75;
+        margin-bottom: 8px;
+    }
+
+    .highway-editor-panel .editor-path-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+
+    .highway-editor-panel .editor-field {
+        margin-bottom: 8px;
+    }
+
+    .highway-editor-panel .editor-field label {
+        display: block;
+        font-size: 0.72rem;
+        opacity: 0.75;
+        margin-bottom: 2px;
+    }
+
+    .highway-editor-panel .editor-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .highway-editor-panel .editor-checks {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px 8px;
+        margin: 6px 0 8px;
+    }
+
+    .highway-editor-panel .w-100 {
+        width: 100%;
+    }
+
+    .highway-editor-panel .editor-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .highway-editor-panel .editor-error {
+        color: #ff6b6b;
+        font-size: 0.78rem;
+        margin-top: 6px;
+    }
+
+    .atlas-measure-seg {
+        background: rgba(0, 0, 0, 0.72);
+        color: #ffab40;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+    }
+
+    /* User-placed custom markers (star/mansion/gapple/diamond/monument) */
+    .atlas-custom-marker {
+        cursor: move;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+    }
+
+    .measure-total {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #ffab40;
+        margin: 4px 0;
+    }
+
+    .measure-hint {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        margin: 6px 0;
+    }
+
+    .goto-num {
+        display: inline-block;
+        width: 96px;
+    }
+
+    /* Phone: panels become edge-anchored sheets so they never overflow */
+    @@media (max-width: 600px) {
+        .search-panel,
+        .layers-panel,
+        .history-panel,
+        .export-panel,
+        .hw-info-panel,
+        .loc-info-panel {
+            top: 10px;
+            left: 8px;
+            right: 60px;
+            width: auto;
+        }
+
+        .measure-panel,
+        .marker-tool-panel {
+            left: 8px;
+            right: 8px;
+            width: auto;
+            bottom: 28px;
+        }
+
+        .map-coords {
+            font-size: 0.72rem;
+            padding: 4px 5px 4px 9px;
+        }
+    }
+</style>

@@ -6,7 +6,7 @@ can correct documentation, fix examples, or add runnable examples in other langu
 ## Ground rules
 
 1. Keep examples read-only. This repository documents anonymous public `GET` routes, not moderation or ingestion capabilities.
-2. Never commit tokens, passwords, session files, private coordinates, collector details, or production configuration.
+2. Never commit tokens, passwords, session files, private coordinates, production collector state, or production configuration. Generalized collector source belongs in `examples/atlas-stack`, with synthetic fixtures and configurable paths.
 3. Test examples against the local fixture; use the live API to verify contract changes.
 4. Use a descriptive User-Agent where the language permits it and cache bulk data locally.
 5. Keep entity links and source-specific provenance when practical.

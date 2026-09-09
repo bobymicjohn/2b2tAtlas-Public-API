@@ -1,0 +1,129 @@
+@using Atlas
+@using Group = Atlas.Group
+
+<RadzenStack Gap="1rem" class="group-dialog">
+    <RadzenFieldset Text="Group Details">
+        <RadzenStack Gap="0.5rem">
+            <RadzenFormField Text="Name" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="Group.Name" Name="Name" />
+                <RadzenRequiredValidator Component="Name" Text="Name is required" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Type" Variant="Variant.Outlined">
+                <RadzenDropDown @bind-Value="Group.Type" Data="@types" Name="Type" />
+            </RadzenFormField>
+
+            <RadzenRow Gap="0.75rem">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenFormField Text="Founded (exact or approximate)" Variant="Variant.Outlined">
+                        <RadzenTextBox @bind-Value="Group.Founded" Name="Founded" Placeholder="April 27, 2011" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenFormField Text="Status" Variant="Variant.Outlined">
+                        <RadzenTextBox @bind-Value="Group.Status" Name="Status" Placeholder="Active, inactive, disbanded..." />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenFormField Text="Description" Variant="Variant.Outlined">
+                <RadzenTextArea @bind-Value="Group.Description" Name="Description" Rows="3" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Colour (hex, optional)" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="Group.Color" Name="Color" Placeholder="#4da3ff" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Wiki URL (optional)" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="Group.WikiUrl" Name="WikiUrl" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Official website (optional)" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="Group.WebsiteUrl" Name="WebsiteUrl" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Discord invite (optional)" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="Group.DiscordUrl" Name="DiscordUrl" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Logo URL (optional)" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="Group.LogoUrl" Name="LogoUrl" />
+            </RadzenFormField>
+
+            @if (!string.IsNullOrWhiteSpace(Group.LogoUrl))
+            {
+                <div class="group-logo-preview">
+                    <img src="@Group.LogoUrl" alt="Logo preview" onerror="this.style.display='none'" />
+                    <span>Logo preview</span>
+                </div>
+            }
+
+            <RadzenFormField Text="Logo source / credit URL (optional)" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="Group.LogoSourceUrl" Name="LogoSourceUrl" />
+            </RadzenFormField>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" AllowClose="false">@error</RadzenAlert>
+    }
+
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" JustifyContent="JustifyContent.End">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        <RadzenButton Text="@(IsEdit ? "Update" : "Create")" ButtonStyle="ButtonStyle.Primary" Click="@Submit" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    /// <summary>Gets or sets the group model created or updated by the dialog.</summary>
+    [Parameter] public Group Group { get; set; } = new();
+
+    /// <summary>Gets or sets whether the dialog is editing an existing group rather than creating one.</summary>
+    [Parameter] public bool IsEdit { get; set; } = false;
+
+    private readonly GroupType[] types = (GroupType[])Enum.GetValues(typeof(GroupType));
+    private string? error;
+
+    [Inject] DialogService DialogService { get; set; } = default!;
+
+    void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Group.Name))
+        {
+            error = "Name is required";
+            return;
+        }
+        foreach (var (label, value) in new[]
+        {
+            ("Wiki URL", Group.WikiUrl),
+            ("Website URL", Group.WebsiteUrl),
+            ("Discord URL", Group.DiscordUrl),
+            ("Logo URL", Group.LogoUrl),
+            ("Logo source URL", Group.LogoSourceUrl),
+        })
+        {
+            if (string.IsNullOrWhiteSpace(value)) continue;
+            if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+            {
+                error = $"{label} must be an absolute HTTP or HTTPS URL.";
+                return;
+            }
+        }
+        DialogService.Close(Group);
+    }
+
+    void Cancel() => DialogService.Close(null);
+}
+
+<style>
+    .group-dialog .rz-form-field { width: 100%; }
+    .group-dialog .rz-textbox, .group-dialog .rz-dropdown, .group-dialog textarea { width: 100%; }
+    .group-logo-preview { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; opacity: 0.8; }
+    .group-logo-preview img { width: 64px; height: 64px; border-radius: 10px; object-fit: contain; background: rgba(127,127,127,.12); }
+    @@media (max-width: 640px) {
+        .group-dialog { max-height: calc(100dvh - 110px); overflow-y: auto; }
+        .group-dialog .rz-stack-horizontal { flex-wrap: wrap; }
+        .group-dialog .rz-stack-horizontal > .rz-button { flex: 1 1 120px; }
+    }
+</style>

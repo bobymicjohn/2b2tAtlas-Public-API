@@ -1,0 +1,379 @@
+@page "/extras"
+
+@using _2b2tAtlas.Client.Services
+@inject IJSRuntime JSRuntime
+@inject GroupService GroupService
+
+<PageTitle>Extras</PageTitle>
+
+<div class="extras-page">
+    <div class="extras-grid">
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://2b2t.org/")' @onkeydown='args => HandleCardKeyDown(args, "https://2b2t.org/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/2b2torg.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">2b2t.org</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">The official 2b2t website. Purchase priority queue and more.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://thearchive.world/")' @onkeydown='args => HandleCardKeyDown(args, "https://thearchive.world/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">  
+                <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/archive.webp"></RadzenImage>  
+                <h2 style="margin-left: 11px;">thearchive.world</h2>  
+            </RadzenStack>  
+            <hr />  
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Terbin's archive of world downloads from 2b2t. Join the server at <b>thearchive.world</b></p>  
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://2b2t.place/")' @onkeydown='args => HandleCardKeyDown(args, "https://2b2t.place/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/2b2t-place.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">2b2t.place</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Interactive 2b2t world map with searchable World and Obsidian layers for the Overworld, Nether, and End.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://2b2t.miraheze.org/wiki/2b2t_Anarchy_Server_Wiki")' @onkeydown='args => HandleCardKeyDown(args, "https://2b2t.miraheze.org/wiki/2b2t_Anarchy_Server_Wiki")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/wiki.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">2b2t Wiki</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">The 2b2t Wiki on Miraheze. Find detailed information about the server.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://github.com/nerdsinspace/nocom-explanation")' @onkeydown='args => HandleCardKeyDown(args, "https://github.com/nerdsinspace/nocom-explanation")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/atlas.webp"></RadzenImage>
+                <h2 style="margin-left: 11px;">Nocom</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">The original explanation, source code, and public data release for the famous 2018-2021 loaded-chunk exploit. The Atlas World Pulse layer visualizes its historical activity record.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://map.daporkchop.net/")' @onkeydown='args => HandleCardKeyDown(args, "https://map.daporkchop.net/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/porkchop.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">DaPorkchop_'s Maps</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">DaPorkchop_'s Maps provide top-down and isometric renders of 2b2t.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://2b2t.info/")' @onkeydown='args => HandleCardKeyDown(args, "https://2b2t.info/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                <RadzenImage Style="height: 58px; width: 58px; object-fit: contain; vertical-align: middle;" Path="./Images/2b2t-info.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">2b2t.info</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Live 2b2t server status, queue and player data, in-game chat, historical performance graphs, curated community links, and browsable preservation maps.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://2b2t.online/")' @onkeydown='args => HandleCardKeyDown(args, "https://2b2t.online/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/cartographer.webp"></RadzenImage>
+                <h2 style="margin-left: 11px;">2b2t.online</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Community-run live server dashboard with queue length, player counts, priority-queue estimates, and a browsable world map.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://2b2t.dev/")' @onkeydown='args => HandleCardKeyDown(args, "https://2b2t.dev/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/api.webp"></RadzenImage>
+                <h2 style="margin-left: 11px;">2b2t.dev</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Community tools for live priority queue data, the server tab list, player statistics, and a public 2b2t API.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://www.reddit.com/r/2b2t/")' @onkeydown='args => HandleCardKeyDown(args, "https://www.reddit.com/r/2b2t/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/reddit.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">/r/2b2t</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">The official (and heavily censored) 2b2t subreddit.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://www.reddit.com/r/2b2t_uncensored/")' @onkeydown='args => HandleCardKeyDown(args, "https://www.reddit.com/r/2b2t_uncensored/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/uncesnored.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">/r/2b2t_uncensored</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">The unofficial 2b2t subreddit with uncensored discussions.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://rusherhack.org/")' @onkeydown='args => HandleCardKeyDown(args, "https://rusherhack.org/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/rusher.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">RusherHack</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">RusherHack is a trusted Player Assistance Utility Mod with features designed specifically for 2b2t. Use referral code <b>ATLAS</b> !</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://futureclient.net/")' @onkeydown='args => HandleCardKeyDown(args, "https://futureclient.net/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/future.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">Future Client</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Future Client is a premium Minecraft utility mod for anarchy servers like 2b2t.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://meteorclient.com/")' @onkeydown='args => HandleCardKeyDown(args, "https://meteorclient.com/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/meteor.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">Meteor Client</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">A popular free, open-source Fabric utility client widely used on anarchy servers like 2b2t. Highly extensible via addons.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://www.wurstclient.net/")' @onkeydown='args => HandleCardKeyDown(args, "https://www.wurstclient.net/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/wurst.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">Wurst Client</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">A free, open-source Fabric utility client with a huge built-in feature set. A popular no-cost option for anarchy servers like 2b2t.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://github.com/cabaletta/baritone")' @onkeydown='args => HandleCardKeyDown(args, "https://github.com/cabaletta/baritone")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/baritone.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">Baritone</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">The pathfinding &amp; automation mod — walks you to any coordinate, follows highways, and mines automatically. Bundled with most 2b2t clients.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://www.curseforge.com/minecraft/mc-mods/journeymap")' @onkeydown='args => HandleCardKeyDown(args, "https://www.curseforge.com/minecraft/mc-mods/journeymap")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/journeymap.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">JourneyMap</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">JourneyMap is a client+server mod for Forge or Fabric and Quilt which maps your Minecraft world in real-time as you explore.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://modrinth.com/mod/xaeroplus")' @onkeydown='args => HandleCardKeyDown(args, "https://modrinth.com/mod/xaeroplus")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/xaeroplus.webp"></RadzenImage>
+                <h2 style="margin-left: 11px;">XaeroPlus</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Enhances Xaero's WorldMap and Minimap mods with extra features and performance improvements. <b>Shows 2b2t highways and chunk trails.</b></p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://github.com/dekrom/xaerotools")' @onkeydown='args => HandleCardKeyDown(args, "https://github.com/dekrom/xaerotools")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                <span class="xaerotools-icon" aria-hidden="true">
+                    <RadzenIcon Icon="construction" />
+                </span>
+                <h2 style="margin-left: 11px;">XaeroTools</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Browse, merge, back up, and share Xaero map data outside Minecraft. Its optional <b>2b2tAtlas overlay</b> adds documented locations, source links, and locally mirrored Atlas map imagery.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://unmined.net/")' @onkeydown='args => HandleCardKeyDown(args, "https://unmined.net/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                <span class="renderer-icon unmined-icon" aria-hidden="true"><RadzenIcon Icon="layers" /></span>
+                <h2 style="margin-left: 11px;">uNmINeD</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Fast Minecraft world viewer and mapper used by 2b2t Atlas to produce browseable day and night 2D tile pyramids from preserved world downloads.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://bluemap.bluecolored.de/")' @onkeydown='args => HandleCardKeyDown(args, "https://bluemap.bluecolored.de/")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                <RadzenImage Style="height: 58px; width: 58px; object-fit: contain; vertical-align: middle;" Path="./Images/bluemap.png" AlternateText="BlueMap logo" />
+                <h2 style="margin-left: 11px;">BlueMap</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Open-source 3D Minecraft map renderer and web viewer used for the Atlas's interactive, quality-gated 3D location views.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://www.desmos.com/calculator/siw620fvnu")' @onkeydown='args => HandleCardKeyDown(args, "https://www.desmos.com/calculator/siw620fvnu")'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/hwulogo.png"></RadzenImage>
+                <h2 style="margin-left: 11px;">Highway Workers Union</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">The HWU builds and maintains 2b2t's obsidian Nether highways. This Desmos tracker shows the latest highway extension progress.</p>
+        </RadzenCard>
+        @foreach (var resource in groupResources)
+        {
+            <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick="() => OpenLink(resource.Url)" @onkeydown="args => HandleCardKeyDown(args, resource.Url)">
+                <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                    <RadzenImage Style="height: 58px; width: 58px; object-fit: contain; vertical-align: middle;" Path="@resource.LogoUrl"></RadzenImage>
+                    <h2 style="margin-left: 11px;">@resource.Title</h2>
+                </RadzenStack>
+                <hr />
+                <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">@DisplayText.CompactDescription(resource.Description)</p>
+            </RadzenCard>
+        }
+         <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://www.youtube.com/user/fitmc")' @onkeydown='args => HandleCardKeyDown(args, "https://www.youtube.com/user/fitmc")'>
+           <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">  
+             <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/fit.jpg"></RadzenImage>
+               <h2 style="margin-left: 11px;">FitMC</h2>  
+           </RadzenStack>  
+           <hr />  
+           <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">FitMC is a YouTuber known for his videos about 2b2t.</p>  
+        </RadzenCard>  
+         <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://www.youtube.com/user/fastvincent1")' @onkeydown='args => HandleCardKeyDown(args, "https://www.youtube.com/user/fastvincent1")'>
+           <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">  
+             <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/fastvincent.jpg"></RadzenImage>
+               <h2 style="margin-left: 11px;">FastVincent1</h2>  
+           </RadzenStack>  
+           <hr />  
+           <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">FastVincent1 is a YouTuber known for his 2b2t content and history videos.</p>  
+        </RadzenCard>  
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink(dadTwokneeUrl)' @onkeydown='args => HandleCardKeyDown(args, dadTwokneeUrl)'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                <RadzenImage Style="height: 58px; width: 58px; border-radius: 50%; object-fit: cover; vertical-align: middle;" Path="https://yt3.googleusercontent.com/ytc/AIdro_lU_PwJrw99mkxpnzmcx0K0FjVn86fuAp7tESnmawh8Lw=s900-c-k-c0x00ffffff-no-rj"></RadzenImage>
+                <h2 style="margin-left: 11px;">Dad Twoknee</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">A Minecraft streamer and GrayBeard Geezers member whose streams preserve tours and building history from Geezer Town 5, 6, and 17.</p>
+        </RadzenCard>
+         <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink("https://www.youtube.com/user/salc1")' @onkeydown='args => HandleCardKeyDown(args, "https://www.youtube.com/user/salc1")'>
+           <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">  
+             <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/sal.png"></RadzenImage>
+               <h2 style="margin-left: 11px;">SalC1</h2>  
+           </RadzenStack>  
+           <hr />  
+           <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">SalC1 is a YouTuber known for his 2b2t videos and tutorials.</p>  
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink(r1cksonUrl)' @onkeydown='args => HandleCardKeyDown(args, r1cksonUrl)'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+                <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/r1ckson.jpg"></RadzenImage>
+                <h2 style="margin-left: 11px;">R1ckson</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">R1ckson is a 2b2t content creator, base hunter, collector, and explorer.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink(blizzenurl)' @onkeydown='args => HandleCardKeyDown(args, blizzenurl)'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/blizzen.jpg"></RadzenImage>
+                <h2 style="margin-left: 11px;">Blizzen</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">Blizzen is a 2b2t streamer known for his stash hunting and exploration videos.</p>
+        </RadzenCard>
+        <RadzenCard Style="max-width: 500px;" role="link" tabindex="0" @onclick='() => OpenLink(barrendomeUrl)' @onkeydown='args => HandleCardKeyDown(args, barrendomeUrl)'>
+            <RadzenStack Orientation="Orientation.Horizontal" Style="align-items: center !important;">
+            <RadzenImage Style="height: 58px; vertical-align: middle;" Path="./Images/barrendome.jpg"></RadzenImage>
+                <h2 style="margin-left: 11px;">BarrenDome</h2>
+            </RadzenStack>
+            <hr />
+            <p class="text-muted" style="@(themes[themeIndex] == "dark" ? "color: #9c9c9c !important;" : "")">BarrenDome is a classic 2b2t content creator.</p>
+        </RadzenCard>
+    </div>
+</div>
+
+@code {
+    /// <summary>Gets or sets the current layout theme index used to style resource descriptions.</summary>
+    [CascadingParameter]
+    public int themeIndex { get; set; } = 0;
+    string[] themes = new string[] { "light", "dark" };
+
+    string r1cksonUrl = "https://www.youtube.com/@rickson2b2t";
+    string blizzenurl = "https://www.youtube.com/@blizzen";
+    string barrendomeUrl = "https://www.youtube.com/c/barrendome";
+    string dadTwokneeUrl = "https://www.youtube.com/@dadtwoknee632";
+    private List<GroupExtra> groupResources = [];
+
+    /// <summary>Loads verified group resources from the public group catalog.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var groups = (await GroupService.GetGroupsAsync())
+            .Where(group => !string.IsNullOrWhiteSpace(group.WebsiteUrl))
+            .Where(group => !group.Name.Contains("Highway Workers Union", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(group => group.Name)
+            .ToList();
+
+        groupResources = groups
+            .Select(group => new GroupExtra(
+                group.Name,
+                group.WebsiteUrl!,
+                group.LogoUrl ?? "./Images/atlas.webp",
+                $"Official website for {group.Name}."))
+            .ToList();
+    }
+
+    private Task HandleCardKeyDown(KeyboardEventArgs args, string url)
+        => args.Key == "Enter" ? OpenLink(url) : Task.CompletedTask;
+
+    private async Task OpenLink(string url)
+    {
+        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private sealed record GroupExtra(string Title, string Url, string LogoUrl, string Description);
+}
+
+<style>
+    .extras-page {
+        height: 100%;
+        width: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+
+    .extras-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+        gap: 16px;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    /* Cards fill their grid cell evenly and stretch to equal row height */
+    .extras-grid .rz-card {
+        max-width: none !important;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        cursor: pointer;
+    }
+
+    .extras-grid .rz-card:focus-visible {
+        outline: 3px solid var(--rz-primary);
+        outline-offset: 2px;
+    }
+
+    /* Let long titles (e.g. /r/2b2t_uncensored) wrap instead of overflowing */
+    .extras-page h2 {
+        margin: 0;
+        font-size: 1.4rem;
+        line-height: 1.15;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    /* Keep source logos from shrinking when the title wraps */
+    .extras-page .rz-image,
+    .extras-page img {
+        flex: 0 0 auto;
+    }
+
+    .xaerotools-icon {
+        align-items: center;
+        background: linear-gradient(145deg, #3076b7, #183c63);
+        border: 1px solid rgba(132, 196, 255, .55);
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 2px rgba(7, 18, 29, .38);
+        color: #e5f4ff;
+        display: inline-flex;
+        flex: 0 0 58px;
+        height: 58px;
+        justify-content: center;
+        width: 58px;
+    }
+
+    .xaerotools-icon .rzi {
+        font-size: 34px;
+    }
+
+    .renderer-icon {
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, .2);
+        border-radius: 8px;
+        color: #fff;
+        display: inline-flex;
+        flex: 0 0 58px;
+        height: 58px;
+        justify-content: center;
+        width: 58px;
+    }
+
+    .renderer-icon .rzi { font-size: 34px; }
+    .unmined-icon { background: linear-gradient(145deg, #5d8d36, #274c23); }
+</style>

@@ -1,0 +1,101 @@
+@page "/login"
+@using Atlas.Auth
+@using _2b2tAtlas.Client.Services
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+
+<PageTitle>Login - 2b2t Atlas</PageTitle>
+
+<RadzenCard class="rz-mx-auto rz-mt-8" Style="max-width: 400px;">
+    <RadzenStack>
+        <RadzenText TextStyle="TextStyle.H4" Class="rz-text-align-center">
+            2b2t Atlas Login
+        </RadzenText>
+
+        <RadzenTemplateForm Data="@loginRequest" Submit="@HandleLogin" TItem="LoginRequest">
+            <DataAnnotationsValidator />
+            <RadzenStack Gap="1rem">
+                <RadzenFormField Text="Username" Variant="Variant.Outlined">
+                    <RadzenTextBox @bind-Value="@loginRequest.Username" Name="Username" />
+                    <RadzenRequiredValidator Component="Username" Text="Username is required" />
+                </RadzenFormField>
+
+                <RadzenFormField Text="Password" Variant="Variant.Outlined">
+                    <RadzenPassword @bind-Value="@loginRequest.Password" Name="Password" />
+                    <RadzenRequiredValidator Component="Password" Text="Password is required" />
+                </RadzenFormField>
+
+                <RadzenButton ButtonType="ButtonType.Submit" 
+                              Size="ButtonSize.Large" 
+                              Variant="Variant.Filled" 
+                              BusyText="Logging in..." 
+                              IsBusy="@isLoading"
+                              Style="width: 100%;">
+                    Login
+                </RadzenButton>
+            </RadzenStack>
+        </RadzenTemplateForm>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger" 
+                         Variant="Variant.Flat" 
+                         Size="AlertSize.Small"
+                         Shade="Shade.Lighter">
+                @errorMessage
+            </RadzenAlert>
+        }
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    private LoginRequest loginRequest = new();
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+
+    /// <summary>Gets or sets the optional query-string destination used after successful or already-valid authentication.</summary>
+    [Parameter, SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    /// <summary>Redirects an already authenticated browser to <see cref="ReturnUrl"/> or the administration page.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        // If user is already logged in, redirect them
+        if (await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo(ReturnUrl ?? "/admin");
+        }
+    }
+
+    private async Task HandleLogin(LoginRequest request)
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var result = await AuthService.LoginAsync(request);
+            
+            if (result != null && result.Success)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Login Successful", 
+                    $"Welcome back, {result.User?.Username}!");
+                
+                Navigation.NavigateTo(ReturnUrl ?? "/admin");
+            }
+            else
+            {
+                errorMessage = result?.Message ?? "Login failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

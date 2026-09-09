@@ -1,0 +1,437 @@
+@using Atlas
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject _2b2tAtlas.Client.Services.AuthService AuthService
+@inject _2b2tAtlas.Client.Services.IngestionUploadService IngestionUploadService
+
+<RadzenTemplateForm TItem="IngestionJobRequest" Data="@Request" Submit="@Submit">
+    <RadzenStack Gap="1rem">
+        <label class="wdl-drop-zone @(selectedArchive is null ? string.Empty : "has-file")">
+            <InputFile id="@archiveInputId" OnChange="@SelectArchive" accept=".zip,application/zip" disabled="@isUploading" />
+            <RadzenIcon Icon="folder_zip" class="wdl-drop-icon" />
+            @if (selectedArchive is null)
+            {
+                <strong>Drop a world download ZIP here</strong>
+                <span>or click to choose a file</span>
+            }
+            else
+            {
+                <strong>@selectedArchive.Name</strong>
+                <span>@FormatSize(selectedArchive.Size)</span>
+            }
+        </label>
+
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="7">
+                <RadzenFormField Text="Render name" Variant="Variant.Outlined">
+                    <RadzenTextBox @bind-Value="Request.Name" Name="RenderName" MaxLength="90" Disabled="@isUploading" Style="width: 100%" Change="@OnNameEdited" />
+                </RadzenFormField>
+                <RadzenRequiredValidator Component="RenderName" Text="Render name is required" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="5">
+                <RadzenFormField Text="Slug" Variant="Variant.Outlined">
+                    <RadzenTextBox @bind-Value="Request.Slug" Name="Slug" MaxLength="54" Disabled="@isUploading" Style="width: 100%" Change="@OnSlugEdited" />
+                </RadzenFormField>
+                <RadzenRequiredValidator Component="Slug" Text="Slug is required" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="5">
+                <RadzenFormField Text="Dimension" Variant="Variant.Outlined">
+                    <RadzenDropDown @bind-Value="Request.Dimension" Data="@DimensionOptions" TextProperty="Label" ValueProperty="Value"
+                                    Name="Dimension" Disabled="@isUploading" Style="width: 100%" Change="@(async _ => await RunPreviewAsync())" />
+                </RadzenFormField>
+                <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+                    Auto-detect queues every recognized dimension. For a legacy WDL containing one custom dimension,
+                    choose its original 2b2t dimension here and Atlas will normalize it without changing the archived ZIP.
+                </RadzenText>
+            </RadzenColumn>
+        </RadzenRow>
+
+        @if (inspecting)
+        {
+            <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">Reading the archive for dimensions and location match…</RadzenText>
+        }
+        else if (matchPreview is { Count: > 0 })
+        {
+            <div class="wdl-match-preview">
+                @foreach (var m in matchPreview)
+                {
+                    <RadzenText TextStyle="TextStyle.Body2">
+                        <strong>@CapitalizeDimension(m.Dimension)</strong>
+                        <span class="rz-text-secondary">(@m.CenterX, @m.CenterZ)</span>
+                        @if (m.AutoAttachName is not null)
+                        {
+                            <RadzenIcon Icon="check_circle" Style="color: var(--rz-success); font-size: 1rem; vertical-align: middle;" />
+                            <span> matches <strong>@m.AutoAttachName</strong></span>
+                        }
+                        else if (m.Suggestions.Count > 0)
+                        {
+                            <span> — possible match <strong>@m.Suggestions[0].Name</strong> (@m.Suggestions[0].Distance.ToString("N0") blocks); server inspection will decide or request review.</span>
+                        }
+                        else
+                        {
+                            <span> — no nearby location; trusted Archive metadata can create it automatically after inspection.</span>
+                        }
+                    </RadzenText>
+                }
+            </div>
+        }
+
+        @if (unknownDimensions.Count > 0)
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Warning" ShowIcon="true" AllowClose="false">
+                <strong>Custom dimension storage detected:</strong> @string.Join(", ", unknownDimensions).
+                Choose the original 2b2t dimension above. Atlas will normalize a single custom dimension in its private
+                work copy; it will not guess or alter the archived ZIP.
+            </RadzenAlert>
+        }
+
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="5">
+                <RadzenFormField Text="Fallback date" Variant="Variant.Outlined">
+                    <RadzenDatePicker @bind-Value="worldDownloadDate" Name="WorldDownloadDate"
+                                      DateFormat="yyyy-MM-dd" Max="DateTime.Today" Disabled="@isUploading" Style="width: 100%" Change="@OnDateEdited" />
+                </RadzenFormField>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="7">
+                <RadzenFormField Text="Source / attribution" Variant="Variant.Outlined">
+                    <RadzenTextBox @bind-Value="Request.Source" Name="Source" MaxLength="200" Disabled="@isUploading" Style="width: 100%" />
+                </RadzenFormField>
+                <RadzenRequiredValidator Component="Source" Text="Source is required" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenFormField Text="Attach to location" Variant="Variant.Outlined">
+            <RadzenDropDown @bind-Value="Request.ExistingLocationId" TValue="int?" Data="@Locations"
+                            TextProperty="Name" ValueProperty="Rowid" AllowClear="true" AllowFiltering="true"
+                            Placeholder="Create a new location from detected coordinates" Disabled="@isUploading"
+                            Style="width: 100%" Change="@OnAttachChanged" />
+        </RadzenFormField>
+        <RadzenFormField Text="Archive /warp (optional)" Variant="Variant.Outlined">
+            <RadzenTextBox @bind-Value="Request.ArchiveWarpName" MaxLength="240" Disabled="@isUploading"
+                           Placeholder="Usually inferred from Terbin's WDL report or ZIP filename" Style="width: 100%" />
+        </RadzenFormField>
+        <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+            Leave this blank normally. Set it only when you know the exact command; Atlas treats an entered value as authoritative,
+            reuses an existing warp if present, or adds it to the matched/new location only after the render succeeds.
+        </RadzenText>
+        <RadzenFormField Text="World root (advanced, optional)" Variant="Variant.Outlined">
+            <RadzenTextBox @bind-Value="Request.WorldRoot" MaxLength="240" Disabled="@isUploading"
+                           Placeholder="Example: My World or saves/base" Style="width: 100%" />
+        </RadzenFormField>
+        <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">
+            Leave world root blank normally. If prepare reports multiple worlds, paste one of its archive-relative choices here and retry. Last played date, dimensions, bounds, and placement are verified before publishing.
+        </RadzenText>
+
+        @if (isUploading)
+        {
+            <RadzenProgressBar Mode="ProgressBarMode.Indeterminate" ShowValue="false" />
+            <RadzenText TextStyle="TextStyle.Body2">Uploading, validating ZIP structure, and reading Minecraft metadata... @FormatElapsed(uploadElapsedSeconds)</RadzenText>
+            <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary">Large archives may take several minutes. Rendering progress continues in World Download Jobs.</RadzenText>
+        }
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" JustifyContent="JustifyContent.End">
+            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Disabled="@isUploading" Click="@Cancel" />
+            <RadzenButton Text="Upload and Queue" Icon="upload_file" ButtonType="ButtonType.Submit"
+                          ButtonStyle="ButtonStyle.Success" Disabled="@(isUploading || selectedArchive is null)"
+                          IsBusy="@isUploading" BusyText="Uploading…" />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenTemplateForm>
+
+<style>
+    .wdl-drop-zone {
+        position: relative;
+        min-height: 164px;
+        border: 2px dashed var(--rz-base-400);
+        border-radius: var(--rz-border-radius);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        padding: 1.25rem;
+        text-align: center;
+        background: var(--rz-base-50);
+        transition: border-color 120ms ease, background-color 120ms ease;
+        overflow: hidden;
+    }
+    .wdl-drop-zone:hover, .wdl-drop-zone:focus-within, .wdl-drop-zone.has-file {
+        border-color: var(--rz-success);
+        background: color-mix(in srgb, var(--rz-success) 7%, var(--rz-base-background-color));
+    }
+    .wdl-drop-zone input[type=file] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .wdl-drop-zone strong { max-width: 100%; overflow-wrap: anywhere; }
+    .wdl-drop-zone span { color: var(--rz-text-secondary-color); }
+    .wdl-drop-icon { font-size: 2.4rem; color: var(--rz-success); }
+    .wdl-match-preview {
+        border-left: 3px solid var(--rz-primary);
+        padding: 0.5rem 0.75rem;
+        background: var(--rz-base-50);
+        border-radius: var(--rz-border-radius);
+    }
+</style>
+
+@code {
+    /// <summary>Gets or sets the mutable ingestion metadata submitted with the selected archive.</summary>
+    [Parameter] public IngestionJobRequest Request { get; set; } = new();
+
+    /// <summary>Gets or sets the locations that may receive the completed render instead of creating a new location.</summary>
+    [Parameter] public IReadOnlyList<Location> Locations { get; set; } = [];
+
+    private const string archiveInputId = "atlas-wdl-archive";
+    private DateTime worldDownloadDate = DateTime.Today;
+    private IBrowserFile? selectedArchive;
+    private bool isUploading;
+    private int uploadElapsedSeconds;
+    private CancellationTokenSource? uploadTimerCancellation;
+    private IReadOnlyList<MatchPreviewCandidate> detectedCandidates = [];
+    private List<MatchPreviewResult>? matchPreview;
+    private IReadOnlyList<string> unknownDimensions = [];
+    private bool inspecting;
+    private bool nameTouched, slugTouched, dateTouched, attachTouched;
+    private string filenameName = string.Empty;
+
+    private sealed record WdlInspect(
+        List<MatchPreviewCandidate> Candidates,
+        List<string>? UnknownDimensions,
+        string? LastPlayed);
+
+    private static readonly IReadOnlyList<DimensionOption> DimensionOptions =
+    [
+        new("Auto-detect (all present)", "auto"),
+        new("Overworld", "overworld"),
+        new("Nether", "nether"),
+        new("End", "end"),
+    ];
+
+    private sealed record DimensionOption(string Label, string Value);
+
+    /// <summary>Defaults a fresh upload to auto-detect so multi-dimension WDLs queue every present dimension.</summary>
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrWhiteSpace(Request.Dimension) || Request.Dimension == "overworld")
+            Request.Dimension = "auto";
+    }
+
+    private async Task SelectArchive(InputFileChangeEventArgs args)
+    {
+        selectedArchive = args.File;
+        if (!attachTouched) Request.ExistingLocationId = null;
+        matchPreview = null;
+        detectedCandidates = [];
+        unknownDimensions = [];
+        if (!selectedArchive.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            selectedArchive = null;
+            NotificationService.Notify(NotificationSeverity.Error, "Invalid archive", "Select a ZIP world download.");
+            return;
+        }
+        filenameName = Path.GetFileNameWithoutExtension(selectedArchive.Name).Replace('_', ' ').Trim();
+        await InspectAndPreviewAsync();
+    }
+
+    /// <summary>Reads the dropped archive's region names + level.dat date client-side and previews the match.</summary>
+    private async Task InspectAndPreviewAsync()
+    {
+        inspecting = true;
+        StateHasChanged();
+        try
+        {
+            var inspect = await JS.InvokeAsync<WdlInspect>("atlasInspectWdl", archiveInputId);
+            detectedCandidates = inspect?.Candidates ?? [];
+            unknownDimensions = inspect?.UnknownDimensions ?? [];
+            if (!dateTouched && !string.IsNullOrWhiteSpace(inspect?.LastPlayed)
+                && DateTime.TryParse(inspect!.LastPlayed, out var lastPlayed))
+                worldDownloadDate = lastPlayed;
+            await RunPreviewAsync();
+        }
+        catch (Exception exception)
+        {
+            // Best-effort preview only; the server still matches authoritatively on upload.
+            Console.WriteLine($"WDL inspection failed: {exception.Message}");
+            ApplyAutoFill();
+        }
+        finally
+        {
+            inspecting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RunPreviewAsync()
+    {
+        if (detectedCandidates.Count == 0) { matchPreview = null; ApplyAutoFill(); return; }
+        var wanted = ResolvePreviewDimensions();
+        var candidates = detectedCandidates.Where(candidate => wanted.Contains(candidate.Dimension)).ToList();
+        if (candidates.Count == 0) { matchPreview = null; ApplyAutoFill(); return; }
+
+        var token = await AuthService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) { ApplyAutoFill(); return; }
+        using var message = new HttpRequestMessage(HttpMethod.Post, "api/ingestion-jobs/match-preview")
+        {
+            Content = JsonContent.Create(new MatchPreviewRequest { Name = Request.Name, Candidates = candidates }),
+        };
+        message.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        using var response = await Http.SendAsync(message);
+        if (!response.IsSuccessStatusCode) { matchPreview = null; ApplyAutoFill(); return; }
+        matchPreview = await response.Content.ReadFromJsonAsync<List<MatchPreviewResult>>();
+
+        // Only a confident match is pre-selected; ranked suggestions must not silently become writes.
+        var baseMatch = matchPreview?.FirstOrDefault(m => m.Dimension == "overworld") ?? matchPreview?.FirstOrDefault();
+        if (!attachTouched && baseMatch?.AutoAttachLocationId is int locationId)
+            Request.ExistingLocationId = locationId;
+        ApplyAutoFill();
+    }
+
+    /// <summary>Fills Render name + slug from the selected location and slug from the date, unless manually edited.</summary>
+    private void ApplyAutoFill()
+    {
+        var selectedName = Request.ExistingLocationId is int id
+            ? Locations.FirstOrDefault(location => location.Rowid == id)?.Name
+            : null;
+        if (!nameTouched)
+            Request.Name = string.IsNullOrWhiteSpace(selectedName) ? filenameName : selectedName;
+        if (!slugTouched)
+            Request.Slug = DeriveSlug(Request.Name, worldDownloadDate);
+    }
+
+    private static string DeriveSlug(string name, DateTime date)
+    {
+        var baseSlug = Slugify(name ?? string.Empty);
+        return string.IsNullOrEmpty(baseSlug) ? date.ToString("yyyy-MM-dd") : $"{baseSlug}-{date:yyyy-MM-dd}";
+    }
+
+    private void OnNameEdited() => nameTouched = true;
+
+    private void OnSlugEdited() => slugTouched = true;
+
+    private void OnDateEdited()
+    {
+        dateTouched = true;
+        if (!slugTouched) Request.Slug = DeriveSlug(Request.Name, worldDownloadDate);
+    }
+
+    private void OnAttachChanged()
+    {
+        attachTouched = true;
+        ApplyAutoFill();
+    }
+
+    private IReadOnlyList<string> ResolvePreviewDimensions()
+    {
+        var present = detectedCandidates.Select(candidate => candidate.Dimension).ToHashSet();
+        var dimension = string.IsNullOrWhiteSpace(Request.Dimension) ? "auto" : Request.Dimension;
+        if (dimension != "auto")
+            return present.Contains(dimension) ? [dimension] : [];
+        return [.. new[] { "overworld", "nether", "end" }.Where(present.Contains)];
+    }
+
+    private static string CapitalizeDimension(string dimension) => dimension switch
+    {
+        "overworld" => "Overworld",
+        "nether" => "Nether",
+        "end" => "End",
+        _ => dimension,
+    };
+
+    private async Task Submit()
+    {
+        if (selectedArchive is null) return;
+        if (unknownDimensions.Count > 0 && Request.Dimension == "auto")
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Warning,
+                "Choose the original dimension",
+                "This WDL uses custom dimension storage. Select Overworld, Nether, or End so Atlas does not guess.",
+                8000);
+            return;
+        }
+        Request.IntakeFileName = "pending.zip";
+        Request.WorldDownloadDate = worldDownloadDate.ToString("yyyy-MM-dd");
+        Request.UseArchiveLastPlayed = !dateTouched;
+        Request.Slug = Request.Slug.Trim().ToLowerInvariant();
+        Request.Scale = "1";
+        var errors = IngestionJobValidator.ValidateRequest(Request);
+        if (errors.Count > 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Invalid job", string.Join(" ", errors), 6000);
+            return;
+        }
+
+        try
+        {
+            isUploading = true;
+            uploadElapsedSeconds = 0;
+            uploadTimerCancellation = new CancellationTokenSource();
+            _ = TrackUploadElapsedAsync(uploadTimerCancellation.Token);
+            var queued = await UploadArchiveAsync(selectedArchive, Request);
+            DialogService.Close(queued);
+        }
+        catch (Exception exception)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Upload failed", exception.Message, 8000);
+        }
+        finally
+        {
+            uploadTimerCancellation?.Cancel();
+            isUploading = false;
+        }
+    }
+
+    private async Task<IngestionJobDto?> UploadArchiveAsync(IBrowserFile file, IngestionJobRequest request)
+    {
+        return await IngestionUploadService.UploadAsync(file, request);
+    }
+
+    private static string Slugify(string value)
+    {
+        var slug = System.Text.RegularExpressions.Regex.Replace(value.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+        return slug.Length > 54 ? slug[..54].TrimEnd('-') : slug;
+    }
+
+    private static string FormatSize(long bytes) => bytes >= 1024 * 1024 * 1024
+        ? $"{bytes / (1024d * 1024 * 1024):0.##} GB"
+        : $"{bytes / (1024d * 1024):0.##} MB";
+
+    private static string FormatElapsed(int seconds) => $"{seconds / 60}:{seconds % 60:00} elapsed";
+
+    private async Task TrackUploadElapsedAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                uploadElapsedSeconds++;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    }
+
+    private void Cancel() => DialogService.Close(null);
+
+    /// <summary>Cancels upload elapsed-time updates.</summary>
+    public ValueTask DisposeAsync()
+    {
+        uploadTimerCancellation?.Cancel();
+        uploadTimerCancellation?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}

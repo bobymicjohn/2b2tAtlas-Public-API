@@ -36,7 +36,8 @@ Data conventions:
 - Eligible Archive warps link to immutable bounded-footprint Java-save ZIPs and metadata.
 - Verified pre-Archive/community renders may link directly to preserved-render-source ZIPs without fabricating Archive warp identities.
 - Both download classes are partial historical Java saves, not complete 2b2t worlds; follow sourceType, scope, provenance, and warning fields.
-- Do not use or describe private write/admin routes from this repository.
+- The live Atlas API examples document anonymous reads. Never attempt private writes against the live service.
+- /examples/atlas-stack contains the separately MIT-licensed application, backend, ingestion and collector source for a self-hosted instance. Its authenticated admin routes operate on that instance's own data and credentials; see examples/atlas-stack/README.md.
 - The MCP endpoint is public, stateless, read-only, bounded, and uses Streamable HTTP.
 - MCP returns WDL/render metadata and public URLs, not ZIP or image bytes in model context.
 - The canonical MCP discovery manifest is server.json and is published to the official MCP Registry.

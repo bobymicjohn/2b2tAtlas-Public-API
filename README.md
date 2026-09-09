@@ -14,6 +14,7 @@ JSON responses support browser CORS.
 - [Nocom data](docs/NOCOM.md)
 - [MCP setup and tools](docs/MCP.md)
 - [Changelog](CHANGELOG.md)
+- [Full Atlas stack source](examples/atlas-stack/README.md) — UI, API, ingestion, collectors and rendering, with local setup and example configuration.
 
 ## Requests
 
@@ -29,6 +30,10 @@ and `offset`; the default limit is 500 and the maximum is 1,000. Locations retur
 the complete catalog.
 
 ## Examples
+
+To run your own Atlas, see [examples/atlas-stack](examples/atlas-stack/README.md).
+That folder is a separate MIT-licensed application snapshot. The smaller API clients below
+remain standalone examples for consuming the public service.
 
 Run from the repository root:
 
@@ -122,7 +127,9 @@ Report documentation errors and broken examples through
 
 ## License
 
-Examples and documentation are released under the [Unlicense](LICENSE).
+The original API examples and documentation are released under the [Unlicense](LICENSE).
+The [full-stack application](examples/atlas-stack/README.md) retains its separate
+[MIT license](examples/atlas-stack/LICENSE).
 Atlas does not require attribution for its factual API catalog.
 [ATTRIBUTION.md](ATTRIBUTION.md) has optional credit formats;
 [NOTICE.md](NOTICE.md) covers third-party media and source terms.

@@ -1,0 +1,17 @@
+// Atlas uNmINeD block-style overrides (reference copy).
+//
+// The ACTIVE file lives on the render box at:
+//   C:\AtlasExample\Ingest\tools\unmined-cli_0.19.48-dev_win-64bit\config\custom.blockstyles.txt
+// uNmINeD only reads it from that CLI's config dir; this repo copy is documentation only.
+//
+// uNmINeD colors are HSL in the default stylesheet (builder.color(name, H, S, L)).
+// Defaults we override:
+//   map.darkrock  = HSL(0,0,30)  -> grey (bedrock/obsidian/basalt/deepslate live here)
+//   map.netherrack = HSL(0,60,25) -> dark maroon
+
+// Render obsidian pure black to match 2b2t.place (default groups it into #darkrock grey).
+obsidian = #000000
+crying_obsidian = #000000
+
+// Warm brick-red netherrack sampled from 2b2t.place's nether (base rgb 97,38,38; default map.netherrack is too dark/maroon).
+netherrack = #612626

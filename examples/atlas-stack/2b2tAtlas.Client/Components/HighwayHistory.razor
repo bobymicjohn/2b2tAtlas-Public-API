@@ -1,0 +1,96 @@
+@using Atlas
+@using System.Text.Json
+@using _2b2tAtlas.Client.Services
+@inject HighwayService HighwayService
+@inject DialogService DialogService
+
+<section class="rz-mt-4">
+    <div class="rz-d-flex rz-justify-content-between rz-align-items-center">
+        <h3>Highway change history</h3>
+        <RadzenButton Text="Refresh history" Icon="history" Size="ButtonSize.Small" Click="Load" Disabled="busy" />
+    </div>
+    <p>Changes are recorded with the editor and complete before/after state. Flagged attempts are blocked for non-owner accounts.</p>
+    @if (!string.IsNullOrEmpty(error)) { <RadzenAlert AlertStyle="AlertStyle.Warning">@error</RadzenAlert> }
+    @if (entries is not null)
+    {
+        <RadzenDataGrid Data="entries" TItem="HighwayChange" AllowPaging="true" PageSize="10" AllowSorting="true" AllowFiltering="true">
+            <Columns>
+                <RadzenDataGridColumn TItem="HighwayChange" Property="CreatedUtc" Title="When" Width="165px">
+                    <Template Context="entry">@entry.CreatedUtc.ToLocalTime().ToString("MMM d, HH:mm:ss")</Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="HighwayChange" Property="Username" Title="Editor" Width="140px" />
+                <RadzenDataGridColumn TItem="HighwayChange" Property="Action" Title="Action" Width="155px" />
+                <RadzenDataGridColumn TItem="HighwayChange" Property="Summary" Title="Change">
+                    <Template Context="entry">
+                        @if (entry.Warnings.Count > 0) { <strong>⚠ </strong> }@entry.Summary
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="HighwayChange" Title="Review" Width="90px" Filterable="false" Sortable="false">
+                    <Template Context="entry"><RadzenButton Text="Inspect" Size="ButtonSize.Small" Click="@(() => Inspect(entry))" Disabled="busy" /></Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    }
+    @if (selected is not null)
+    {
+        <div class="rz-mt-3">
+            <h4>Highway #@selected.HighwayId — @selected.Username — @selected.Action</h4>
+            @foreach (var warning in selected.Warnings) { <p><strong>@warning</strong></p> }
+            <p>Changed fields: @string.Join(", ", selected.Fields)</p>
+            <details><summary>Before this change</summary><pre style="max-height:300px;overflow:auto;white-space:pre-wrap">@Json(selected.Before)</pre></details>
+            <details><summary>After this change</summary><pre style="max-height:300px;overflow:auto;white-space:pre-wrap">@Json(selected.After)</pre></details>
+            @if (selected.Proposed is not null)
+            {
+                <details open><summary>Blocked proposal (not applied)</summary><pre style="max-height:300px;overflow:auto;white-space:pre-wrap">@Json(selected.Proposed)</pre></details>
+            }
+            <details open><summary>Current highway</summary><pre style="max-height:240px;overflow:auto;white-space:pre-wrap">@Json(current)</pre></details>
+            @if (CanRestore && selected.Before is not null && selected.Action != "highway.blocked")
+            {
+                <p>Restore replaces this highway and its group credits with the saved <strong>before</strong> state. Later edits to this highway will be undone. Other highways and locations are unaffected.</p>
+                <RadzenButton Text="Restore before state" Icon="restore" ButtonStyle="ButtonStyle.Warning" Click="Restore" Disabled="busy" />
+            }
+            else if (selected.Before is null) { <p>This entry has no saved before state. Older edits can be recovered by the owner from database backups.</p> }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public bool CanRestore { get; set; }
+    [Parameter] public EventCallback Changed { get; set; }
+    private List<HighwayChange>? entries;
+    private HighwayChange? selected;
+    private Highway? current;
+    private bool busy;
+    private string? error;
+    protected override Task OnInitializedAsync() => Load();
+    private static string Json(object? value) => JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
+    private async Task Load()
+    {
+        busy = true; error = null;
+        try { entries = await HighwayService.GetHistoryAsync(); }
+        catch (Exception) { error = "Highway history could not be loaded. Refresh to try again."; }
+        finally { busy = false; }
+    }
+    private async Task Inspect(HighwayChange entry)
+    {
+        busy = true; selected = entry;
+        try { current = await HighwayService.GetHighwayAsync(entry.HighwayId); }
+        finally { busy = false; }
+    }
+    private async Task Restore()
+    {
+        if (selected is null || busy || !CanRestore) return;
+        var confirmed = await DialogService.Confirm($"Restore highway #{selected.HighwayId} to the state before change #{selected.Id}? This replaces its current geometry, details and group credits.", "Restore highway");
+        if (confirmed != true) return;
+        busy = true; error = null;
+        try
+        {
+            var result = await HighwayService.RestoreAsync(selected.Id, current?.EditVersion ?? "deleted");
+            if (!result.Ok) { error = result.Error; return; }
+            current = result.Saved;
+            entries = await HighwayService.GetHistoryAsync();
+            await Changed.InvokeAsync();
+        }
+        finally { busy = false; }
+    }
+}

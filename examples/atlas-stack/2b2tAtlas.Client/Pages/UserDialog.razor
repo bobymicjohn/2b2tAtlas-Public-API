@@ -1,0 +1,100 @@
+<RadzenStack Gap="1rem">
+    <RadzenFieldset Text="User Details">
+        <RadzenStack Gap="0.5rem">
+            <RadzenFormField Text="Username" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="User.Username" Name="Username" />
+                <RadzenRequiredValidator Component="Username" Text="Username is required" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Discord" Variant="Variant.Outlined">
+                <RadzenTextBox @bind-Value="User.DiscordHandle" Name="DiscordHandle" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="@(IsEdit ? "New Password (leave blank to keep current)" : "Password")" Variant="Variant.Outlined">
+                <RadzenPassword @bind-Value="User.PasswordHash" Name="Password" />
+                @if (!IsEdit)
+                {
+                    <RadzenRequiredValidator Component="Password" Text="Password is required" />
+                }
+            </RadzenFormField>
+
+            <RadzenFormField Text="Role" Variant="Variant.Outlined">
+                <RadzenDropDown @bind-Value="User.Role" Data="@RoleOptions" TextProperty="Label" ValueProperty="Value" Name="Role" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Status">
+                <RadzenCheckBox @bind-Value="User.IsActive" Name="IsActive" />
+                <RadzenLabel Text="Active" Component="IsActive" class="rz-ms-2" />
+            </RadzenFormField>
+
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" JustifyContent="JustifyContent.End">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        <RadzenButton Text="@(IsEdit ? "Update" : "Create")" ButtonStyle="ButtonStyle.Primary" Click="@Submit" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    /// <summary>Gets or sets the user model created or updated by the dialog.</summary>
+    [Parameter] public Atlas.Auth.User User { get; set; } = new();
+
+    /// <summary>Gets or sets whether the dialog updates an existing account rather than creating one.</summary>
+    [Parameter] public bool IsEdit { get; set; } = false;
+
+    /// <summary>Gets or sets the canonical roles the current caller may assign without privilege escalation.</summary>
+    [Parameter] public IReadOnlyList<string> AssignableRoles { get; set; } = RoleNames.All;
+
+    private IEnumerable<RoleOption> RoleOptions => AssignableRoles
+        .Select(role => new RoleOption(role, RoleNames.DisplayName(role)));
+
+    private sealed record RoleOption(string Value, string Label);
+
+    [Inject] DialogService DialogService { get; set; } = default!;
+
+    async Task Submit()
+    {
+        Console.WriteLine($"Submit called for user: {User.Username}");
+
+        // Basic validation
+        if (string.IsNullOrWhiteSpace(User.Username))
+        {
+            Console.WriteLine("Username is empty, returning");
+            return;
+        }
+
+        if (!IsEdit && string.IsNullOrWhiteSpace(User.PasswordHash))
+        {
+            Console.WriteLine("Password is empty for new user, returning");
+            return;
+        }
+
+        Console.WriteLine("Closing dialog with user data");
+
+        try
+        {
+            // Close dialog and pass back the user data
+            DialogService.Close(User);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error closing dialog: {ex.Message}");
+        }
+    }
+
+    async Task Cancel()
+    {
+        Console.WriteLine("Cancel called");
+
+        try
+        {
+            DialogService.Close(null);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cancelling dialog: {ex.Message}");
+        }
+    }
+}
+
