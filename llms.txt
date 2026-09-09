@@ -1,6 +1,8 @@
 # 2b2tAtlas Public API
 
-Purpose: public, read-only developer documentation and examples for the 2b2tAtlas historical entity and map API.
+Purpose: public read-only API documentation and clients, plus a separate self-hosted application source example.
+Full stack source: https://github.com/bobymicjohn/2b2tAtlas-Public-API/tree/main/examples/atlas-stack
+Stack setup: examples/atlas-stack/README.md (MIT-licensed UI, backend, WDL ingestion, collectors and rendering; bring your own data and credentials).
 
 Canonical Atlas: https://2b2tatlas.com
 API discovery: https://api.blackportal.cloud/api

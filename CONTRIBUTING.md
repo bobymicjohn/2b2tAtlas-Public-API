@@ -1,11 +1,12 @@
 # Contributing
 
-This repository contains public API documentation and examples. Pull requests
-can correct documentation, fix examples, or add runnable examples in other languages.
+This repository contains public API documentation, small API clients, and the
+[self-hosted Atlas stack](examples/atlas-stack/README.md). Pull requests can improve
+any of these. For application changes, follow the stack's own contribution guide.
 
 ## Ground rules
 
-1. Keep examples read-only. This repository documents anonymous public `GET` routes, not moderation or ingestion capabilities.
+1. Keep API consumer examples read-only against the public service. Test stack administration, ingestion and other mutations only against your own disposable instance; never against the live Atlas.
 2. Never commit tokens, passwords, session files, private coordinates, production collector state, or production configuration. Generalized collector source belongs in `examples/atlas-stack`, with synthetic fixtures and configurable paths.
 3. Test examples against the local fixture; use the live API to verify contract changes.
 4. Use a descriptive User-Agent where the language permits it and cache bulk data locally.
