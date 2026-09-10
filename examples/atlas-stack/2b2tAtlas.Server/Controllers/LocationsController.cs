@@ -162,7 +162,7 @@ public class LocationsController : ControllerBase
                         HasDayNight = r.HasDayNight == 1,
                         PreviewImagePath = r.PreviewImagePath,
                         WorldDownloadDate = r.WorldDownloadDate,
-                        WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, loc.Name),
+                        WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, loc.Name, sourceJob.ArchiveSha256),
                         WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(r.Id),
                         WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
                         WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),
@@ -288,7 +288,7 @@ public class LocationsController : ControllerBase
                     HasDayNight = r.HasDayNight == 1,
                     PreviewImagePath = r.PreviewImagePath,
                     WorldDownloadDate = r.WorldDownloadDate,
-                    WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, dbLocation.Name),
+                    WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, dbLocation.Name, sourceJob.ArchiveSha256),
                     WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(r.Id),
                     WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
                     WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),
@@ -664,7 +664,7 @@ public class LocationsController : ControllerBase
             warp.Id,
             ArchiveWarpResolver.IsSinglePlayerConcept(warp.Name)
                 ? $"{locationName ?? "2b2t-location"} singleplayer concept"
-                : locationName) : null,
+                : locationName, warp.ArchiveSha256) : null,
         WorldDownloadMetadataUrl = HasPublicWorldDownload(warp) ? PublicAtlasUrls.WorldDownloadMetadata(warp.Id) : null,
         WorldDownloadScope = HasPublicWorldDownload(warp) ? "bounded-footprint" : null,
         WorldDownloadDate = warp.WorldDownloadDate,

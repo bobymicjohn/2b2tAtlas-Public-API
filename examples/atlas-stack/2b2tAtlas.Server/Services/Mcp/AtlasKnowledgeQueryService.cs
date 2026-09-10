@@ -373,7 +373,7 @@ public sealed class AtlasKnowledgeQueryService
                 warp.Id,
                 Atlas.ArchiveWarpResolver.IsSinglePlayerConcept(warp.Name)
                     ? $"{locationName ?? "2b2t-location"} singleplayer concept"
-                    : locationName) : null,
+                    : locationName, warp.ArchiveSha256) : null,
             downloadable ? PublicAtlasUrls.WorldDownloadMetadata(warp.Id) : null,
             PublicAtlasUrls.WarpApi(warp.Id));
     }
@@ -383,7 +383,7 @@ public sealed class AtlasKnowledgeQueryService
         render.ArchiveWarpId, render.WorldDownloadDate, render.TilesPath, render.PreviewImagePath,
         render.MinX, render.MinZ, render.MaxXExclusive, render.MaxZExclusive, render.MaxNativeZoom,
         render.CoordinateScheme, render.HasDayNight == 1,
-        sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(render.Id, locationName),
+        sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(render.Id, locationName, sourceJob.ArchiveSha256),
         sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(render.Id),
         sourceJob?.ArchiveSha256?.ToLowerInvariant(), PublicAtlasUrls.RenderApi(render.Id));
 

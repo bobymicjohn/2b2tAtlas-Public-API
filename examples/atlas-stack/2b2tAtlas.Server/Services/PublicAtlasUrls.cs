@@ -18,16 +18,16 @@ internal static class PublicAtlasUrls
     public static string AttachmentApi(int id) => $"{ApiBase}/api/attachments/{id}";
     public static string WarpApi(int id) => $"{ApiBase}/api/warps/{id}";
     public static string WorldDownloadMetadata(int warpId) => $"{ApiBase}/api/warps/{warpId}/world-download";
-    public static string WorldDownload(int warpId, string? locationName)
+    public static string WorldDownload(int warpId, string? locationName, string? sha256)
     {
         var fileName = Atlas.DownloadFileNames.WorldDownload(locationName, warpId);
-        return $"{ApiBase}/api/warps/{warpId}/world-download.zip?filename={Uri.EscapeDataString(fileName)}";
+        return $"{ApiBase}/api/warps/{warpId}/world-download.zip?filename={Uri.EscapeDataString(fileName)}&sha256={Uri.EscapeDataString(sha256?.ToLowerInvariant() ?? string.Empty)}";
     }
     public static string RenderWorldDownloadMetadata(int renderId) => $"{ApiBase}/api/renders/{renderId}/world-download";
-    public static string RenderWorldDownload(int renderId, string? locationName)
+    public static string RenderWorldDownload(int renderId, string? locationName, string? sha256)
     {
         var fileName = Atlas.DownloadFileNames.RenderWorldDownload(locationName, renderId);
-        return $"{ApiBase}/api/renders/{renderId}/world-download.zip?filename={Uri.EscapeDataString(fileName)}";
+        return $"{ApiBase}/api/renders/{renderId}/world-download.zip?filename={Uri.EscapeDataString(fileName)}&sha256={Uri.EscapeDataString(sha256?.ToLowerInvariant() ?? string.Empty)}";
     }
 
     private static string DimensionSlug(int dimension) => dimension switch

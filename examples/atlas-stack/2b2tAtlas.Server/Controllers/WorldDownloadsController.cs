@@ -64,7 +64,7 @@ public sealed class WorldDownloadsController : ControllerBase
         if (resolved.Status is not null) return StatusCode(resolved.Status.Value, new { message = resolved.Message });
 
         var sha = resolved.Warp!.ArchiveSha256!.ToLowerInvariant();
-        Response.Headers.CacheControl = "public,max-age=31536000,immutable";
+        if (ValidateDownloadVersion(sha) is { } versionError) return versionError;
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         Response.Headers["X-Atlas-World-Scope"] = Scope;
         Response.Headers["X-Atlas-Complete-World"] = "false";
@@ -99,7 +99,7 @@ public sealed class WorldDownloadsController : ControllerBase
         if (resolved.Status is not null) return StatusCode(resolved.Status.Value, new { message = resolved.Message });
 
         var sha = resolved.Job!.ArchiveSha256!.ToLowerInvariant();
-        Response.Headers.CacheControl = "public,max-age=31536000,immutable";
+        if (ValidateDownloadVersion(sha) is { } versionError) return versionError;
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         Response.Headers["X-Atlas-World-Scope"] = PreservedRenderScope;
         Response.Headers["X-Atlas-Complete-World"] = "false";
@@ -110,6 +110,23 @@ public sealed class WorldDownloadsController : ControllerBase
             EnableRangeProcessing = true,
             EntityTag = new EntityTagHeaderValue($"\"{sha}\""),
         };
+    }
+
+    private IActionResult? ValidateDownloadVersion(string sha)
+    {
+        var requested = Request.Query["sha256"].ToString();
+        if (!string.IsNullOrEmpty(requested) &&
+            !string.Equals(requested, sha, StringComparison.OrdinalIgnoreCase))
+        {
+            Response.Headers.CacheControl = "no-store";
+            return Conflict(new { message = "This world download has been replaced. Refresh its metadata for the current download link." });
+        }
+
+        // IDs point to the latest reviewed source; only digest-qualified URLs are immutable.
+        Response.Headers.CacheControl = string.IsNullOrEmpty(requested)
+            ? "public,max-age=0,must-revalidate"
+            : "public,max-age=31536000,immutable";
+        return null;
     }
 
     private async Task<(ServerWarp? Warp, string? Path, int? Status, string? Message)> ResolveAsync(
@@ -196,7 +213,7 @@ public sealed class WorldDownloadsController : ControllerBase
             LocationApiUrl = PublicAtlasUrls.LocationApi(warp.LocationRow.Rowid),
             MetadataUrl = PublicAtlasUrls.WorldDownloadMetadata(warp.Id),
             DownloadUrl = PublicAtlasUrls.WorldDownload(
-                warp.Id, ConceptDownloadName(warp.LocationRow.Name, warp.Name)),
+                warp.Id, ConceptDownloadName(warp.LocationRow.Name, warp.Name), warp.ArchiveSha256),
             FileName = DownloadFileNames.WorldDownload(
                 ConceptDownloadName(warp.LocationRow.Name, warp.Name), warp.Id),
             ByteLength = new FileInfo(path).Length,
@@ -237,7 +254,7 @@ public sealed class WorldDownloadsController : ControllerBase
             LocationUrl = PublicAtlasUrls.Location(render.LocationRow.Rowid),
             LocationApiUrl = PublicAtlasUrls.LocationApi(render.LocationRow.Rowid),
             MetadataUrl = PublicAtlasUrls.RenderWorldDownloadMetadata(render.Id),
-            DownloadUrl = PublicAtlasUrls.RenderWorldDownload(render.Id, render.LocationRow.Name),
+            DownloadUrl = PublicAtlasUrls.RenderWorldDownload(render.Id, render.LocationRow.Name, job.ArchiveSha256),
             FileName = DownloadFileNames.RenderWorldDownload(render.LocationRow.Name, render.Id),
             ByteLength = new FileInfo(path).Length,
             Sha256 = job.ArchiveSha256!.ToLowerInvariant(),

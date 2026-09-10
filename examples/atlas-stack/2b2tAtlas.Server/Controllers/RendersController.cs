@@ -189,7 +189,7 @@ public sealed class RendersController : ControllerBase
         MaxNativeZoom = r.MaxNativeZoom,
         CoordinateScheme = r.CoordinateScheme,
         WorldDownloadDate = r.WorldDownloadDate,
-        WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, loc.Name),
+        WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, loc.Name, sourceJob.ArchiveSha256),
         WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(r.Id),
         WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
         WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),

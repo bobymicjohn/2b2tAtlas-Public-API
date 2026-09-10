@@ -52,7 +52,7 @@ window only helps propose horizontal boundaries; it never cuts vertical WDL data
 | Boat Lodge, 2019-09-21 | 867.5 MiB | 1.50 MiB | 440 of 315,186 |
 | Boyland rebuild, 2022-12-18 | 818.1 MiB | 2.42 MiB | 729 of 336,144 |
 | Mu Megabase | 238.8 MiB | 236.24 MiB | 61,073 of 61,910 |
-| Chunk Haven, 2021-05-22 | 371.8 MiB | 23.91 MiB | 7,396 of 116,332 |
+| Chunk Haven, 2021-05-22 | 371.8 MiB | 43.13 MiB | 14,178 of 116,332 |
 
 The first two extents were explicitly reviewed. Mu removes only 837 distant
 Overworld fragments; all 23,257 Nether and 289 End chunks remain byte-identical.
@@ -62,11 +62,22 @@ are needed for this workflow.
 
 Chunk Haven's initial 480-block square excluded outer builds. Doubling the sides
 to 960 blocks still cut through structures. After further extent review, a
-1,376-block square includes the northern artwork, eastern structure, and long
-southern build. Bounds are X [27,184, 28,560), Z [89,104, 90,480). All 7,396 retained
-terrain payloads and 136 entity payloads match the source exactly. The existing
+1,376-block square included the nearer edge structures, but a second visual
+review identified a farther northern walled complex and eastern pinwheel map art.
+The boundary now extends north by 848 blocks and east by 256 blocks, keeping
+the west and south edges unchanged: X [27,184, 28,816), Z [88,256, 90,480).
+This 1,632 by 2,224-block rectangle includes both additions with surrounding
+terrain. All 14,178 retained terrain payloads and 178 entity payloads match
+the source exactly, with full vertical height preserved. The existing
 dated render is replaced in place, with its original source and generations
 preserved. Other ambiguous crops still await extent review.
+
+Download links include the current source SHA-256 in their query string. Only a
+matching digest-qualified URL is cached as immutable; unversioned links must
+revalidate. A stale digest returns HTTP 409 rather than a different ZIP under
+the same URL. This prevents a cached pre-crop download from silently outliving
+its replacement. Existing cached unversioned bookmarks may still contain an
+older copy; use the current download link from the location or API metadata.
 
 ## Camera coordinates belong to the dated render
 

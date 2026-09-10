@@ -98,7 +98,7 @@ public sealed class WorldDownloadEndpointTests
             Assert.False(metadata.IsCompleteWorld);
             Assert.Equal(96, metadata.Bounds!.MinX);
             Assert.Equal(
-                $"http://127.0.0.1:5297/api/warps/{warp.Id}/world-download.zip?filename=2b2tAtlas-Preserved-Build-warp-{warp.Id}.zip",
+                $"http://127.0.0.1:5297/api/warps/{warp.Id}/world-download.zip?filename=2b2tAtlas-Preserved-Build-warp-{warp.Id}.zip&sha256={sha}",
                 metadata.DownloadUrl);
             Assert.Equal($"2b2tAtlas-Preserved-Build-warp-{warp.Id}.zip", metadata.FileName);
             Assert.DoesNotContain(archiveRoot, JsonSerializer.Serialize(metadata), StringComparison.OrdinalIgnoreCase);
@@ -109,9 +109,15 @@ public sealed class WorldDownloadEndpointTests
             Assert.Equal($"2b2tAtlas-Preserved-Build-warp-{warp.Id}.zip", download.FileDownloadName);
             Assert.True(download.EnableRangeProcessing);
             Assert.Equal(new EntityTagHeaderValue($"\"{sha}\""), download.EntityTag);
-            Assert.Equal("public,max-age=31536000,immutable", httpContext.Response.Headers.CacheControl);
+            Assert.Equal("public,max-age=0,must-revalidate", httpContext.Response.Headers.CacheControl);
             Assert.Equal("bounded-footprint", httpContext.Response.Headers["X-Atlas-World-Scope"]);
             Assert.DoesNotContain(archiveRoot, string.Join("\n", httpContext.Response.Headers), StringComparison.OrdinalIgnoreCase);
+            httpContext.Request.QueryString = new QueryString($"?sha256={sha}");
+            Assert.IsType<PhysicalFileResult>(await controller.Download(warp.Id, TestContext.Current.CancellationToken));
+            Assert.Equal("public,max-age=31536000,immutable", httpContext.Response.Headers.CacheControl);
+            httpContext.Request.QueryString = new QueryString("?sha256=" + new string('0', 64));
+            Assert.IsType<ConflictObjectResult>(await controller.Download(warp.Id, TestContext.Current.CancellationToken));
+            Assert.Equal("no-store", httpContext.Response.Headers.CacheControl);
         }
         finally
         {
@@ -255,6 +261,14 @@ public sealed class WorldDownloadEndpointTests
             Assert.True(download.EnableRangeProcessing);
             Assert.Equal(new EntityTagHeaderValue($"\"{sha}\""), download.EntityTag);
             Assert.Equal("preserved-render-source", httpContext.Response.Headers["X-Atlas-World-Scope"]);
+            Assert.Contains($"&sha256={sha}", metadata.DownloadUrl);
+            Assert.Equal("public,max-age=0,must-revalidate", httpContext.Response.Headers.CacheControl);
+            httpContext.Request.QueryString = new QueryString($"?sha256={sha}");
+            Assert.IsType<PhysicalFileResult>(await controller.DownloadRenderSource(render.Id, TestContext.Current.CancellationToken));
+            Assert.Equal("public,max-age=31536000,immutable", httpContext.Response.Headers.CacheControl);
+            httpContext.Request.QueryString = new QueryString("?sha256=" + new string('0', 64));
+            Assert.IsType<ConflictObjectResult>(await controller.DownloadRenderSource(render.Id, TestContext.Current.CancellationToken));
+            Assert.Equal("no-store", httpContext.Response.Headers.CacheControl);
         }
         finally
         {

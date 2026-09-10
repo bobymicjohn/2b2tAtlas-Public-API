@@ -63,7 +63,7 @@ public sealed class WarpsController : ControllerBase
             warp.Id,
             Atlas.ArchiveWarpResolver.IsSinglePlayerConcept(warp.Name)
                 ? $"{warp.LocationRow.Name ?? "2b2t-location"} singleplayer concept"
-                : warp.LocationRow.Name) : null,
+                : warp.LocationRow.Name, warp.ArchiveSha256) : null,
         WorldDownloadMetadataUrl = HasPublicWorldDownload(warp) ? PublicAtlasUrls.WorldDownloadMetadata(warp.Id) : null,
         WorldDownloadScope = HasPublicWorldDownload(warp) ? "bounded-footprint" : null,
         WorldDownloadDate = warp.WorldDownloadDate,

@@ -90,7 +90,7 @@ public sealed class PublicResourceLinkTests
         Assert.Equal(locationDto.CanonicalUrl, warpDto.LocationUrl);
         Assert.Equal(locationDto.ApiUrl, warpDto.LocationApiUrl);
         Assert.Equal(
-            $"http://127.0.0.1:5297/api/warps/{warp.Id}/world-download.zip?filename=2b2tAtlas-Linked-Build-warp-{warp.Id}.zip",
+            $"http://127.0.0.1:5297/api/warps/{warp.Id}/world-download.zip?filename=2b2tAtlas-Linked-Build-warp-{warp.Id}.zip&sha256={warp.ArchiveSha256}",
             warpDto.WorldDownloadUrl);
         Assert.Equal($"http://127.0.0.1:5297/api/warps/{warp.Id}/world-download", warpDto.WorldDownloadMetadataUrl);
         Assert.Equal("bounded-footprint", warpDto.WorldDownloadScope);
