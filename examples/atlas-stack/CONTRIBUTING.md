@@ -12,6 +12,6 @@ Run the .NET suite and relevant collector/map fixtures, then stage changes and r
 WDLs, game profiles, downloaded tools, private records or generated tiles. Use synthetic
 worlds and temporary databases in tests. Keep dependency and third-party notices intact.
 
-The CI workflow runs on GitHub-hosted runners with read-only repository permissions.
-It does not deploy services or contact an authenticated production API. Never add a
-self-hosted runner or pass deployment secrets to untrusted pull requests.
+Run all checks locally. GitHub Actions is disabled; do not add, enable, or dispatch
+workflows. Test with synthetic fixtures and disposable databases. Never pass
+deployment secrets to untrusted code or test against production state.

@@ -40,7 +40,9 @@ python examples/python/nocom_activity.py --dimension end
 python examples/python/location_media.py 5
 ```
 
-CI runs these examples and `scripts/smoke-test.sh` against the fixture.
+Run `scripts/smoke-test.sh` locally against the fixture as well.
+GitHub Actions is disabled; do not add or run workflows. Build, test, and publish
+from a local environment using the documented commands.
 For endpoint or response-field changes, also check the
 [live OpenAPI schema](https://api.blackportal.cloud/openapi/v1.json).
 
