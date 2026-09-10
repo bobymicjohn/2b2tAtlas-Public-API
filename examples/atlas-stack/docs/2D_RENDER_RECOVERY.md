@@ -22,13 +22,12 @@ Cloudflare continued serving cached 404s for the old URLs, so a fresh immutable
 generation was used. Do not overwrite an existing generation with different
 pixels or assume restoring a file clears cached errors.
 
-The warp arrives at Y -37. Restoring the surface tiles exposed a second problem:
-terrain concealed the actual underground build. Local previews at Y -20, -30 and
--36 were inspected. The published 2D view uses the Y -20 cutaway through the same
-hash-pinned renderer, day/night grading, tile adapter and publication verification.
-The original surface generations, full-height WDL and existing BlueMap are retained.
-This is a 2D-only derivative; the ingestion job's shared `RenderTopY` was not changed,
-because that would also change future BlueMap masks.
+The warp arrives at Y -37, so the surface view naturally hides the underground
+build. A Y -20 cutaway was briefly published during investigation and then
+withdrawn at the owner's request. The live view is the restored top-down surface
+generation. Do not introduce underground 2D cutaways, even for underground builds;
+use the full-height 3D view to explore below the surface. The WDL remains intact.
+The ingestion job's `RenderTopY` was never changed.
 
 The catalog audit covered 1,157 public generated render records. After recovery,
 all had their generation directories and day/night overview tiles. Twenty-two
