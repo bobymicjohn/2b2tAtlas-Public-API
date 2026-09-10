@@ -126,3 +126,5 @@ Run `scripts/tests/test-archive-footprint-policy.ps1`,
 `scripts/tests/test_compare_wdl_payloads.py`, and
 `scripts/tests/test_review_wdl_footprint.py` (the last uses the review requirements),
 plus the coverage project's normal Gradle checks.
+
+For the operator pause latch, live storage reserve, and review-held recovery behavior, see [collector pause and storage](COLLECTOR_PAUSE_AND_STORAGE.md).

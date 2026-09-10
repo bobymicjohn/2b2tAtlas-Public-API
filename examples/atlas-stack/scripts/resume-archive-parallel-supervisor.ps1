@@ -35,6 +35,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$collectorPauseSignal = 'C:\AtlasExample\Ingest\pause-collector'
+if (Test-Path -LiteralPath $collectorPauseSignal) { Write-Warning 'Collector paused by operator.'; return }
 Set-StrictMode -Version 2.0
 $utf8 = New-Object Text.UTF8Encoding($false)
 . (Join-Path $PSScriptRoot 'archive-json-io.ps1')
@@ -72,6 +74,7 @@ function Start-CollectorWorker([object]$Worker) {
     $suffix = ".reattach-restart-$($Worker.restarts)"
     $Worker.stdout = Join-Path $Worker.workerRoot "collector$suffix.out.log"
     $Worker.stderr = Join-Path $Worker.workerRoot "collector$suffix.err.log"
+    if (Test-Path -LiteralPath $collectorPauseSignal) { throw 'Collector safety hold: operator pause is active.' }
     $process = Start-Process -FilePath 'powershell.exe' -ArgumentList $attemptArguments -WindowStyle Hidden `
         -RedirectStandardOutput $Worker.stdout -RedirectStandardError $Worker.stderr -PassThru
     $Worker.processId = [int]$process.Id

@@ -194,7 +194,7 @@ $archiveParallelRoot = Join-Path $archiveRunRoot 'parallel-runs\20260901-061410'
 $archiveRepo = 'C:\Source\2b2tAtlas-Public-API\examples\atlas-stack'
 $archiveStatusPath = Join-Path $archiveRunRoot 'parallel-collector-status.json'
 
-if (Test-Path -LiteralPath $archiveStatusPath -PathType Leaf) {
+if (-not (Test-Path -LiteralPath 'C:\AtlasExample\Ingest\pause-collector') -and (Test-Path -LiteralPath $archiveStatusPath -PathType Leaf)) {
     try {
         $archiveStatus = Get-Content -LiteralPath $archiveStatusPath -Raw | ConvertFrom-Json
         if ($null -ne $archiveStatus.PSObject.Properties['runRoot'] -and

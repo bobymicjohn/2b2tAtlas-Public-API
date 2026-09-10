@@ -1,4 +1,4 @@
-# Durable per-worker capture journal. Partial worlds never enter public intake.
+﻿# Durable per-worker capture journal. Partial worlds never enter public intake.
 function Get-CaptureJournalPath { Join-Path (Split-Path -Parent $StatePath) 'active-capture.json' }
 
 function Set-CaptureJournalSeed($Seed) {
@@ -116,6 +116,10 @@ function Recover-CaptureJournal {
     $owned = @($queue.entries | Where-Object { $_.normalizedWarp -ceq $journal.normalizedWarp })
     if ($owned.Count -ne 1) { throw 'Resume checkpoint held: interrupted capture is not owned by this queue.' }
     $prior = $stateByWarp[$journal.normalizedWarp]
+    if ($null -ne $prior -and $null -ne $prior.PSObject.Properties['requiresFootprintReviewBeforeRecovery'] -and
+        [bool]$prior.requiresFootprintReviewBeforeRecovery) {
+        throw 'Resume checkpoint held: review the saved footprint before reconstructing or copying this capture.'
+    }
     if ($null -ne $prior -and $prior.status -in @('captured','ready') -and (Test-FinalAdaptiveCapture $prior)) {
         Clear-CaptureJournal
         return

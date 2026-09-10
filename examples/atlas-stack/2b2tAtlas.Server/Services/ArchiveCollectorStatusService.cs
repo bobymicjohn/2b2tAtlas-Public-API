@@ -108,7 +108,8 @@ public sealed partial class ArchiveCollectorStatusService
         var longRunningWorkers = workers.Count - fastLaneWorkers;
         var deferredToLongRunning = parallel is null ? 0 : Int(parallel.RootElement, "deferredToLongRunning");
         var updatedUtc = parallel is null ? NullableDate(state.RootElement, "updatedUtc") : NullableDate(parallel.RootElement, "updatedUtc");
-        var stale = updatedUtc is null || now - updatedUtc.Value > TimeSpan.FromSeconds(Math.Clamp(_options.StaleAfterSeconds, 30, 600));
+        var paused = parallel is not null && String(parallel.RootElement, "stage") == "operator-paused";
+        var stale = !paused && (updatedUtc is null || now - updatedUtc.Value > TimeSpan.FromSeconds(Math.Clamp(_options.StaleAfterSeconds, 30, 600)));
         var activeWorkers = workers.Count(worker => worker.Outcome == "live");
         var recovering = !stale && activeWorkers == 0 && workers.Any(worker =>
             worker.Outcome is "archive-backend-rejected" or "server-disconnected" or "connecting" or "backoff");
@@ -120,15 +121,15 @@ public sealed partial class ArchiveCollectorStatusService
         var handoffStage = rollingStage is not ("" or "idle") ? rollingStage : finalizerStage;
         if (handoffStage.Length == 0) handoffStage = "not-started";
         var submitted = rolling is null ? 0 : Int(rolling.RootElement, "submitted");
-        var active = !stale && activeWorkers > 0;
+        var active = !paused && !stale && activeWorkers > 0;
 
         return new ArchiveCollectorStatusDto
         {
             Available = true,
             Active = active,
             Stale = stale,
-            Status = active ? "Active" : stale ? "Stale" : recovering ? "Recovering" : remaining == 0 ? "Complete" : "Idle",
-            Phase = active
+            Status = paused ? "Paused" : active ? "Active" : stale ? "Stale" : recovering ? "Recovering" : remaining == 0 ? "Complete" : "Idle",
+            Phase = paused ? "Collection paused for operator review; saved terrain retained" : active
                 ? $"Parallel adaptive capture | {activeWorkers} active | {fastLaneWorkers} fast / {longRunningWorkers} long"
                 : stale ? "Collector status has stopped updating"
                 : recovering && workers.Any(worker => worker.Outcome == "archive-backend-rejected")
@@ -198,7 +199,8 @@ public sealed partial class ArchiveCollectorStatusService
         // look like an in-progress capture. Coverage telemetry is the authoritative
         // boundary between a connected capture and a merely running launcher.
         var launchOutcome = CurrentLaunchOutcome(currentCollectorLog, safeStdout, safeStderr);
-        var outcome = !running && Bool(worker, "refillPending") ? "awaiting-refill"
+        var outcome = !running && String(worker, "phase") == "paused" ? "paused"
+            : !running && Bool(worker, "refillPending") ? "awaiting-refill"
             : running && progress.Received is not null ? "live"
             : launchOutcome ?? (running ? "connecting"
             : restarting ? "backoff"
@@ -206,6 +208,7 @@ public sealed partial class ArchiveCollectorStatusService
             : "idle");
         var status = outcome switch
         {
+            "paused" => "Paused",
             "live" => "Active",
             "archive-backend-rejected" => "Archive unavailable",
             "server-disconnected" => "Disconnected",

@@ -1,4 +1,4 @@
-# Interrupted working saves are private evidence, never ready/public WDLs.
+﻿# Interrupted working saves are private evidence, never ready/public WDLs.
 function Assert-InterruptedCaptureSnapshot {
     param([string]$Path,[string]$SavesRoot,[string]$CaptureName,
         [string]$RecoveryRoot='D:\AtlasExample\Ingest\DeferredCaptures\interrupted')
@@ -93,6 +93,10 @@ function Preserve-PendingInterruptedCaptures {
     param($StateByWarp, $State, [string]$StatePath, [string]$SavesRoot)
     $changed = $false
     foreach ($record in @($StateByWarp.Values)) {
+        # Review holds already retain the stopped save and its journal. Repeated
+        # recovery attempts must not multiply that same oversized world on D.
+        if ($null -ne $record.PSObject.Properties['requiresFootprintReviewBeforeRecovery'] -and
+            [bool]$record.requiresFootprintReviewBeforeRecovery) { continue }
         if ($null -eq $record.PSObject.Properties['workingCaptureNames'] -or
             $null -eq $record.PSObject.Properties['partialPreservation'] -or
             [string]$record.partialPreservation -ne 'retained-in-working-saves') { continue }

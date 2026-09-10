@@ -464,6 +464,26 @@ public sealed class ArchiveCollectorStatusServiceTests
         Assert.Equal(0, result.LongRunningWorkers);
     }
 
+    [Fact]
+    public async Task Operator_pause_remains_paused_without_a_running_supervisor()
+    {
+        using var temp = new TempDirectory();
+        var runRoot = temp.Resolve("run");
+        Directory.CreateDirectory(runRoot);
+        await WriteMinimalStatus(runRoot, new { id = 1, profile = "fixture", running = false });
+        await WriteJson(Path.Combine(runRoot, "parallel-collector-status.json"), new
+        {
+            stage = "operator-paused", updatedUtc = DateTimeOffset.UtcNow.AddDays(-1),
+            workers = new[] { new { id = 1, profile = "fixture", running = false, restarting = false, phase = "paused", assigned = 10 } }
+        });
+        var result = await NewService(runRoot, temp.Resolve("primary"), temp.Resolve("profiles"))
+            .GetAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Paused", result.Status);
+        Assert.False(result.Stale);
+        Assert.False(result.Active);
+        Assert.Equal("Paused", Assert.Single(result.Workers).Status);
+    }
+
     private static ArchiveCollectorStatusService NewService(
         string runRoot,
         string primaryRoot,

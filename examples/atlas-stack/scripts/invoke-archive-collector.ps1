@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$InstallRoot = 'C:\AtlasExample\Ingest\archive-sync\collector',
     [string]$QueuePath = 'C:\AtlasExample\Ingest\archive-sync\collector-queue.json',
@@ -52,12 +52,17 @@ param(
     [switch]$MoveToReady,
     [switch]$RecheckMissing,
     [switch]$RecheckRetryable,
+    [string]$PauseSignalPath = 'C:\AtlasExample\Ingest\pause-collector',
     [string]$ExitAfterCurrentWarpSignalPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2.0
 . (Join-Path $PSScriptRoot 'archive-json-io.ps1')
+. (Join-Path $PSScriptRoot 'archive-collector-safety.ps1')
+if (Test-Path -LiteralPath $PauseSignalPath) { throw 'Collector safety hold: operator pause is active.' }
+$script:safetyStopping = $false
+$script:nextSafetyCheck = [datetime]::MinValue
 . (Join-Path $PSScriptRoot 'archive-adaptive-policy.ps1')
 . (Join-Path $PSScriptRoot 'archive-survey-handoff.ps1')
 . (Join-Path $PSScriptRoot 'archive-interrupted-captures.ps1')
@@ -244,6 +249,10 @@ function Wait-CollectorMatch(
     $nextKeepAliveUtc = $startedUtc.AddSeconds($KeepAliveIntervalSeconds)
     while ([DateTime]::UtcNow -lt $idleDeadline -and [DateTime]::UtcNow -lt $maximumDeadline) {
         Pump-CollectorOutput
+        if ($script:downloadActive -and -not $script:safetyStopping -and [datetime]::UtcNow -ge $script:nextSafetyCheck) {
+            $script:nextSafetyCheck = [datetime]::UtcNow.AddSeconds(5)
+            Assert-ArchiveCollectorSafety -PauseSignalPath $PauseSignalPath -StoragePaths @($savesRoot, $CapturedRoot) -MinimumFreeGiB $MinimumFreeGiB
+        }
         while ($next -lt $script:lines.Count) {
             $line = $script:lines[$next]
             $next++
@@ -621,6 +630,7 @@ foreach ($entry in @($state.entries)) {
 
 $queue = Read-JsonUtf8 $QueuePath
 if (@($queue.conflicts).Count -gt 0) { throw 'Collector queue contains normalized-warp conflicts.' }
+Assert-ArchiveCollectorSafety -PauseSignalPath $PauseSignalPath -StoragePaths @($savesRoot, $CapturedRoot) -MinimumFreeGiB $MinimumFreeGiB
 Recover-CaptureJournal
 $requestedWarps = @($Warp | ForEach-Object { ([string]$_).Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 if ($requestedWarps.Count -eq 0) {
@@ -770,6 +780,8 @@ try {
 
     $candidateOrdinal = 0
     foreach ($candidate in $candidates) {
+        Assert-ArchiveCollectorSafety -PauseSignalPath $PauseSignalPath -StoragePaths @($savesRoot, $CapturedRoot) -MinimumFreeGiB $MinimumFreeGiB
+        $script:safetyStopping = $false
         if ($candidateOrdinal -gt 0 -and
             -not [string]::IsNullOrWhiteSpace($ExitAfterCurrentWarpSignalPath) -and
             (Test-Path -LiteralPath $ExitAfterCurrentWarpSignalPath -PathType Leaf)) {
@@ -1551,6 +1563,7 @@ try {
                 Write-Warning "Capture is durable, but transient C-drive cleanup failed for ${warpName}: $($_.Exception.Message)"
             }
         } catch {
+            $script:safetyStopping = $true
             $adaptiveRuntimeLimitReached = $adaptiveEnabled -and
                 $_.Exception.Message -like 'Adaptive maximum runtime of *'
             $captureFailureMessage = $_.Exception.Message
@@ -1558,6 +1571,7 @@ try {
                 ($adaptiveRuntimeLimitReached -and $AdaptiveRuntimeLimitDisposition -eq 'Review') -or
                 $_.Exception.Message -like 'Resume checkpoint held:*' -or
                 $_.Exception.Message -like 'Adaptive runaway guard: *' -or
+                $_.Exception.Message -like 'Collector safety hold:*' -or
                 $adaptiveBoundarySkipped -gt 0)
             $disconnected = (Test-NewArchiveDisconnect) -or $captureFailureMessage -match '(?i)disconnected during an active WDL|Collector process exited'
             $handoffPreserved = $false
@@ -1574,6 +1588,7 @@ try {
             }
             if ($adaptiveNeedsFootprintReview -and $script:downloadActive -and -not $disconnected) {
                 try {
+                    Invoke-CollectorCommand 'msg /atlascover checkpoint' @('ATLAS_COVER checkpoint-saved') 30 | Out-Null
                     Invoke-CollectorCommand 'msg /atlascover cancel' @('ATLAS_COVER cancelled reason=') 30 | Out-Null
                 } catch { }
             }
@@ -1589,6 +1604,7 @@ try {
                 status = if ($adaptiveNeedsFootprintReview) { 'needs-footprint-review' } else { 'retryable' }
                 failedUtc = [DateTime]::UtcNow.ToString('o')
                 error = $captureFailureMessage
+                requiresFootprintReviewBeforeRecovery = [bool]$adaptiveNeedsFootprintReview
                 adaptivePolicy = [string]$adaptiveCapturePolicy.name
                 workingCaptureNames = @($captureName, "$captureName-discovery", "$captureName-exact", "$captureName-repair-1", "$captureName-repair-2", "$captureName-repair-3")
                 partialPreservation = if ($handoffPreserved) { 'verified-handoff-on-D' } else { 'retained-in-working-saves' }
@@ -1622,6 +1638,7 @@ try {
         if ($DelayBetweenWarpsSeconds -gt 0) { Start-Sleep -Seconds $DelayBetweenWarpsSeconds }
     }
 } finally {
+    $script:safetyStopping = $true
     Wait-InterruptedCaptureFlush
     Stop-CollectorProcessTree $script:process
     try { Recover-CaptureJournal }

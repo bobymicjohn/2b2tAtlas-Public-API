@@ -35,6 +35,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$collectorPauseSignal = 'C:\AtlasExample\Ingest\pause-collector'
+if (Test-Path -LiteralPath $collectorPauseSignal) { Write-Warning 'Collector paused by operator.'; return }
 Set-StrictMode -Version 2.0
 . (Join-Path $PSScriptRoot 'archive-json-io.ps1')
 . (Join-Path $PSScriptRoot 'archive-fast-lane-routing.ps1')
@@ -93,6 +95,7 @@ function Start-CollectorWorker([object]$Worker) {
     $suffix = if ([int]$Worker.restarts -gt 0) { ".restart-$($Worker.restarts)" } else { '' }
     $Worker.stdoutPath = Join-Path $Worker.workerRoot "collector$suffix.out.log"
     $Worker.stderrPath = Join-Path $Worker.workerRoot "collector$suffix.err.log"
+    if (Test-Path -LiteralPath $collectorPauseSignal) { throw 'Collector safety hold: operator pause is active.' }
     $Worker.process = Start-Process -FilePath 'powershell.exe' -ArgumentList @(Get-ArchiveRefillLaunchArguments $Worker $Worker.arguments $refillLaneIds $FastLaneAdaptiveMaximumRuntimeSeconds -AllLong:$lanePolicy.allLong) -WindowStyle Hidden `
         -RedirectStandardOutput $Worker.stdoutPath -RedirectStandardError $Worker.stderrPath -PassThru
     $Worker.finalExitCode = $null

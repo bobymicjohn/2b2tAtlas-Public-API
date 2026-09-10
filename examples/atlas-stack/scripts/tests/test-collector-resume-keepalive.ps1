@@ -1,10 +1,11 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Split-Path -Parent $PSScriptRoot) 'invoke-archive-collector.ps1'),[ref]$tokens,[ref]$errors)
 if($errors.Count){throw 'Collector parse errors'}
 $fn=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Wait-CollectorMatch'},$true)
 Invoke-Expression $fn.Extent.Text
+$script:downloadActive=$false;$script:safetyStopping=$false;$script:nextSafetyCheck=[datetime]::MaxValue
 $script:lines=New-Object 'Collections.Generic.List[string]'
 $script:process=[pscustomobject]@{HasExited=$false}
 $script:commands=New-Object 'Collections.Generic.List[string]'

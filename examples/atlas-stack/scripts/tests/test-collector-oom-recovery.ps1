@@ -1,4 +1,4 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $scripts=Split-Path -Parent $PSScriptRoot
 . (Join-Path $scripts 'archive-capture-recovery.ps1')
@@ -27,6 +27,7 @@ $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $scripts 'inv
 if($errors.Count){throw $errors[0]}
 $wait=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Wait-CollectorMatch'},$true)
 Invoke-Expression $wait.Extent.Text
+$script:safetyStopping=$false;$script:nextSafetyCheck=[datetime]::MaxValue
 $script:polls=0
 $held=$false
 try { Wait-CollectorMatch @('never') 2 0 } catch { $held=$_.Exception.Message -like '*exhausted its heap*' }

@@ -1,4 +1,4 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $scripts=Split-Path -Parent $PSScriptRoot
 . (Join-Path $scripts 'archive-json-io.ps1')
@@ -85,6 +85,12 @@ archive(Path(os.environ['ATLAS_RECOVERY_FIXTURE'])/'archive-test.zip',{0:chunk('
     Save-JsonAtomically $journal (Get-CaptureJournalPath)
     Recover-CaptureJournal
     Assert ($script:copies -eq 1 -and $stateByWarp[$identity].interruptionCount -eq 1) 'Journal replay duplicated work/retry count'
+    $stateByWarp[$identity] | Add-Member requiresFootprintReviewBeforeRecovery $true -Force
+    Save-JsonAtomically $journal (Get-CaptureJournalPath)
+    $held=$false
+    try { Recover-CaptureJournal } catch { $held=$_.Exception.Message -like 'Resume checkpoint held: review the saved footprint*' }
+    Assert ($held -and $script:copies -eq 1 -and (Test-Path (Get-CaptureJournalPath))) 'Review hold copied the world or discarded its journal'
+    $stateByWarp[$identity].requiresFootprintReviewBeforeRecovery=$false
     $stateByWarp[$identity].status='needs-footprint-review'
     Save-JsonAtomically $journal (Get-CaptureJournalPath)
     Recover-CaptureJournal
