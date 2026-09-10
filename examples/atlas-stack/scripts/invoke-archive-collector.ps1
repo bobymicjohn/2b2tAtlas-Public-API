@@ -3,6 +3,8 @@ param(
     [string]$InstallRoot = 'C:\AtlasExample\Ingest\archive-sync\collector',
     [string]$QueuePath = 'C:\AtlasExample\Ingest\archive-sync\collector-queue.json',
     [string]$StatePath = 'C:\AtlasExample\Ingest\archive-sync\collector-state.json',
+    [string]$KnownWarpStatePath = '',
+    [string]$PeerStateRoot = '',
     [string]$CapturedRoot = 'D:\AtlasExample\Ingest\archive-captures\example-catalog\captured',
     [string]$ReadyRoot = 'C:\AtlasExample\Ingest\archive-sync\ready',
     [string]$Server = 'thearchive.world',
@@ -60,6 +62,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2.0
 . (Join-Path $PSScriptRoot 'archive-json-io.ps1')
 . (Join-Path $PSScriptRoot 'archive-collector-safety.ps1')
+. (Join-Path $PSScriptRoot 'archive-observed-neighbors.ps1')
 if (Test-Path -LiteralPath $PauseSignalPath) { throw 'Collector safety hold: operator pause is active.' }
 $script:safetyStopping = $false
 $script:nextSafetyCheck = [datetime]::MinValue
@@ -1151,26 +1154,8 @@ try {
                     }
                 }
                 $adaptiveManifestDigest = (Get-FileHash -LiteralPath $adaptiveNonVoidManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
-                $adaptiveNeighborWarps = @($queue.entries | Where-Object {
-                    [string]$_.normalizedWarp -ne $identity -and
-                    (Get-DateInsensitiveWarpIdentity ([string]$_.warp)) -ne $dateInsensitiveIdentity -and
-                    ([string]::IsNullOrWhiteSpace([string]$candidate.locationUuid) -or
-                        [string]$_.locationUuid -ne [string]$candidate.locationUuid) -and
-                    (Get-QueueDimension $_ $AdaptiveDimension) -eq $adaptiveCaptureDimension -and
-                    ([int]$_.x -ne 0 -or [int]$_.z -ne 0) -and
-                    [int]$_.x -ge $adaptiveCaptureBounds[0] -and [int]$_.x -lt $adaptiveCaptureBounds[2] -and
-                    [int]$_.z -ge $adaptiveCaptureBounds[1] -and [int]$_.z -lt $adaptiveCaptureBounds[3]
-                } | ForEach-Object {
-                    [pscustomobject][ordered]@{
-                        warp = [string]$_.warp
-                        normalizedWarp = [string]$_.normalizedWarp
-                        locationName = [string]$_.locationName
-                        dimension = Get-QueueDimension $_ $AdaptiveDimension
-                        x = [int]$_.x
-                        y = [int]$_.y
-                        z = [int]$_.z
-                    }
-                })
+                $observedEntries = @(Read-ArchiveNeighborStates -StatePath $StatePath -KnownWarpStatePath $KnownWarpStatePath -PeerStateRoot $PeerStateRoot)
+                $adaptiveNeighborWarps = @(Get-ObservedArchiveNeighbors -Entries $observedEntries -Server $Server -LiveDimensionId $adaptiveLiveDimensionId -Warp $warpName -Bounds $adaptiveCaptureBounds)
                 $adaptiveEffectiveConfidence = [string]$adaptiveDiscoveryResult.Match.Groups[1].Value
                 if ($adaptiveNeighborWarps.Count -gt 0) {
                     $adaptiveEffectiveConfidence = 'low'

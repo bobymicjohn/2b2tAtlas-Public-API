@@ -214,6 +214,8 @@ try {
             '-InstallRoot', [IO.Path]::GetFullPath($selectedRoots[$index]),
             '-QueuePath', $workerQueuePath,
             '-StatePath', $workerStatePath,
+            '-KnownWarpStatePath', $statePath,
+            '-PeerStateRoot', $parallelRoot,
             '-CapturedRoot', $capturedRoot,
             '-ReadyRoot', $readyRoot,
             '-MaxWarps', [string]$MaxWarpsPerWorker,

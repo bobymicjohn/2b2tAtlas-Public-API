@@ -156,6 +156,8 @@ foreach ($workerRoot in @(Get-ChildItem -LiteralPath $parallelRun -Directory | S
         '-MinecraftVersion', $PrimaryMinecraftVersion,
         '-QueuePath', $queuePath,
         '-StatePath', $workerStatePath,
+        '-KnownWarpStatePath', $statePath,
+        '-PeerStateRoot', $parallelRun,
         '-CapturedRoot', $capturedRoot,
         '-ReadyRoot', $readyRoot,
         '-MaxWarps', '10000',

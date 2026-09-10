@@ -49,7 +49,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($script in @('scripts/tests/test-archive-collector-safety.ps1', 'scripts/tests/test-archive-footprint-policy.ps1', 'scripts/tests/test-archive-capture-recovery.ps1', 'scripts/tests/test-archive-survey-handoff.ps1', 'scripts/tests/test-collector-resume-keepalive.ps1', 'scripts/tests/test-archive-fast-lane-routing.ps1', 'scripts/tests/test-archive-fast-lane-refill.ps1')) {
+          foreach ($script in @('scripts/tests/test-archive-collector-safety.ps1', 'scripts/tests/test-archive-observed-neighbors.ps1', 'scripts/tests/test-archive-footprint-policy.ps1', 'scripts/tests/test-archive-capture-recovery.ps1', 'scripts/tests/test-archive-survey-handoff.ps1', 'scripts/tests/test-collector-resume-keepalive.ps1', 'scripts/tests/test-archive-fast-lane-routing.ps1', 'scripts/tests/test-archive-fast-lane-refill.ps1')) {
             & powershell -NoProfile -ExecutionPolicy Bypass -File $script
             if ($LASTEXITCODE -ne 0) { throw "Failed: $script" }
           }
