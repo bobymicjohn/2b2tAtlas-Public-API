@@ -21,6 +21,22 @@ Keep the original snapshot while reviewing a smaller derivative.
    original ingestion job or create another card for the same dated source.
 6. Verify public WDL metadata and bytes, day/night tiles, and the separately
    generated BlueMap. Retain the old generation until the replacement passes.
+7. After replacement verification, move superseded source retention to backup
+   storage. Recheck the original's backup SHA-256 and make sure no warp, latest
+   completed render source, active job, or direct attachment still needs that
+   object. Keep a retirement receipt mapping the old hash to its backup and new
+   source. Remove the superseded object from live storage only after those checks.
+
+Live storage holds the approved WDL that generated the published render. Scratch
+holds pending captures and disposable processing output; backup storage holds
+superseded originals and recovery history. Keeping an original for rollback does
+not require leaving another copy on the live volume. Restore a retired source
+from its receipt before intentionally rerunning an old ingestion job.
+
+Completed scratch caches can be removed after verifying their canonical source,
+backup, publication receipt, and absence of active jobs. Preserve small provenance
+receipts. A deferred or unmatched capture is unfinished work, not a disposable
+cache: review or resolve it before clearing its recovery state.
 
 The Archive warp matcher can bind a reviewed replacement automatically. A source
 without a warp needs an explicit operator replacement binding; the ordinary
