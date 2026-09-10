@@ -16,6 +16,10 @@ $config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
 if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($config.apiKeyEnvironment))) {
     throw 'Worker credential is not configured for this process.'
 }
-Set-Location -LiteralPath $WorkerRoot
-& $binary worker --config $ConfigPath
-exit $LASTEXITCODE
+$logRoot = Join-Path (Split-Path -Parent $WorkerRoot) 'logs'
+New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+# The worker handles individual job failures. Capture native stderr directly so
+# Windows PowerShell cannot terminate the worker pipeline on an error message.
+$process = Start-Process -FilePath $binary -WorkingDirectory $WorkerRoot -ArgumentList @('worker', '--config', ('"{0}"' -f $ConfigPath)) -WindowStyle Hidden -PassThru -Wait -RedirectStandardOutput (Join-Path $logRoot "worker-$stamp.out.log") -RedirectStandardError (Join-Path $logRoot "worker-$stamp.err.log")
+exit $process.ExitCode
