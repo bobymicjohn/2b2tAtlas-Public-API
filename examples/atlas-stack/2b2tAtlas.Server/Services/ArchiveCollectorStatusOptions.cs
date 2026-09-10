@@ -14,6 +14,8 @@ public sealed class ArchiveCollectorStatusOptions
     public string ProfilesRoot { get; set; } = @"C:\AtlasExample\Ingest\archive-sync\collectors";
     /// <summary>Isolated worker-five profile used for Minecraft 1.21.10 compatibility retries.</summary>
     public string CompatibilityProfileRoot { get; set; } = @"D:\AtlasExample\Ingest\archive-compat\collector-1.21.10";
+    /// <summary>Operator/disk safety latch, independent of supervisor heartbeat.</summary>
+    public string PauseSignalPath { get; set; } = @"C:\AtlasExample\Ingest\pause-collector";
     /// <summary>Server-side snapshot cache lifetime in seconds.</summary>
     public int CacheSeconds { get; set; } = 10;
     /// <summary>Age in seconds after which a supervisor heartbeat is stale.</summary>

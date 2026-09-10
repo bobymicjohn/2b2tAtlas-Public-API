@@ -63,6 +63,7 @@ public sealed class ArchiveCollectorStatusServiceTests
             Options.Create(new ArchiveCollectorStatusOptions
             {
                 RunRoot = runRoot,
+                PauseSignalPath = Path.Combine(runRoot, "pause-collector"),
                 PrimaryProfileRoot = primaryRoot,
                 ProfilesRoot = temp.Resolve("profiles"),
                 CacheSeconds = 2,
@@ -130,6 +131,7 @@ public sealed class ArchiveCollectorStatusServiceTests
             Options.Create(new ArchiveCollectorStatusOptions
             {
                 RunRoot = runRoot,
+                PauseSignalPath = Path.Combine(runRoot, "pause-collector"),
                 PrimaryProfileRoot = primaryRoot,
                 ProfilesRoot = temp.Resolve("profiles")
             }),
@@ -199,6 +201,7 @@ public sealed class ArchiveCollectorStatusServiceTests
             Options.Create(new ArchiveCollectorStatusOptions
             {
                 RunRoot = runRoot,
+                PauseSignalPath = Path.Combine(runRoot, "pause-collector"),
                 PrimaryProfileRoot = primaryRoot,
                 ProfilesRoot = temp.Resolve("profiles"),
                 CacheSeconds = 2,
@@ -259,6 +262,7 @@ public sealed class ArchiveCollectorStatusServiceTests
             Options.Create(new ArchiveCollectorStatusOptions
             {
                 RunRoot = runRoot,
+                PauseSignalPath = Path.Combine(runRoot, "pause-collector"),
                 PrimaryProfileRoot = primaryRoot,
                 ProfilesRoot = temp.Resolve("profiles"),
                 CacheSeconds = 2,
@@ -484,6 +488,22 @@ public sealed class ArchiveCollectorStatusServiceTests
         Assert.Equal("Paused", Assert.Single(result.Workers).Status);
     }
 
+    [Fact]
+    public async Task Disk_pause_latch_overrides_old_supervisor_restart_status()
+    {
+        using var temp = new TempDirectory();
+        var runRoot = temp.Resolve("run");
+        Directory.CreateDirectory(runRoot);
+        await WriteMinimalStatus(runRoot, new { id = 1, profile = "fixture", running = false, restarting = true, assigned = 10 });
+        await File.WriteAllTextAsync(Path.Combine(runRoot, "pause-collector"), "low disk", TestContext.Current.CancellationToken);
+        var result = await NewService(runRoot, temp.Resolve("primary"), temp.Resolve("profiles"))
+            .GetAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Paused", result.Status);
+        Assert.False(result.Active);
+        Assert.False(result.Stale);
+        Assert.Equal("Paused", Assert.Single(result.Workers).Status);
+    }
+
     private static ArchiveCollectorStatusService NewService(
         string runRoot,
         string primaryRoot,
@@ -492,6 +512,7 @@ public sealed class ArchiveCollectorStatusServiceTests
             Options.Create(new ArchiveCollectorStatusOptions
             {
                 RunRoot = runRoot,
+                PauseSignalPath = Path.Combine(runRoot, "pause-collector"),
                 PrimaryProfileRoot = primaryRoot,
                 ProfilesRoot = profilesRoot,
                 CompatibilityProfileRoot = compatibilityRoot ?? Path.Combine(profilesRoot, "compatibility"),

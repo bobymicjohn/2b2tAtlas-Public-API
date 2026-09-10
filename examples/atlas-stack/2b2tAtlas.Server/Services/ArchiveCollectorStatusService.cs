@@ -97,18 +97,19 @@ public sealed partial class ArchiveCollectorStatusService
             }
         }
 
+        var paused = File.Exists(_options.PauseSignalPath) ||
+            (parallel is not null && String(parallel.RootElement, "stage") == "operator-paused");
         var workers = parallel is null
             ? []
             : Elements(parallel.RootElement, "workers")
                 .OrderBy(worker => Int(worker, "id"))
                 .Take(16)
-                .Select(worker => BuildWorker(worker, runRoot))
+                .Select(worker => BuildWorker(worker, runRoot, paused))
                 .ToList();
         var fastLaneWorkers = workers.Count(worker => worker.Lane is "throughput" or "temporary-long");
         var longRunningWorkers = workers.Count - fastLaneWorkers;
         var deferredToLongRunning = parallel is null ? 0 : Int(parallel.RootElement, "deferredToLongRunning");
         var updatedUtc = parallel is null ? NullableDate(state.RootElement, "updatedUtc") : NullableDate(parallel.RootElement, "updatedUtc");
-        var paused = parallel is not null && String(parallel.RootElement, "stage") == "operator-paused";
         var stale = !paused && (updatedUtc is null || now - updatedUtc.Value > TimeSpan.FromSeconds(Math.Clamp(_options.StaleAfterSeconds, 30, 600)));
         var activeWorkers = workers.Count(worker => worker.Outcome == "live");
         var recovering = !stale && activeWorkers == 0 && workers.Any(worker =>
@@ -158,7 +159,7 @@ public sealed partial class ArchiveCollectorStatusService
         };
     }
 
-    private ArchiveCollectorWorkerStatusDto BuildWorker(JsonElement worker, string runRoot)
+    private ArchiveCollectorWorkerStatusDto BuildWorker(JsonElement worker, string runRoot, bool paused)
     {
         var id = Int(worker, "id");
         var profile = String(worker, "profile");
@@ -199,7 +200,8 @@ public sealed partial class ArchiveCollectorStatusService
         // look like an in-progress capture. Coverage telemetry is the authoritative
         // boundary between a connected capture and a merely running launcher.
         var launchOutcome = CurrentLaunchOutcome(currentCollectorLog, safeStdout, safeStderr);
-        var outcome = !running && String(worker, "phase") == "paused" ? "paused"
+        var outcome = paused && running ? "pausing"
+            : !running && (paused || String(worker, "phase") == "paused") ? "paused"
             : !running && Bool(worker, "refillPending") ? "awaiting-refill"
             : running && progress.Received is not null ? "live"
             : launchOutcome ?? (running ? "connecting"
@@ -209,6 +211,7 @@ public sealed partial class ArchiveCollectorStatusService
         var status = outcome switch
         {
             "paused" => "Paused",
+            "pausing" => "Finishing save",
             "live" => "Active",
             "archive-backend-rejected" => "Archive unavailable",
             "server-disconnected" => "Disconnected",
