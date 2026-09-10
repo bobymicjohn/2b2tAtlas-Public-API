@@ -69,3 +69,14 @@ val writerBackpressureRegression = tasks.register<JavaExec>("writerBackpressureR
     mainClass.set("com.b2btatlas.archive.coverage.WriterBackpressureTest")
 }
 tasks.check { dependsOn(writerBackpressureRegression) }
+
+val savedFootprintEvidence = tasks.register<JavaExec>("savedFootprintEvidence") {
+    dependsOn(tasks.classes)
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("com.b2btatlas.archive.coverage.SavedFootprintEvidence")
+    maxHeapSize = "2G"
+    if (project.hasProperty("footprintSource")) args(project.property("footprintSource").toString())
+    if (project.hasProperty("footprintOutput")) args(project.property("footprintOutput").toString())
+    if (project.hasProperty("footprintMinY") && project.hasProperty("footprintMaxY"))
+        args(project.property("footprintMinY").toString(), project.property("footprintMaxY").toString())
+}

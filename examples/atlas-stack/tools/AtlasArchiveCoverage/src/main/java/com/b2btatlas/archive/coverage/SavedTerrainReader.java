@@ -14,6 +14,13 @@ final class SavedTerrainReader {
     private static final Pattern REGION = Pattern.compile("^([^/]+/)(?:(DIM-1/|DIM1/))?region/r\\.(-?\\d+)\\.(-?\\d+)\\.mca$");
 
     static void read(Path path, Consumer<Chunk> consumer) throws IOException {
+        read(path, consumer, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
+
+    /** Height filtering is for offline footprint proposals only. Resume always reads all heights. */
+    static void read(Path path, Consumer<Chunk> consumer, int minY, int maxY) throws IOException {
+        if (minY > maxY) throw new IllegalArgumentException("Invalid analysis height range");
+        boolean filtered = minY != Integer.MIN_VALUE || maxY != Integer.MAX_VALUE;
         try (ZipFile zip = new ZipFile(path.toFile())) {
             String dimensionFolder = null;
             Set<String> coordinates = new HashSet<>();
@@ -56,24 +63,40 @@ final class SavedTerrainReader {
                         Map<String, Integer> counts = new HashMap<>();
                         ListTag sections = tag.getList("sections").orElseThrow(() -> new IOException("Missing modern chunk sections"));
                         for (int i = 0; i < sections.size(); i++) {
-                            CompoundTag states = sections.getCompoundOrEmpty(i).getCompoundOrEmpty("block_states");
+                            CompoundTag section = sections.getCompoundOrEmpty(i);
+                            int low = 0, high = 15;
+                            if (filtered) {
+                                int sectionY = section.getByte("Y").orElseThrow(() -> new IOException("Missing section Y")) * 16;
+                                low = Math.max(0, minY - sectionY); high = Math.min(15, maxY - sectionY);
+                                if (low > high) continue;
+                            }
+                            CompoundTag states = section.getCompoundOrEmpty("block_states");
                             ListTag palette = states.getListOrEmpty("palette");
                             if (palette.isEmpty()) continue;
                             if (palette.size() > 4096) throw new IOException("Invalid block palette");
                             String[] names = new String[palette.size()];
                             for (int p = 0; p < names.length; p++) names[p] = palette.getCompoundOrEmpty(p).getString("Name").orElseThrow();
-                            if (names.length == 1) { counts.merge(names[0], 4096, Integer::sum); continue; }
+                            if (names.length == 1) { counts.merge(names[0], (high-low+1)*256, Integer::sum); continue; }
                             long[] data = states.getLongArray("data").orElseThrow();
                             int bits = Math.max(4, 32 - Integer.numberOfLeadingZeros(names.length - 1));
                             int perLong = 64 / bits;
                             if (data.length != (4096 + perLong - 1) / perLong) throw new IOException("Invalid packed block data");
-                            for (int b = 0; b < 4096; b++) {
+                            for (int b = low*256; b < (high+1)*256; b++) {
                                 int p = (int)((data[b / perLong] >>> ((b % perLong) * bits)) & ((1L << bits) - 1));
                                 if (p >= names.length) throw new IOException("Invalid palette index");
                                 counts.merge(names[p], 1, Integer::sum);
                             }
                         }
-                        consumer.accept(new Chunk(x, z, counts, tag.getListOrEmpty("block_entities").size()));
+                        ListTag entities = tag.getListOrEmpty("block_entities");
+                        int entityCount = entities.size();
+                        if (filtered) {
+                            entityCount = 0;
+                            for (int i = 0; i < entities.size(); i++) {
+                                int y = entities.getCompoundOrEmpty(i).getInt("y").orElseThrow(() -> new IOException("Missing block entity y"));
+                                if (y >= minY && y <= maxY) entityCount++;
+                            }
+                        }
+                        consumer.accept(new Chunk(x, z, counts, entityCount));
                     }
                 }
             }

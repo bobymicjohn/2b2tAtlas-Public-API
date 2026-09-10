@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$StatePath,
@@ -12,6 +12,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2.0
+. (Join-Path $PSScriptRoot 'archive-adaptive-policy.ps1')
 
 function Read-JsonUtf8([string]$Path) {
     return [IO.File]::ReadAllText($Path, (New-Object Text.UTF8Encoding($false))) | ConvertFrom-Json
@@ -62,6 +63,8 @@ foreach ($entry in @($state.entries | Where-Object { [string]$_.status -eq 'capt
 
     $reasons = New-Object System.Collections.Generic.List[string]
     if ($null -ne $adaptive) {
+        $footprintReview = Get-ArchiveAdaptiveCompletedReviewReason -Candidate $entry -Adaptive $adaptive
+        if ($footprintReview) { $reasons.Add($footprintReview) }
         if ($null -eq $adaptive.PSObject.Properties['standardVersion'] -or
             [int]$adaptive.standardVersion -lt 2) { $reasons.Add('collector standard is older than v2') }
         if ($null -eq $adaptive.PSObject.Properties['componentSelection']) {

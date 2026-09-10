@@ -26,6 +26,12 @@ public final class SavedTerrainReaderTest {
                 check(chunk.blocks().get("minecraft:beacon") == 1, "Packed final palette entry");
                 check(chunk.blockEntities() == 1, "Block entity evidence lost");
             }
+            List<SavedTerrainReader.Chunk> band = new ArrayList<>();
+            SavedTerrainReader.read(fixture, band::add, 15, 15);
+            check(band.size() == 2 && band.getFirst().blocks().get("minecraft:stone") == 255, "Y band must select only the final 256 block layer");
+            check(band.getFirst().blocks().get("minecraft:beacon") == 1 && band.getFirst().blockEntities() == 1, "Y band lost beacon/entity");
+            band.clear(); SavedTerrainReader.read(fixture, band::add, -16, -1);
+            check(band.size() == 2 && band.getFirst().blocks().isEmpty() && band.getFirst().blockEntities() == 0, "Empty negative Y band must preserve coverage without including other heights");
             for (int failure = 0; failure < 2; failure++) {
                 write(fixture, failure == 0, failure == 1);
                 boolean rejected = false;
@@ -44,9 +50,9 @@ public final class SavedTerrainReaderTest {
         }
         CompoundTag states = new CompoundTag(); states.put("palette", palette);
         long[] data = new long[256]; data[255] = 1L << 60; states.putLongArray("data", data);
-        CompoundTag section = new CompoundTag(); section.put("block_states", states);
+        CompoundTag section = new CompoundTag(); section.put("block_states", states); section.putByte("Y", (byte)0);
         ListTag sections = new ListTag(); sections.add(section); tag.put("sections", sections);
-        ListTag entities = new ListTag(); entities.add(new CompoundTag()); tag.put("block_entities", entities);
+        ListTag entities = new ListTag(); CompoundTag entity = new CompoundTag(); entity.putInt("y",15); entities.add(entity); tag.put("block_entities", entities);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (var compressed = new DeflaterOutputStream(bytes); var output = new DataOutputStream(compressed)) { NbtIo.write(tag, output); }
         return bytes.toByteArray();

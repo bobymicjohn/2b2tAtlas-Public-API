@@ -785,6 +785,7 @@ try {
         $dateInsensitiveIdentity = Get-DateInsensitiveWarpIdentity $warpName
         $adaptiveCaptureDimension = Get-QueueDimension $candidate $AdaptiveDimension
         $adaptiveCapturePolicy = Get-ArchiveAdaptiveCapturePolicy $candidate
+        Write-Output ("ADAPTIVE-FOOTPRINT-POLICY {0} maxSurveyChunks={1} maxSpanBlocks={2} expansionReviewAt={3}" -f $adaptiveCapturePolicy.name, $adaptiveCapturePolicy.maximumSurveyChunks, $adaptiveCapturePolicy.maximumSpanBlocks, $adaptiveCapturePolicy.runawayIterationThreshold)
         $captureName = Get-SafeCaptureName $warpName
         if ($coverageEnabled) {
             $captureName += '-coverage-' + [DateTime]::UtcNow.ToString('yyyyMMddHHmmss')
@@ -1086,6 +1087,10 @@ try {
                 if ($adaptiveDiscoveryResult.Line -match 'ATLAS_COVER cancelled') {
                     throw "Adaptive discovery failed: $($adaptiveDiscoveryResult.Line)"
                 }
+                # Completion messages match before ProgressGuard runs. Apply the
+                # same footprint gate here before any capture can be promoted.
+                $footprintReview = Get-ArchiveAdaptiveRunawayReason -Line $adaptiveDiscoveryResult.Line -Policy $adaptiveCapturePolicy
+                if ($footprintReview) { throw "Adaptive runaway guard: $footprintReview" }
                 $adaptiveBoundarySkipped = [int]$adaptiveDiscoveryResult.Match.Groups[34].Value
                 if (([int]$adaptiveDiscoveryResult.Match.Groups[11].Value -ne 0 -or
                     [int]$adaptiveDiscoveryResult.Match.Groups[24].Value -ne 0) -and
