@@ -124,6 +124,7 @@ public static class IngestionWorker
         string? publicationStaging = null;
         var publicationHadExistingDestination = false;
         var publicationBackupReady = false;
+        var registrationAttempted = false;
         var stage = "intake";
         try
         {
@@ -411,10 +412,13 @@ public static class IngestionWorker
                 MaxNativeZoom = receipt.Report.MaxZoom - scheme.UrlZoomOffset,
                 CoordinateScheme = receipt.Report.CoordinateScheme,
             };
+            // A timeout does not tell us whether the API committed. From this point the
+            // generation may be public, even if we never receive its acknowledgement.
+            registrationAttempted = true;
             await ReportAsync(client, job, "completed", "registered", "Registered and linked the location base render.",
                 archiveSha256, render, cancellationToken);
-            try { DeleteSupersededRenderEntries(dimensionDestination, generation); }
-            catch (IOException exception) { Console.Error.WriteLine($"Could not remove superseded render entries: {exception.Message}"); }
+            // Older immutable URLs can still be referenced by cached clients or another
+            // render. Retention belongs to a separate catalog-aware maintenance pass.
             if (publicationBackup is not null && Directory.Exists(publicationBackup))
             {
                 try { Directory.Delete(publicationBackup, recursive: true); }
@@ -431,7 +435,8 @@ public static class IngestionWorker
         {
             await RestorePublishedTilesAsync(
                 publicationDestination, publicationBackup, publicationStaging,
-                publicationHadExistingDestination, publicationBackupReady, CancellationToken.None);
+                publicationHadExistingDestination, publicationBackupReady, CancellationToken.None,
+                registrationAttempted);
             Console.Error.WriteLine($"Worker job {job.Id} failed in {stage}: {exception}");
             await SafeReportAsync(client, job, "failed", stage,
                 $"{stage} failed; inspect the local worker log ({exception.GetType().Name}).",
@@ -439,14 +444,16 @@ public static class IngestionWorker
         }
     }
 
-    private static async Task RestorePublishedTilesAsync(
+    internal static async Task RestorePublishedTilesAsync(
         string? destination,
         string? backup,
         string? staging,
         bool hadExistingDestination,
         bool backupReady,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool registrationAttempted = false)
     {
+        if (registrationAttempted) return;
         if (staging is not null && Directory.Exists(staging)) Directory.Delete(staging, recursive: true);
         if (destination is null || backup is null) return;
         if (hadExistingDestination && backupReady && Directory.Exists(backup))
@@ -513,18 +520,6 @@ public static class IngestionWorker
             }
         }
         throw lastError ?? new IOException($"Could not copy tile '{source}' to '{destination}'.");
-    }
-
-    private static void DeleteSupersededRenderEntries(string dimensionRoot, string currentGeneration)
-    {
-        if (!Directory.Exists(dimensionRoot)) return;
-        foreach (var file in Directory.EnumerateFiles(dimensionRoot)) File.Delete(file);
-        foreach (var directory in Directory.EnumerateDirectories(dimensionRoot))
-        {
-            var name = Path.GetFileName(directory);
-            if (!string.Equals(name, currentGeneration, StringComparison.Ordinal))
-                Directory.Delete(directory, recursive: true);
-        }
     }
 
     private static JobPaths VariantPaths(JobPaths paths, string variant)
