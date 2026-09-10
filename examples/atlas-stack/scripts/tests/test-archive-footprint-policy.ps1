@@ -33,3 +33,40 @@ Check 'area uses 64-bit arithmetic' ([bool](Get-ArchiveAdaptiveRunawayReason (Co
 
 Check 'promotion refuses missing footprint evidence' ([bool](Get-ArchiveAdaptiveCompletedReviewReason ([pscustomobject]@{warp='base'}) ([pscustomobject]@{}))) $true
 Check 'promotion checks old high-confidence oversized captures' ([bool](Get-ArchiveAdaptiveCompletedReviewReason ([pscustomobject]@{warp='Boat_lodge'}) ([pscustomobject]@{bounds=@(12912,-8544,25488,-2128);targetChunks=315186;primaryComponentBuildChunks=36988;orphanBuildChunksInsideBounds=36193}))) $true
+
+Check 'oversized resume stopped before reconstruction' ([bool](Get-ArchiveAdaptiveCheckpointReviewReason ([pscustomobject]@{minX=-512;minZ=-512;maxX=511;maxZ=511;iteration=2}) $base)) $true
+Check 'ordinary small checkpoint still resumes' ([bool](Get-ArchiveAdaptiveCheckpointReviewReason ([pscustomobject]@{minX=-20;minZ=-20;maxX=20;maxZ=20;iteration=2}) $base)) $false
+Check 'different dated exhibits never reuse automatically' (Test-ArchiveSameSnapshotDate 'Poker_2021-04-17' 'Chunk_Haven_2021-05-22') $false
+Check 'same dated snapshot may pass remaining reuse checks' (Test-ArchiveSameSnapshotDate 'First_2021-05-22' 'Second_2021-05-22') $true
+Check 'undated shared world is not snapshot proof' (Test-ArchiveSameSnapshotDate 'First' 'Second') $false
+
+. (Join-Path $PSScriptRoot '../archive-survey-handoff.ps1')
+$fixtureRoot = Join-Path $env:TEMP ('atlas-footprint-preflight-' + [guid]::NewGuid().ToString('N'))
+$attemptName = '20260101-000000-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+$attemptPath = Join-Path $fixtureRoot $attemptName
+$hintPath = Join-Path $attemptPath 'survey-hint.json'
+$receiptPath = Join-Path $fixtureRoot 'latest.json'
+function Get-SurveyHandoffDirectory { return $fixtureRoot }
+$AdaptiveMaxRadiusBlocks=0; $Server='fixture.example'; $adaptiveLiveDimensionId='minecraft:overworld'; $adaptiveWarpX=0; $adaptiveWarpZ=0
+try {
+    New-Item -ItemType Directory -Path $attemptPath -Force | Out-Null
+    @{minX=-512;minZ=-512;maxX=511;maxZ=511;iteration=2} | ConvertTo-Json | Set-Content $hintPath
+    $receipt=@{schemaVersion=3;server=$Server;warp='Base_2022-07-20';dimension=$adaptiveLiveDimensionId;x=0;z=0;createdUtc=[datetime]::UtcNow.ToString('o');directory=$attemptName;hintSha256=(Get-FileHash $hintPath).Hash}
+    $receipt | ConvertTo-Json | Set-Content $receiptPath
+    $originalReceipt=(Get-FileHash $receiptPath).Hash; $originalHint=(Get-FileHash $hintPath).Hash
+    $held=$false
+    try { Assert-SurveyHandoffFootprint 'Base_2022-07-20' $base } catch { $held=$_.Exception.Message -like 'Resume checkpoint held: policy=*' }
+    Check 'preflight rejects oversized saved parent' $held $true
+    Check 'preflight leaves parent receipt and terrain pointer unchanged' (((Get-FileHash $receiptPath).Hash -eq $originalReceipt) -and ((Get-FileHash $hintPath).Hash -eq $originalHint) -and @(Get-ChildItem $fixtureRoot -File -Recurse).Count -eq 2) $true
+    $tokens=$null; $errors=$null
+    $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '../invoke-archive-collector.ps1'),[ref]$tokens,[ref]$errors)
+    if ($errors.Count) { throw $errors[0] }
+    $preflight=$ast.Find({param($n) $n -is [Management.Automation.Language.CommandAst] -and $n.GetCommandName() -eq 'Assert-SurveyHandoffFootprint'},$true)
+    $start=$ast.Find({param($n) $n -is [Management.Automation.Language.CommandAst] -and $n.GetCommandName() -eq 'Start-TrackedWdlCapture'},$true)
+    Check 'collector preflight precedes first tracked download' ($preflight.Extent.StartOffset -lt $start.Extent.StartOffset) $true
+} finally {
+    # Explicit fixture files and empty directories only; never touch a live store.
+    foreach ($path in @($receiptPath,$hintPath)) { if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path } }
+    if (Test-Path -LiteralPath $attemptPath) { Remove-Item -LiteralPath $attemptPath }
+    if (Test-Path -LiteralPath $fixtureRoot) { Remove-Item -LiteralPath $fixtureRoot }
+}

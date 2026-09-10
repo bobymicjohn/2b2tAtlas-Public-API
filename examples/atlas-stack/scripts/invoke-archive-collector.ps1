@@ -545,7 +545,8 @@ function Find-ReusableAdaptiveCapture(
     [string]$Identity,
     [string]$LiveDimensionId,
     [double]$BlockX,
-    [double]$BlockZ
+    [double]$BlockZ,
+    [string]$CurrentWarp
 ) {
     if ([string]::IsNullOrWhiteSpace($LiveDimensionId)) { return $null }
     foreach ($prior in @($StateByWarp.Values)) {
@@ -556,6 +557,7 @@ function Find-ReusableAdaptiveCapture(
         if (@($requiredRecordProperties | Where-Object { $null -eq $prior.PSObject.Properties[$_] }).Count -gt 0) { continue }
         if ([string]$prior.normalizedWarp -eq $Identity -or
             [string]$prior.status -notin @('captured', 'ready')) { continue }
+        if (-not (Test-ArchiveSameSnapshotDate ([string]$prior.warp) $CurrentWarp)) { continue }
         $adaptiveProperty = $prior.PSObject.Properties['adaptive']
         if ($null -eq $adaptiveProperty) { continue }
         $adaptive = $adaptiveProperty.Value
@@ -915,7 +917,7 @@ try {
                 # dimension id, cover the actual landing coordinate, contain nearby
                 # non-void chunks, and pass every stored SHA/exactness invariant.
                 $reuseSource = Find-ReusableAdaptiveCapture $stateByWarp $identity `
-                    $adaptiveLiveDimensionId $adaptiveWarpX $adaptiveWarpZ
+                    $adaptiveLiveDimensionId $adaptiveWarpX $adaptiveWarpZ $warpName
                 if ($null -ne $reuseSource) {
                     $reuseBaseName = "$captureName-reused"
                     $reuseRawPath = Join-Path $CapturedRoot "$reuseBaseName.zip"
@@ -1066,6 +1068,7 @@ try {
             } elseif ($adaptiveEnabled) {
                 # Capture once, then repair only persisted gaps if the independent
                 # full non-void audit finds any. Journal before starting the WDL.
+                Assert-SurveyHandoffFootprint $warpName $adaptiveCapturePolicy
                 $activeCaptureName = "$captureName-discovery"
                 Start-TrackedWdlCapture $activeCaptureName
                 $adaptiveCommand = 'msg /atlascover adaptive {0} {1} {2} {3} {4}' -f

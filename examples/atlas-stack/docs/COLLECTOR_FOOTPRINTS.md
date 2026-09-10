@@ -25,6 +25,8 @@ retry it. The existing disconnect, writer-drain, disk recovery and coverage gate
 still apply. These numbers are conservative operating budgets, not claimed build
 boundaries. A legitimate giant build goes through extent review.
 
+A checkpoint preflight checks its verified saved bounds before starting a new WDL
+or rebuilding saved NBT evidence. Oversized parents remain untouched in review.
 The completion path checks the budget again, including captures restored from an
 old checkpoint. A rectangle of at least 16,384 chunks also needs review when at
 least 1,024 construction-evidence chunks lie outside the selected component and
@@ -105,7 +107,10 @@ In the initial audit, Poker Room and Chunk Haven had the same 116,332 terrain
 coordinates and identical construction counts. Their terrain NBT payloads differed
 at every coordinate, and their entity inventories also differed. They remain
 separate dated originals. Locally cropping either preserved source requires no
-Archive download. Automatic cross-date substitution is deliberately not enabled.
+Archive download. Automatic cross-date substitution is deliberately not enabled. The existing
+covered-world reuse path now also requires the same explicit snapshot date, in
+addition to its live dimension, listed neighbor, landing, coverage and hash checks.
+Reused captures remain low-confidence and ineligible for automatic publication.
 
 ## Validation
 

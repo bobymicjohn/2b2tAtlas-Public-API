@@ -75,3 +75,27 @@ function Get-ArchiveAdaptiveCompletedReviewReason {
     $line = 'ATLAS_COVER adaptive-complete confidence=high bounds={0},{1}..{2},{3} surveyBounds={0},{1}..{2},{3} target={4} componentBuild={5} orphanBuild={6}' -f $b[0],$b[1],$b[2],$b[3],$Adaptive.targetChunks,$Adaptive.primaryComponentBuildChunks,$Adaptive.orphanBuildChunksInsideBounds
     Get-ArchiveAdaptiveRunawayReason $line (Get-ArchiveAdaptiveCapturePolicy $Candidate)
 }
+
+function Get-ArchiveAdaptiveCheckpointReviewReason {
+    param([Parameter(Mandatory = $true)][object]$Hint,
+          [Parameter(Mandatory = $true)][object]$Policy)
+    foreach ($field in @('minX','minZ','maxX','maxZ','iteration')) {
+        if ($null -eq $Hint.PSObject.Properties[$field]) { return "Missing checkpoint footprint field: $field" }
+    }
+    foreach ($field in @('minX','minZ','maxX','maxZ')) {
+        if ([Math]::Abs([long]$Hint.$field) -gt 134217727L) { return 'Checkpoint bounds outside representable block coordinates' }
+    }
+    $width = [long]$Hint.maxX - [long]$Hint.minX + 1L
+    $height = [long]$Hint.maxZ - [long]$Hint.minZ + 1L
+    if ($width -le 0 -or $height -le 0 -or [int]$Hint.iteration -lt 0) { return 'Invalid checkpoint footprint' }
+    $line = 'ATLAS_COVER adaptive-expand iteration={0} bounds={1},{2}..{3},{4} targetChunks={5}' -f $Hint.iteration,$Hint.minX,$Hint.minZ,$Hint.maxX,$Hint.maxZ,($width*$height)
+    Get-ArchiveAdaptiveRunawayReason $line $Policy
+}
+
+function Test-ArchiveSameSnapshotDate([string]$PriorWarp, [string]$CurrentWarp) {
+    $a = [regex]::Match($PriorWarp, '\d{4}-\d{2}-\d{2}')
+    $b = [regex]::Match($CurrentWarp, '\d{4}-\d{2}-\d{2}')
+    # A shared museum dimension does not establish that two dated exhibits have
+    # the same snapshot. Existing live-dimension/neighbor/hash checks still apply.
+    return $a.Success -and $b.Success -and $a.Value -ceq $b.Value
+}

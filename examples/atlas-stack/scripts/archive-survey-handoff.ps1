@@ -56,6 +56,25 @@ function Save-SurveyHandoff([string]$WarpName, [string]$CaptureName) {
     Write-Output "SURVEY-HANDOFF-SAVED $WarpName chunks=$($partial.SavedChunks) schema=$($hintState.schema) durableTerrain=true"
 }
 
+# Run before Start-TrackedWdlCapture: a held parent must not create a new empty
+# capture/journal or replace the latest saved checkpoint during recovery.
+function Assert-SurveyHandoffFootprint([string]$WarpName, [object]$Policy) {
+    if ($AdaptiveMaxRadiusBlocks -ne 0) { return }
+    $root = Get-SurveyHandoffDirectory $Server $WarpName
+    $path = Join-Path $root 'latest.json'
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return }
+    try {
+        $receipt = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+        if (-not (Test-SurveyHandoffIdentity $receipt $Server $WarpName $adaptiveLiveDimensionId $adaptiveWarpX $adaptiveWarpZ ([datetimeoffset]::UtcNow))) { throw 'Saved snapshot identity requires review.' }
+        if ($receipt.directory -notmatch '^\d{8}-\d{6}-[a-f0-9]{32}$') { throw 'Invalid saved handoff directory.' }
+        $hintPath = Join-Path (Join-Path $root $receipt.directory) 'survey-hint.json'
+        if ((Get-FileHash -LiteralPath $hintPath -Algorithm SHA256).Hash -ne $receipt.hintSha256) { throw 'Checkpoint hash mismatch.' }
+        $hint = Get-Content -LiteralPath $hintPath -Raw | ConvertFrom-Json
+        $reason = Get-ArchiveAdaptiveCheckpointReviewReason $hint $Policy
+        if ($reason) { throw $reason }
+    } catch { throw "Resume checkpoint held: $($_.Exception.Message)" }
+}
+
 function Restore-SurveyHandoff([string]$WarpName, [string]$CaptureName) {
     if ($AdaptiveMaxRadiusBlocks -ne 0) { return $false }
     $root = Get-SurveyHandoffDirectory $Server $WarpName
