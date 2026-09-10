@@ -24,6 +24,7 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot 'atlas-bluemap-resources.ps1')
+. (Join-Path $PSScriptRoot 'atlas-bluemap-camera.ps1')
 if ($MemoryLimit -ne '8g' -or $RelightMemoryLimit -ne '12g') {
     throw 'Stage admission requires the validated 8g render and 12g relight container limits.'
 }
@@ -187,7 +188,7 @@ function Test-BlueMapStaticGeneration {
     if ($null -eq $settings.startPos -or @($settings.startPos).Count -ne 2 -or
         [int64]$settings.startPos[0] -ne $ExpectedStartX -or
         [int64]$settings.startPos[1] -ne $ExpectedStartZ) {
-        throw "BlueMap start position is not anchored to the canonical Atlas location ($ExpectedStartX,$ExpectedStartZ)."
+        throw "BlueMap start position does not match the selected render anchor ($ExpectedStartX,$ExpectedStartZ)."
     }
 
     $mapRoot = Join-Path $WebRoot 'maps\atlas'
@@ -756,6 +757,8 @@ WITH ranked AS (
         l.X AS LocationX,
         l.Y AS LocationY,
         l.Z AS LocationZ,
+        w.ArchiveX,
+        w.ArchiveZ,
         j.Dimension,
         j.RenderTopY,
         j.ArchiveSha256,
@@ -772,6 +775,7 @@ WITH ranked AS (
     FROM IngestionJobs j
     JOIN Renders r ON r.Id = j.RenderId
     JOIN Locations l ON l.Rowid = r.LocationRowid
+    LEFT JOIN Warps w ON w.Id = r.ArchiveWarpId
     WHERE lower(j.Status) = 'completed'
       AND j.ArchiveSha256 IS NOT NULL
       $selectionClause
@@ -807,6 +811,7 @@ SELECT * FROM ranked WHERE rn = 1 ORDER BY RenderId;
 
     $completedCount = 0
     foreach ($job in $jobs) {
+        $camera = Get-AtlasBlueMapCamera $job
         $jobStartedUtc = [datetime]::UtcNow.ToString('o')
         $sha = ([string]$job.ArchiveSha256).ToLowerInvariant()
         $renderIdValue = [int]$job.RenderId
@@ -844,8 +849,8 @@ SELECT * FROM ranked WHERE rn = 1 ORDER BY RenderId;
                     $existingSettings = Get-Content -LiteralPath $existingSettingsPath -Raw | ConvertFrom-Json
                     $hasLocationStart = $null -ne $existingSettings.startPos -and
                         @($existingSettings.startPos).Count -eq 2 -and
-                        [int64]$existingSettings.startPos[0] -eq [int64]$job.LocationX -and
-                        [int64]$existingSettings.startPos[1] -eq [int64]$job.LocationZ
+                        [int64]$existingSettings.startPos[0] -eq $camera.X -and
+                        [int64]$existingSettings.startPos[1] -eq $camera.Z
                 }
                 if ($existing.Status -eq 'complete' -and $existing.SourceSha256 -eq $sha -and
                     $existing.BlueMapVersion -eq $blueMapVersion -and
@@ -986,9 +991,9 @@ SELECT * FROM ranked WHERE rn = 1 ORDER BY RenderId;
             # WDLs can be sparse and may contain multiple preserved clusters. A
             # bounds midpoint can therefore land in empty terrain, or halfway
             # between an Overworld base and an old 8:1-scaled companion cluster.
-            # The Atlas location coordinate is the canonical camera anchor.
-            $centerX = [int64]$job.LocationX
-            $centerZ = [int64]$job.LocationZ
+            # A dated render may instead need its own in-bounds Archive arrival.
+            $centerX = $camera.X
+            $centerZ = $camera.Z
             $dimensionKey = switch ($dimension) {
                 'overworld' { 'minecraft:overworld' }
                 'nether' { 'minecraft:the_nether' }
@@ -1182,6 +1187,7 @@ marker-sets: {}
                 RenderId = $renderIdValue
                 LocationId = [int]$job.LocationId
                 LocationName = [string]$job.LocationName
+                CameraAnchor = $camera
                 LocationCoordinates = [ordered]@{
                     X = [int64]$job.LocationX
                     Y = if ($null -eq $job.LocationY) { $null } else { [int64]$job.LocationY }

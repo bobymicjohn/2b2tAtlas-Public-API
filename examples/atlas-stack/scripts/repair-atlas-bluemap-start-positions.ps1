@@ -1,11 +1,13 @@
 ﻿param(
     [string]$DatabasePath = 'C:\AtlasExample\Api\data\atlas.db',
     [string]$OutputRoot = 'F:\AtlasExample\AtlasBlueMap\location-renders',
-    [int]$MinimumProfileVersion = 7
+    [int]$MinimumProfileVersion = 7,
+    [int[]]$RenderId = @()
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'atlas-bluemap-camera.ps1')
 
 if (-not (Test-Path -LiteralPath $DatabasePath -PathType Leaf)) {
     throw "Atlas database was not found: $DatabasePath"
@@ -39,9 +41,11 @@ SELECT r.Id AS RenderId,
        l.Rowid AS LocationId,
        l.X AS LocationX,
        l.Y AS LocationY,
-       l.Z AS LocationZ
+       l.Z AS LocationZ,
+       r.MinX,r.MinZ,r.MaxXExclusive,r.MaxZExclusive,w.ArchiveX,w.ArchiveZ
 FROM Renders r
-JOIN Locations l ON l.Rowid = r.LocationRowid;
+JOIN Locations l ON l.Rowid = r.LocationRowid
+LEFT JOIN Warps w ON w.Id = r.ArchiveWarpId;
 "@
 if ($LASTEXITCODE -ne 0) { throw 'Could not query Atlas render locations.' }
 $parsedRows = (($rowsJson -join "`n") | ConvertFrom-Json)
@@ -74,18 +78,20 @@ foreach ($generation in @(Get-ChildItem -LiteralPath $OutputRoot -Directory)) {
         [int]$manifest.RendererProfileVersion -lt $MinimumProfileVersion) { continue }
     $examined++
 
-    $renderId = [int]$manifest.RenderId
-    if (-not $byRender.ContainsKey($renderId)) {
-        Write-Warning "No Atlas location row exists for BlueMap render $renderId."
+    $currentRenderId = [int]$manifest.RenderId
+    if ($RenderId.Count -gt 0 -and $currentRenderId -notin $RenderId) { continue }
+    if (-not $byRender.ContainsKey($currentRenderId)) {
+        Write-Warning "No Atlas location row exists for BlueMap render $currentRenderId."
         $skipped++
         continue
     }
-    $row = $byRender[$renderId]
-    $x = [int64]$row.LocationX
-    $z = [int64]$row.LocationZ
+    $row = $byRender[$currentRenderId]
+    $camera = Get-AtlasBlueMapCamera $row
+    $x = $camera.X
+    $z = $camera.Z
     $settingsPath = Join-Path $generation.FullName 'web\maps\atlas\settings.json'
     if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) {
-        Write-Warning "BlueMap settings are missing for render $renderId."
+        Write-Warning "BlueMap settings are missing for render $currentRenderId."
         $skipped++
         continue
     }
@@ -104,10 +110,11 @@ foreach ($generation in @(Get-ChildItem -LiteralPath $OutputRoot -Directory)) {
     }
 
     $settings.startPos = @($x, $z)
+    $manifest | Add-Member -NotePropertyName CameraAnchor -NotePropertyValue $camera -Force
     $coordinates = [pscustomobject]@{
-        X = $x
+        X = [int64]$row.LocationX
         Y = if ($null -eq $row.LocationY) { $null } else { [int64]$row.LocationY }
-        Z = $z
+        Z = [int64]$row.LocationZ
     }
     if ($null -eq $manifest.PSObject.Properties['LocationCoordinates']) {
         $manifest | Add-Member -NotePropertyName LocationCoordinates -NotePropertyValue $coordinates

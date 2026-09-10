@@ -133,3 +133,5 @@ For the operator pause latch, live storage reserve, and review-held recovery beh
 
 See [the shared-world review](COLLECTOR_SHARED_WORLD_REVIEW.md) for The Isle lodge
 correction and the cross-worker observed-coordinate overlap guard.
+
+For replacing already published sources, see [reviewed WDL crops](REVIEWED_WDL_CROPS.md).

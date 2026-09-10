@@ -8,6 +8,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'atlas-bluemap-camera.ps1')
 $renderer = Join-Path $PSScriptRoot 'invoke-atlas-bluemap-render.ps1'
 $started = [datetime]::UtcNow
 $lock = $null
@@ -36,10 +37,12 @@ function Discover-Jobs {
     $sql = @'
 WITH ranked AS (
  SELECT r.Id AS RenderId, l.Rowid AS LocationId, l.Name AS LocationName,
- l.X AS X,l.Z AS Z,j.Dimension,j.ArchiveSha256,
+ l.X AS X,l.Z AS Z,l.X AS LocationX,l.Z AS LocationZ,j.Dimension,j.ArchiveSha256,
+ r.MinX,r.MinZ,r.MaxXExclusive,r.MaxZExclusive,w.ArchiveX,w.ArchiveZ,
  COALESCE(j.CompletedUtc,j.UpdatedUtc,j.RequestedUtc) AS CompletedUtc,
  row_number() OVER(PARTITION BY r.Id ORDER BY COALESCE(j.CompletedUtc,j.UpdatedUtc,j.RequestedUtc) DESC,j.Id DESC) AS rn
  FROM IngestionJobs j JOIN Renders r ON r.Id=j.RenderId JOIN Locations l ON l.Rowid=r.LocationRowid
+ LEFT JOIN Warps w ON w.Id=r.ArchiveWarpId
  WHERE lower(j.Status)='completed' AND j.ArchiveSha256 IS NOT NULL
 )
 SELECT * FROM ranked WHERE rn=1 ORDER BY RenderId;
@@ -47,7 +50,12 @@ SELECT * FROM ranked WHERE rn=1 ORDER BY RenderId;
     $json = & sqlite3 -readonly -json $DatabasePath $sql
     if ($LASTEXITCODE -ne 0) { throw 'Could not read eligible BlueMap jobs.' }
     if (-not $json) { return @() }
-    return @((($json | Out-String) | ConvertFrom-Json))
+    $rows = @((($json | Out-String) | ConvertFrom-Json))
+    foreach ($row in $rows) {
+        $camera = Get-AtlasBlueMapCamera $row
+        $row.X = $camera.X; $row.Z = $camera.Z
+    }
+    return $rows
 }
 function Test-Complete($Job) {
     $generation = "render-$($Job.RenderId)-$($Job.ArchiveSha256)-v5.23-p7"

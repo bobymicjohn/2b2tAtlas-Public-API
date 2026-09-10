@@ -140,7 +140,9 @@ For each selected render, the profile-7 pipeline:
    volumes; only the finished static webroot is exported to Windows storage.
 9. Validates lighting, LOD settings, low-resolution tiles, 3D model payload,
    stock client assets, exact relight footprint, and a camera start anchored to
-   the Atlas location's canonical X/Z.
+   the catalog location when it is inside the saved bounds, otherwise the dated
+   render's own in-bounds Archive arrival. See [reviewed WDL crops and camera
+   anchors](REVIEWED_WDL_CROPS.md).
 10. Writes `manifest.json` and atomically promotes the immutable generation to
     `F:\AtlasExample\AtlasBlueMap\location-renders`.
 
@@ -327,8 +329,8 @@ Remove-Item -LiteralPath C:\AtlasExample\Ingest\bluemap\pause-coordinator
 .\scripts\start-atlas-bluemap-preview.ps1
 # Browse http://127.0.0.1:8770/
 
-# Repair only canonical camera metadata for eligible profile-7 generations.
-.\scripts\repair-atlas-bluemap-start-positions.ps1
+# Repair only camera metadata for selected eligible profile-7 generations.
+.\scripts\repair-atlas-bluemap-start-positions.ps1 -RenderId 123
 ```
 
 Never start independent overlapping batches. Use one coordinator with three
