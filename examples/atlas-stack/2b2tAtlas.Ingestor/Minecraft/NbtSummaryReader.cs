@@ -228,7 +228,7 @@ public static class NbtSummaryReader
 
         // Minecraft NBT strings use Java "Modified UTF-8" (DataInput.readUTF): U+0000 is encoded as
         // 0xC0 0x80 and supplementary characters as CESU-8 surrogate pairs, neither of which is valid
-        // standard UTF-8. Decode leniently — real 2b2t worlds carry exotic/garbage bytes in item,
+        // standard UTF-8. Decode leniently - real 2b2t worlds carry exotic/garbage bytes in item,
         // book, and sign names this summary never surfaces, so a malformed sequence yields U+FFFD
         // instead of aborting the whole ingest.
         private static string DecodeModifiedUtf8(byte[] bytes)

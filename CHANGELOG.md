@@ -1,5 +1,12 @@
 # Changes
 
+## Code and documentation cleanup - 2026-09-26
+
+Simplified the API examples, setup guides and stack documentation. Expanded
+compressed code and replaced temporary maintenance scripts with reusable tools.
+Added local checks for BlueMap controls, starting positions and terrain rendering.
+BlueMap now checks the configured database before advertising a public render.
+
 ## Reuse policy - 2026-09-08
 
 Atlas-authored stack code now uses the Unlicense alongside the API examples.
@@ -12,7 +19,8 @@ license conditions. Third-party notices and terms remain in place.
 Added `examples/atlas-stack`: the Blazor frontend, ASP.NET Core API, SQLite models,
 WDL ingestion and publication, Archive collectors and Fabric coverage companion,
 BlueMap orchestration, recovery and research tools. Includes local bootstrap,
-generalized host configuration, MIT license, setup guides and CI. Production
+generalized host configuration, setup guides and local checks. The initial MIT
+license was replaced by the Unlicense, as noted above. Production
 databases, credentials, game state, private history and operator incident reports
 are excluded. Existing public API clients remain standalone.
 

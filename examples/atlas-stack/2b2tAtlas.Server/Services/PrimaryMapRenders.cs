@@ -18,7 +18,7 @@ public static class PrimaryMapRenders
         get;
     } =
     [
-        // --- Overworld (0) — hosted AtlasTiles pyramids (day/night) ---
+        // --- Overworld (0) - hosted AtlasTiles pyramids (day/night) ---
         Tiles("256k", "256k (2021)", 0, "256k", $"{TileBase}/Overworld/256k/{{dn}}/{{z}}/{{y}}/{{x}}.png"),
         Tiles("100k2025", "100k (2025)", 0, "100k", $"{TileBase}/Overworld/100k(256k)/2025/{{dn}}/{{z}}/{{y}}/{{x}}.png"),
         Tiles("100k", "100k Spawn (late 2018; released 2019)", 0, "100k", $"{TileBase}/Overworld/100k(256k)/{{dn}}/{{z}}/{{y}}/{{x}}.png"),

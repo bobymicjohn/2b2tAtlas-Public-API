@@ -128,7 +128,7 @@ def main():
     axes[0].set_title(f"Preserved source: {len(rows):,} chunks")
     axes[1].set_xlim(x1-64,x2+64);axes[1].set_ylim(z2+64,z1-64)
     axes[1].set_title(f"Review candidate: {result['candidateChunks']:,} chunks")
-    fig.suptitle(args.name+' — boundary proposal, not approved',fontsize=15)
+    fig.suptitle(args.name+' - boundary proposal, not approved',fontsize=15)
     fig.supxlabel('Orange: construction evidence · Teal: selected dense structure · Gray: saved terrain · White +: actual warp')
     fig.savefig(args.output_dir/'comparison.png',dpi=140)
     plt.close(fig)

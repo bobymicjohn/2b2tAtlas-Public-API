@@ -1,4 +1,4 @@
-// The WDL test matrix. Add an entry per archive to grow coverage — set the file path via env
+// The WDL test matrix. Add an entry per archive to grow coverage - set the file path via env
 // (recommended, since WDLs are large/local) or an absolute path, and the expected outcome.
 export interface WdlCase {
   /** Human-readable test name. */
@@ -25,7 +25,7 @@ const DISCORD_DIR =
 
 export const cases: WdlCase[] = [
   {
-    name: '+Z Border — overworld + nether, confirmed to +Z Border (904)',
+    name: '+Z Border - overworld + nether, confirmed to +Z Border (904)',
     file: process.env.WDL_PLUS_Z || `${DISCORD_DIR}/1lz_EWe45UzOzRlktc0TZyrjOUEMj3Yaz.zip`,
     slug: 'z-border-2019-04-20',
     attachLocation: '+Z Border',

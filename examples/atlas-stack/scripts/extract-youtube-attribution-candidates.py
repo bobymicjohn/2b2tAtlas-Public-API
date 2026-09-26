@@ -115,7 +115,7 @@ def main() -> int:
     ]
     for candidate in candidates:
         lines.extend([
-            f"## {', '.join(candidate['groups'])} — {candidate['title']}", "",
+            f"## {', '.join(candidate['groups'])} - {candidate['title']}", "",
             f"- Evidence class: `{candidate['evidenceLevel']}`",
             f"- Source: [{candidate['channel']} at {candidate['timestamp']}]({candidate['url']})",
             f"- Match: {candidate['matchedText']}",

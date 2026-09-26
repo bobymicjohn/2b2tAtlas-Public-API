@@ -2023,7 +2023,7 @@ public sealed class IngestionJobsController : ControllerBase
             ArchiveDisplayName(job) is { Length: > 0 } archiveName ? archiveName : job.Name;
         return ArchiveWarpResolver.IsSinglePlayerConcept(job.ArchiveWarpName) &&
             !ArchiveWarpResolver.IsSinglePlayerConcept(name)
-                ? $"{name} — Singleplayer Concept"
+                ? $"{name} \u2014 Singleplayer Concept"
                 : name;
     }
 

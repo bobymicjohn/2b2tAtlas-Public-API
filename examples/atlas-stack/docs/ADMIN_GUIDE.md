@@ -44,7 +44,7 @@ For Archive/museum exports, historical storage eras, and dimension-attribution l
    overlap, names, provenance, and coordinates. Selecting a location is an explicit operator override.
 4. Submit. The browser uploads the ZIP to the Atlas API, which stores it on the dedicated intake drive and queues the job.
 5. Follow the job in World Download Jobs. Confident matches and confident-new Archive WDLs continue unattended;
-   `needs-match` means identity, dimension, or warp ownership is genuinely ambiguous and requires Resolve.
+   `needs-match` means identity, dimension, or warp ownership is ambiguous and requires Resolve.
 6. Inspect exact bounds, center, source attribution, and public tile availability after completion.
 
 Coordinates, bounds, and scale come from chunk storage and NBT. Do not enter or override them manually.

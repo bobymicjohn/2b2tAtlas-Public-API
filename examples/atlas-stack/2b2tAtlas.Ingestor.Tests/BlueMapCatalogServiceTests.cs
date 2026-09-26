@@ -1,10 +1,59 @@
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using _2b2tAtlas.Server.Services;
 
 namespace Atlas.Ingestor.Tests;
 
 public sealed class BlueMapCatalogServiceTests
 {
+    [Theory]
+    [InlineData("Database:Path")]
+    [InlineData("BlueMap:CatalogDatabasePath")]
+    public void Completed_generations_remain_hidden_until_the_render_is_public(string databaseSetting)
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"atlas-bluemap-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            WriteGeneration(root, "render-42-public", 42, 1, complete: true);
+            WriteGeneration(root, "render-43-private", 43, 1, complete: true);
+            WriteGeneration(root, "render-44-missing", 44, 1, complete: true);
+            var database = Path.Combine(root, "catalog.sqlite");
+            using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={database};Pooling=False"))
+            {
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = "CREATE TABLE Renders (Id INTEGER, IsPublic INTEGER); " +
+                    "INSERT INTO Renders VALUES (42, 1), (43, 0);";
+                command.ExecuteNonQuery();
+            }
+
+            var configuration = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    [databaseSetting] = database,
+                }).Build();
+            var catalog = new BlueMapCatalogService(Options.Create(new BlueMapOptions
+            {
+                OutputRoot = root,
+                MinimumProfileVersion = 1,
+            }), configuration);
+
+            Assert.NotNull(catalog.Find(42));
+            Assert.Equal(42, catalog.FindGeneration("RENDER-42-PUBLIC")?.RenderId);
+            Assert.Null(catalog.Find(43));
+            Assert.Null(catalog.Find(44));
+            Assert.False(catalog.IsAdvertisedGeneration("render-43-private"));
+            Assert.False(catalog.IsAdvertisedGeneration("render-44-missing"));
+            Assert.Equal(1, catalog.GetSummary().ValidatedRenderCount);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public void Catalog_advertises_highest_complete_non_superseded_profile()
     {
@@ -124,7 +173,6 @@ public sealed class BlueMapCatalogServiceTests
         {
             return;
         }
-
         var web = Path.Combine(generation, "web");
         Directory.CreateDirectory(web);
         File.WriteAllText(Path.Combine(web, "index.html"), "<!doctype html>");

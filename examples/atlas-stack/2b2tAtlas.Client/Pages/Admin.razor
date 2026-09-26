@@ -1001,7 +1001,7 @@
                                                 </RadzenDataGridColumn>
                                                 <RadzenDataGridColumn TItem="Highway" Property="Width" Title="Width" Width="80px" TextAlign="TextAlign.Center" />
                                                 <RadzenDataGridColumn TItem="Highway" Title="Submitted by" Width="110px">
-                                                    <Template Context="hw">@(hw.CreatedByUserId?.ToString() ?? "—")</Template>
+                                                    <Template Context="hw">@(hw.CreatedByUserId?.ToString() ?? "-")</Template>
                                                 </RadzenDataGridColumn>
                                                 <RadzenDataGridColumn TItem="Highway" Title="Review" Width="180px" Sortable="false">
                                                     <Template Context="hw">
@@ -1039,7 +1039,7 @@
                                                 <RadzenDataGridColumn TItem="RevisionDto" Property="EntityId" Title="Target" Width="80px" TextAlign="TextAlign.Center" />
                                                 <RadzenDataGridColumn TItem="RevisionDto" Property="Note" Title="Note" />
                                                 <RadzenDataGridColumn TItem="RevisionDto" Title="Submitted by" Width="140px">
-                                                    <Template Context="rev">@(string.IsNullOrEmpty(rev.SubmittedByUsername) ? (rev.SubmittedByUserId?.ToString() ?? "—") : rev.SubmittedByUsername)</Template>
+                                                    <Template Context="rev">@(string.IsNullOrEmpty(rev.SubmittedByUsername) ? (rev.SubmittedByUserId?.ToString() ?? "-") : rev.SubmittedByUsername)</Template>
                                                 </RadzenDataGridColumn>
                                                 <RadzenDataGridColumn TItem="RevisionDto" Title="Review" Width="180px" Sortable="false">
                                                     <Template Context="rev">
@@ -1222,7 +1222,7 @@
                                                         }
                                                         else
                                                         {
-                                                            <span class="rz-text-secondary">—</span>
+                                                            <span class="rz-text-secondary">-</span>
                                                         }
                                                     </Template>
                                                 </RadzenDataGridColumn>
@@ -1304,7 +1304,7 @@
                                                     <Template Context="a"><RadzenBadge BadgeStyle="@AuditBadge(a.Action)" Text="@a.Action" /></Template>
                                                 </RadzenDataGridColumn>
                                                 <RadzenDataGridColumn TItem="AuditLogEntry" Property="Username" Title="User" Width="130px">
-                                                    <Template Context="a">@(string.IsNullOrEmpty(a.Username) ? "—" : a.Username)</Template>
+                                                    <Template Context="a">@(string.IsNullOrEmpty(a.Username) ? "-" : a.Username)</Template>
                                                 </RadzenDataGridColumn>
                                                 <RadzenDataGridColumn TItem="AuditLogEntry" Property="Summary" Title="Summary" />
                                             </Columns>
@@ -1411,7 +1411,7 @@
                                                 </RadzenDataGridColumn>
                                                 <RadzenDataGridColumn TItem="Highway" Property="Visibility" Title="Visibility" Width="100px" />
                                                 <RadzenDataGridColumn TItem="Highway" Title="Group" Width="150px">
-                                                    <Template Context="hw">@(string.IsNullOrEmpty(hw.BuilderGroupName) ? "—" : hw.BuilderGroupName)</Template>
+                                                    <Template Context="hw">@(string.IsNullOrEmpty(hw.BuilderGroupName) ? "-" : hw.BuilderGroupName)</Template>
                                                 </RadzenDataGridColumn>
                                                 <RadzenDataGridColumn TItem="Highway" Title="Pts" Width="60px" TextAlign="TextAlign.Center">
                                                     <Template Context="hw">@hw.Points.Count</Template>
@@ -1586,13 +1586,13 @@
                                         </RadzenText>
                                         <RadzenAccordion>
                                             <Items>
-                                                <RadzenAccordionItem Text="custom.colors.txt — block and map colours" Icon="palette">
+                                                <RadzenAccordionItem Text="custom.colors.txt - block and map colours" Icon="palette">
                                                     <textarea class="render-config-editor" rows="14" spellcheck="false" @bind="renderSettings.ColorsText"></textarea>
                                                 </RadzenAccordionItem>
-                                                <RadzenAccordionItem Text="custom.biometints.txt — grass / foliage / water per biome" Icon="forest">
+                                                <RadzenAccordionItem Text="custom.biometints.txt - grass / foliage / water per biome" Icon="forest">
                                                     <textarea class="render-config-editor" rows="14" spellcheck="false" @bind="renderSettings.BiomeTintsText"></textarea>
                                                 </RadzenAccordionItem>
-                                                <RadzenAccordionItem Text="custom.blockstyles.txt — per-block styling" Icon="grid_view">
+                                                <RadzenAccordionItem Text="custom.blockstyles.txt - per-block styling" Icon="grid_view">
                                                     <textarea class="render-config-editor" rows="14" spellcheck="false" @bind="renderSettings.BlockStylesText"></textarea>
                                                 </RadzenAccordionItem>
                                             </Items>
@@ -1608,7 +1608,7 @@
                                         else
                                         {
                                             <RadzenText TextStyle="TextStyle.Caption" class="rz-text-secondary rz-mb-2">
-                                                Save your changes first — the preview renders a small sample area with the currently saved settings.
+                                                Save your changes first - the preview renders a small sample area with the currently saved settings.
                                             </RadzenText>
                                             <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center" class="rz-mb-3">
                                                 <RadzenFormField Text="Sample world" Variant="Variant.Outlined">
@@ -1712,7 +1712,7 @@
     }
 
     /* This Radzen build defines rz-display-flex / rz-justify-content-space-between, but the tab header
-       rows use the Bootstrap-style names, which are undefined here — so the heading and its buttons
+       rows use the Bootstrap-style names, which are undefined here - so the heading and its buttons
        collapse into a touching vertical stack. Define them so each header is a spaced row. */
     .admin-tabs .rz-d-flex {
         display: flex;
@@ -3125,9 +3125,9 @@
         _ => BadgeStyle.Light,
     };
 
-    private static string FormatCollectorCount(int? value) => value?.ToString("N0") ?? "—";
+    private static string FormatCollectorCount(int? value) => value?.ToString("N0") ?? "-";
     private static string FormatCollectorWaypoint(ArchiveCollectorWorkerStatusDto worker) =>
-        worker.Waypoint is int waypoint && worker.WaypointTotal is int total ? $"{waypoint:N0} / {total:N0}" : "—";
+        worker.Waypoint is int waypoint && worker.WaypointTotal is int total ? $"{waypoint:N0} / {total:N0}" : "-";
     private static string FormatCollectorMinecraftVersion(string value) =>
         value.Contains("1.21.10", StringComparison.Ordinal) ? "MC 1.21.10 compatibility" :
         value.Contains("1.21.11", StringComparison.Ordinal) ? "MC 1.21.11" : value;
@@ -3143,7 +3143,7 @@
     };
     private static string FormatStorage(long bytes)
     {
-        if (bytes <= 0) return "—";
+        if (bytes <= 0) return "-";
         var units = new[] { "B", "KiB", "MiB", "GiB", "TiB" };
         var value = (double)bytes;
         var unit = 0;

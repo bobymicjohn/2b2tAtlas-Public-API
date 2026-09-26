@@ -34,7 +34,7 @@
     @if (selected is not null)
     {
         <div class="rz-mt-3">
-            <h4>Highway #@selected.HighwayId — @selected.Username — @selected.Action</h4>
+            <h4>Highway #@selected.HighwayId - @selected.Username - @selected.Action</h4>
             @foreach (var warning in selected.Warnings) { <p><strong>@warning</strong></p> }
             <p>Changed fields: @string.Join(", ", selected.Fields)</p>
             <details><summary>Before this change</summary><pre style="max-height:300px;overflow:auto;white-space:pre-wrap">@Json(selected.Before)</pre></details>

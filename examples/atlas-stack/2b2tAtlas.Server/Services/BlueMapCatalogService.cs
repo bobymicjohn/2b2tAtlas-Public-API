@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 
 namespace _2b2tAtlas.Server.Services;
@@ -11,12 +12,22 @@ namespace _2b2tAtlas.Server.Services;
 public sealed class BlueMapCatalogService
 {
     private readonly BlueMapOptions _options;
+    private readonly string? _database;
     private readonly object _gate = new();
     private DateTime _expiresUtc = DateTime.MinValue;
     private CatalogSnapshot _snapshot = CatalogSnapshot.Empty;
 
-    /// <summary>Initializes the catalog with its immutable output-root settings.</summary>
-    public BlueMapCatalogService(IOptions<BlueMapOptions> options) => _options = options.Value;
+    /// <summary>Reads manifests and checks render visibility in the configured database.</summary>
+    public BlueMapCatalogService(IOptions<BlueMapOptions> options, IConfiguration? configuration = null)
+    {
+        _options = options.Value;
+        if (configuration != null)
+        {
+            _database = configuration["BlueMap:CatalogDatabasePath"]
+                ?? configuration["Database:Path"]
+                ?? Path.Combine(Directory.GetCurrentDirectory(), ".local", "data", "atlas.db");
+        }
+    }
 
     /// <summary>Returns the best validated generation for an Atlas render, when available.</summary>
     public BlueMapGeneration? Find(int renderId)
@@ -38,6 +49,14 @@ public sealed class BlueMapCatalogService
 
         EnsureCurrent();
         return _snapshot.GenerationNames.Contains(generationName);
+    }
+
+    /// <summary>Finds the current validated render represented by an advertised generation.</summary>
+    public BlueMapGeneration? FindGeneration(string generationName)
+    {
+        EnsureCurrent();
+        return _snapshot.ByRender.Values.FirstOrDefault(item =>
+            string.Equals(item.GenerationName, generationName, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Returns bounded aggregate data from the same quality-gated catalog used by public render records.</summary>
@@ -73,6 +92,28 @@ public sealed class BlueMapCatalogService
             return CatalogSnapshot.Empty;
         }
 
+        HashSet<int>? publicIds = null;
+        if (_database != null)
+        {
+            // Staged boundary candidates and rolled-back generations must not
+            // become public simply because their renderer finished writing.
+            var connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = _database,
+                Mode = SqliteOpenMode.ReadOnly
+            };
+            using var connection = new SqliteConnection(connectionString.ToString());
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT Id FROM Renders WHERE IsPublic=1";
+            using var reader = command.ExecuteReader();
+            publicIds = [];
+            while (reader.Read())
+            {
+                publicIds.Add(reader.GetInt32(0));
+            }
+        }
+
         var candidates = new List<BlueMapGeneration>();
         var diagnosticGenerationCount = 0;
         long outputBytes = 0;
@@ -93,6 +134,11 @@ public sealed class BlueMapCatalogService
                 if (!root.TryGetProperty("Status", out var status) ||
                     !string.Equals(status.GetString(), "complete", StringComparison.OrdinalIgnoreCase) ||
                     !root.TryGetProperty("RenderId", out var renderIdValue))
+                {
+                    continue;
+                }
+
+                if (publicIds != null && (!renderIdValue.TryGetInt32(out var publicId) || !publicIds.Contains(publicId)))
                 {
                     continue;
                 }
@@ -176,10 +222,7 @@ public sealed class BlueMapCatalogService
         IReadOnlySet<string> GenerationNames,
         BlueMapCatalogSummary Summary)
     {
-        public static CatalogSnapshot Empty
-        {
-            get;
-        } = new(
+        public static CatalogSnapshot Empty { get; } = new(
             new Dictionary<int, BlueMapGeneration>(),
             new HashSet<string>(StringComparer.OrdinalIgnoreCase),
             BlueMapCatalogSummary.Empty);

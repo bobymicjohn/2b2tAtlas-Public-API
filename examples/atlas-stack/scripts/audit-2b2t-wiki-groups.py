@@ -241,7 +241,7 @@ def _list_candidate(line: str) -> str | None:
     underlined = re.match(r"(?i)<u>\s*(.*?)\s*</u>", subject)
     if underlined:
         return clean_wikitext(underlined.group(1))
-    subject = re.split(r"\s+(?:-|â€“|â€”|–|—)\s+|\s*\(", subject, maxsplit=1)[0]
+    subject = re.split(r"\s+(?:-|â€“|â€”|–|\u2014)\s+|\s*\(", subject, maxsplit=1)[0]
     subject = clean_wikitext(subject)
     return subject.rstrip(":").strip() if subject and len(subject) <= 100 else None
 
@@ -309,7 +309,7 @@ def infobox_base_candidates(raw_value: str | None) -> list[str]:
     for part in re.split(r"[,;]", value):
         part = re.sub(r"\s*\([^)]*\)\s*$", "", part).strip()
         part = re.sub(r"(?i)\s+and others?$", "", part).strip()
-        if part and len(part) <= 100 and not re.fullmatch(r"[~+\d\s–—-]+", part):
+        if part and len(part) <= 100 and not re.fullmatch(r"[~+\d\s–\u2014-]+", part):
             candidates.add(part)
     return sorted(candidates, key=str.casefold)
 
@@ -650,8 +650,8 @@ def markdown(report: dict[str, Any]) -> str:
             continue
         lines.append(
             f"| [{record['name']}]({record['publicUrl']}) | {record['type']} | "
-            f"{record['founded'] or '—'} | {record['status'] or '—'} | "
-            f"{len(record['exactAtlasBuildMatches'])} | {record['revisionId'] or '—'} |"
+            f"{record['founded'] or '-'} | {record['status'] or '-'} | "
+            f"{len(record['exactAtlasBuildMatches'])} | {record['revisionId'] or '-'} |"
         )
     lines += ["", "## Exact-name build attribution candidates", "",
               "These come from an `Infobox group` base list, a building-group title matching an Atlas location, or links/headings inside sections explicitly labelled as bases, builds, projects, outposts, or lodges. The evidence column preserves that distinction. All remain candidates for human review, not automatic proof of ownership.", "",
@@ -693,8 +693,8 @@ def markdown(report: dict[str, Any]) -> str:
     for record in sorted(missing, key=lambda item: (-item["pageLength"], item["name"].casefold())):
         lines.append(
             f"| [{record['name']}]({record['publicUrl']}) | {record['type']} | "
-            f"{record['founded'] or '—'} | {record['status'] or '—'} | "
-            f"{record['pageLength']} | {record['revisionId'] or '—'} |"
+            f"{record['founded'] or '-'} | {record['status'] or '-'} | "
+            f"{record['pageLength']} | {record['revisionId'] or '-'} |"
         )
     lines += ["", "## Review rules", "",
               "- Preserve the page title, revision ID, and evidence URL for every accepted field.",

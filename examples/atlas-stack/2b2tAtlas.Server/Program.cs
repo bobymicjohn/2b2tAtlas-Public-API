@@ -19,7 +19,7 @@ builder.Services.AddRazorPages();
 
 // Public read API: open to any origin so browser-based community tools work cross-origin.
 // Auth is Bearer-token (localStorage), not cookies, so this stays non-credentialed and writes
-// remain JWT-gated — a cross-origin page cannot read another origin's token.
+// remain JWT-gated - a cross-origin page cannot read another origin's token.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("PublicAPI", policy =>
@@ -87,6 +87,7 @@ builder.Services.Configure<_2b2tAtlas.Server.Services.ArchiveCollectorStatusOpti
 builder.Services.AddSingleton<_2b2tAtlas.Server.Services.ArchiveCollectorStatusService>();
 builder.Services.Configure<BlueMapOptions>(builder.Configuration.GetSection(BlueMapOptions.SectionName));
 builder.Services.AddSingleton<BlueMapCatalogService>();
+builder.Services.AddScoped<BlueMapLandingService>();
 builder.Services.AddScoped<BlueMapGenerationStatusService>();
 
 // Public, read-only agent interface over the same reviewed catalog used by the JSON API.
@@ -198,7 +199,7 @@ app.UseHttpsRedirection();
 // Enable CORS for public API access
 app.UseCors("PublicAPI");
 
-// Serve only completed, immutable BlueMap derivatives from the dedicated F: root.
+// Serve completed BlueMap generations from the configured output folder.
 // Generation names are content/profile addressed, so public responses can be cached
 // for a year without making partially rendered output visible.
 var blueMapOptions = app.Configuration.GetSection(BlueMapOptions.SectionName).Get<BlueMapOptions>() ?? new BlueMapOptions();
@@ -222,10 +223,9 @@ if (Directory.Exists(blueMapOptions.OutputRoot))
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return;
             }
-            // Transform only the opt-in embedded shell; completed meshes remain immutable.
+            // Viewer-only arrival defaults also apply to standalone links. Meshes stay immutable.
             var viewerPath = remaining.Value;
-            if (context.Request.Query["atlas-controls"] == "1" &&
-                (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)) &&
+            if ((HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)) &&
                 (viewerPath == $"/{generationName}/web/" || viewerPath == $"/{generationName}/web/index.html"))
             {
                 var index = blueMapFiles.GetFileInfo($"{generationName}/web/index.html");
@@ -235,7 +235,12 @@ if (Directory.Exists(blueMapOptions.OutputRoot))
                     var html = await reader.ReadToEndAsync(context.RequestAborted);
                     var bridge = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,
                         "ClientAssets", "atlas-controls-bridge-v1.js"), context.RequestAborted);
-                    html = html.Replace("</head>", $"<script>{bridge}</script></head>", StringComparison.OrdinalIgnoreCase);
+                    var generation = catalog.FindGeneration(generationName);
+                    var landing = generation is null ? null : await context.RequestServices
+                        .GetRequiredService<BlueMapLandingService>().FindAsync(generation.RenderId, context.RequestAborted);
+                    var landingJson = System.Text.Json.JsonSerializer.Serialize(landing,
+                        new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                    html = html.Replace("</head>", $"<script>window.__atlasBlueMapLanding={landingJson};{bridge}</script></head>", StringComparison.OrdinalIgnoreCase);
                     context.Response.ContentType = "text/html; charset=utf-8";
                     context.Response.Headers.CacheControl = "no-store";
                     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -243,7 +248,6 @@ if (Directory.Exists(blueMapOptions.OutputRoot))
                     {
                         await context.Response.WriteAsync(html, context.RequestAborted);
                     }
-
                     return;
                 }
             }

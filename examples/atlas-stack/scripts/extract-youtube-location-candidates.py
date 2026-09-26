@@ -354,7 +354,7 @@ def main() -> int:
     for item in candidates:
         status = "already linked" if item["alreadyLinked"] else "attachment candidate"
         lines.extend([
-            f"## {item['locationName']} — {item['videoTitle']}", "",
+            f"## {item['locationName']} - {item['videoTitle']}", "",
             f"- Atlas location: `{item['locationId']}` ({item['dimension']})",
             f"- Evidence: `{item['evidenceClass']}` ({item['confidence']:.0%}); {status}",
             f"- Video: [{item['channel']}]({item['videoUrl']})",

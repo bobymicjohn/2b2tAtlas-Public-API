@@ -15,6 +15,8 @@ New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $shell = Join-Path $PSHOME 'pwsh.exe'
 if (-not (Test-Path -LiteralPath $shell)) { $shell = Join-Path $PSHOME 'powershell.exe' }
 $failures = New-Object 'System.Collections.Generic.List[string]'
+$previousPythonEncoding = $env:PYTHONIOENCODING
+$env:PYTHONIOENCODING = 'utf-8'
 
 function Invoke-LocalCheck([string]$Command, [string[]]$Arguments, [string]$Name) {
     Get-Command $Command -ErrorAction Stop | Out-Null
@@ -74,8 +76,10 @@ try {
     Invoke-LocalCheck $Node @('scripts/test-map-primary-layers.mjs') 'test-map-primary-layers.mjs'
     Invoke-LocalCheck $Node @('scripts/test-highway-edit-coordinates.mjs') 'test-highway-edit-coordinates.mjs'
     Invoke-LocalCheck $Node @('scripts/test-bluemap-controls.mjs') 'test-bluemap-controls.mjs'
+    Invoke-LocalCheck $Node @('scripts/test-bluemap-fullscreen.mjs') 'test-bluemap-fullscreen.mjs'
 } finally {
     Pop-Location
+    $env:PYTHONIOENCODING = $previousPythonEncoding
 }
 if ($failures.Count -gt 0) {
     throw "Failed checks: $($failures -join ', '). Logs: $OutputDirectory"

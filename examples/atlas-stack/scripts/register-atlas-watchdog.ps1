@@ -1,10 +1,10 @@
-﻿<#
+<#
     Registers the "Atlas Example Watchdog" scheduled task, which runs
     C:\AtlasExample\Ops\atlas-ensure-running.ps1 every 5 minutes (and shortly after logon)
     to relaunch the Atlas API/worker if either process has died.
 
     Runs as atlas-operator with Interactive logon (same as the API/worker tasks), so NO
-    stored password is required — it relies on the box's existing AutoAdminLogon.
+    stored password is required - it relies on the box's existing AutoAdminLogon.
     Idempotent: re-run any time to update the definition.
 #>
 [CmdletBinding()]

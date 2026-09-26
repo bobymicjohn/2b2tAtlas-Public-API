@@ -99,7 +99,7 @@ public class HighwaySeeder
         const int reach = 30_000_000; // axis/diagonal reach in Nether units
         var list = new List<Highway>();
 
-        // Axis highways (obsidian, width 6) — run to ±30M Nether units.
+        // Axis highways (obsidian, width 6) - run to ±30M Nether units.
         AddAxis(list, "+X Highway", 0, 0, reach, 0);
         AddAxis(list, "-X Highway", 0, 0, -reach, 0);
         AddAxis(list, "+Z Highway", 0, 0, 0, reach);
@@ -191,7 +191,7 @@ public class HighwaySeeder
 
         // The Southern Canal has two independently documented heads. Keeping separate
         // geometries avoids drawing an imaginary completed line across the ~28.9M gap.
-        var southernCanal = Make("Southern Canal — spawnward segment", "Custom",
+        var southernCanal = Make("Southern Canal \u2014 spawnward segment", "Custom",
             new[] { new[] { 0, 1_200 }, new[] { 0, 1_100_000 } }, 32);
         southernCanal.Dimension = (int)Atlas.Dimension.Overworld;
         southernCanal.YLevel = 63;
@@ -205,7 +205,7 @@ public class HighwaySeeder
         southernCanal.LastVerifiedUtc = "2025-11-24T00:00:00Z";
         list.Add(southernCanal);
 
-        var borderCanal = Make("Southern Canal — world-border segment", "Custom",
+        var borderCanal = Make("Southern Canal \u2014 world-border segment", "Custom",
             new[] { new[] { 0, 30_000_000 }, new[] { 0, 29_988_000 } }, 32);
         borderCanal.Dimension = (int)Atlas.Dimension.Overworld;
         borderCanal.YLevel = 63;

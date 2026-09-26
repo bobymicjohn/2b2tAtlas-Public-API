@@ -1,5 +1,5 @@
-﻿<#
-    2b2t Atlas watchdog — self-heals the example host API and WDL worker.
+<#
+    2b2t Atlas watchdog - self-heals the example host API and WDL worker.
 
     The API/worker scheduled tasks are fire-and-forget (their VBS launcher returns
     immediately), so Task Scheduler's restart-on-failure never sees the detached

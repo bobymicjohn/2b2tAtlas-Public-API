@@ -53,6 +53,17 @@ have several historical captures, and overlapping saves remain separate records.
 Cache according to the response headers and refresh the API record when a view
 becomes unavailable.
 
+## Use the viewer
+
+The viewer starts at the selected capture's saved warp coordinates when they are
+available. **Return to warp** brings you back there. **Return to start** means the
+exact warp was unavailable and the viewer used a point inside the saved area.
+A shared camera link keeps its chosen viewpoint.
+
+Right-click a visible block to copy its coordinates or a pathfinding command.
+Coordinates use the render's dimension. Fullscreen is an explicit button, so
+clicking or dragging the scene does not unexpectedly enter fullscreen.
+
 ## Get the actual world
 
 A BlueMap view is a map, not a playable save. Follow the render's

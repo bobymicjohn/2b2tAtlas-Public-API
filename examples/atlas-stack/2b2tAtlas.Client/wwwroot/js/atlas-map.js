@@ -1,4 +1,4 @@
-// atlas-map.js — Leaflet CRS.Simple map for the 2b2t world.
+// atlas-map.js - Leaflet CRS.Simple map for the 2b2t world.
 //
 // Coordinate scheme is copied 1:1 from the proven production (Vue) atlas so the
 // existing tile pyramids on tiles.atlas.example line up exactly. Do NOT "simplify"
@@ -148,7 +148,7 @@ function latLngToBlock(cfg, lat, lng) {
 // The 2b2t highway network is deterministic geometry radiating from (0,0):
 // axis highways, diagonals, concentric square + diamond ring roads, a nether
 // star, and the 50k grid. Points are stored in NETHER-coord units (the 8:1
-// ratio) so ×8 gives Overworld blocks — matching the production transform.
+// ratio) so ×8 gives Overworld blocks - matching the production transform.
 // This is a temporary client-side seed; the editable `Highway` entity + API
 // (Phase 2E) will eventually supply this data with full lore metadata.
 
@@ -156,7 +156,7 @@ const squareRing = (r) => [[-r, r], [r, r], [r, -r], [-r, -r], [-r, r]];
 const diamondRing = (r) => [[-r, 0], [0, r], [r, 0], [0, -r], [-r, 0]];
 
 const HIGHWAYS = [
-    // Axis highways — run to ±30,000,000 NETHER units. On 2b2t the nether axis
+    // Axis highways - run to ±30,000,000 NETHER units. On 2b2t the nether axis
     // highways extend FAR past the ±3.75M nether world border (the border only
     // scales the ring roads); this matches the original 2b2tAtlas data. ×8 in overworld.
     { name: "+X Highway", points: [[0, 0], [30000000, 0]], width: 6, type: "axis" },
@@ -684,7 +684,7 @@ function makePlaceLayer(cfg, dimKey, layerName) {
             for (let tx = txMin; tx <= txMax; tx++) {
                 for (let ty = tyMin; ty <= tyMax; ty++) {
                     // 2b2t.place computes the sector as (t/32)>>0 (truncate toward zero),
-                    // NOT floor — must match or negative-coord tiles 404.
+                    // NOT floor - must match or negative-coord tiles 404.
                     const sx = Math.trunc(tx / 32), sy = Math.trunc(ty / 32);
                     const controller = new AbortController();
                     canvas._placeControllers.push(controller);
@@ -1446,7 +1446,7 @@ function redrawMeasure(state) {
         }
     }
 
-    // Draggable point handles — drag updates geometry live; dragend rebuilds.
+    // Draggable point handles - drag updates geometry live; dragend rebuilds.
     pts.forEach((p, i) => {
         const m = L.marker(blockToLatLng(cfg, p.x, p.z), { icon: MEASURE_POINT_ICON, draggable: true, zIndexOffset: 500 });
         m.bindTooltip(`${p.x}, ${p.z}`, { direction: "top", offset: [0, -8] });
@@ -1605,7 +1605,7 @@ function clearCustomMarkersState(state) {
 // --- Public API (called from Blazor via JS interop) --------------------------
 
 export function initialize(containerId, dimension, isDay, dotNetRef) {
-    dispose(containerId); // idempotent — safe to re-init
+    dispose(containerId); // idempotent - safe to re-init
 
     const dim = DIMENSIONS[dimension] ? dimension : "overworld";
     const cfg = DIMENSIONS[dim];
@@ -1806,7 +1806,7 @@ export function clearNocom(containerId) {
 }
 
 /// Set the enabled world-download renders (stacked) for the current dimension.
-/// An empty list is allowed — the user can choose to show no spawn render.
+/// An empty list is allowed - the user can choose to show no spawn render.
 export function setRenders(containerId, renderIds) {
     const state = registry.get(containerId);
     if (!state) return false;

@@ -265,7 +265,7 @@ def main() -> int:
         status = "already linked" if item["alreadyLinked"] else "not linked"
         dimensions = f"{item['width']}×{item['height']}"
         lines.extend([
-            f"## {item['locationName']} — {item['fileTitle'].partition(':')[2]}", "",
+            f"## {item['locationName']} - {item['fileTitle'].partition(':')[2]}", "",
             f"- Priority: `{item['reviewPriority']}`; {status}; {dimensions}; `{item['mimeType']}`",
             f"- Source: [wiki file page]({item['sourceUrl']}) · [location article]({item['wikiUrl']})",
             f"- License: {item['license'] or item['usageTerms'] or 'not declared in API metadata'}",

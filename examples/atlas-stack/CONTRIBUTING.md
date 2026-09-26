@@ -33,6 +33,19 @@ PowerShell and map JavaScript fixtures. It saves each result under `.artifacts`.
 It uses an explicit test list so a live maintenance script cannot be picked up
 just because its name begins with `test`.
 
+Three additional BlueMap fixtures need files from your viewer build:
+
+```powershell
+node scripts/test-bluemap-landing.mjs path/to/viewer.js.map
+node scripts/test-bluemap-coordinate-menu.mjs path/to/three.module.js
+node scripts/test-bluemap-terrain-transforms.mjs path/to/three.module.js
+```
+
+Use the source map from the installed BlueMap viewer for the landing check.
+The coordinate check uses its Three.js module. The terrain check needs Three.js
+r180 or later to reproduce the distant-terrain bug. These tests run locally;
+they do not connect to Minecraft or change a saved world.
+
 Build the Fabric companion separately with Java 21:
 
 ```powershell

@@ -207,7 +207,7 @@ public sealed class AiEnrichmentService
 
         if (agreement.HasWikiCoordinates && !agreement.Agrees)
         {
-            // Coordinates were listed and disagree — a strong signal this is the wrong place.
+            // Coordinates were listed and disagree - a strong signal this is the wrong place.
             reason = $"Coordinates on the wiki contradict the location ({agreement.BestDistanceBlocks} blocks). {agreement.Basis}";
             return Math.Min(0.3, nameScore * 0.3);
         }

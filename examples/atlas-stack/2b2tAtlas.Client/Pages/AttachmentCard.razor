@@ -108,7 +108,7 @@
         title = string.IsNullOrWhiteSpace(Item.FileName) ? "Attachment" : Item.FileName;
         foreach (var name in new[] { creator?.Name, Item.Attribution })
             if (!string.IsNullOrWhiteSpace(name))
-                foreach (var separator in new[] { " — ", " – ", " - " })
+                foreach (var separator in new[] { " \u2014 ", " – ", " - " })
                     if (title.StartsWith(name + separator, StringComparison.OrdinalIgnoreCase)) title = title[(name.Length + separator.Length)..];
     }
 }
