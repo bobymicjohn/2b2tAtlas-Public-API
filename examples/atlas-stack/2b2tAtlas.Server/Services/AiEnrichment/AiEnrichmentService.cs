@@ -8,7 +8,7 @@ namespace _2b2tAtlas.Server.Services.AiEnrichment;
 /// Coordinates the local AI wiki-enrichment workflow for a single location: it searches the 2b2t wiki for
 /// candidate pages, validates each against the location's coordinates (dimension-aware), scores name
 /// agreement, drafts a description with the local model, and returns a <see cref="WikiEnrichmentSuggestion"/>
-/// for review. Coordinate agreement is a hard gate on trust — a page whose coordinates contradict the
+/// for review. Coordinate agreement is a hard gate on trust - a page whose coordinates contradict the
 /// location can never be auto-applied, and coordinates are never used to move the location itself. The
 /// engine stands down when disabled or when the GPU game-mode lock is present.
 /// </summary>

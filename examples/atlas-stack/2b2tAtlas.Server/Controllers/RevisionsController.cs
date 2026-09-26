@@ -15,7 +15,7 @@ namespace _2b2tAtlas.Server.Controllers;
 /// <summary>
 /// Proposed edits to existing Locations/Highways (GAMEPLAN §15). Contributors who
 /// lack direct edit rights submit a revision; a moderator approves (applies the
-/// payload + audits) or rejects. Direct editors can still edit inline — this is the
+/// payload + audits) or rejects. Direct editors can still edit inline - this is the
 /// trust-gated path for adversarial/community submissions.
 /// </summary>
 [ApiController]
@@ -42,7 +42,7 @@ public class RevisionsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>POST /api/revisions — submit a proposed edit to an existing entity.</summary>
+    /// <summary>POST /api/revisions - submit a proposed edit to an existing entity.</summary>
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<RevisionDto>> Submit([FromBody] RevisionDto dto)
@@ -105,7 +105,7 @@ public class RevisionsController : ControllerBase
         }, MapToDto(revision));
     }
 
-    /// <summary>GET /api/revisions/pending — proposed edits awaiting review.</summary>
+    /// <summary>GET /api/revisions/pending - proposed edits awaiting review.</summary>
     [HttpGet("pending")]
     [Authorize(Policy = Permissions.SubmissionsModerate)]
     public async Task<ActionResult<IEnumerable<RevisionDto>>> GetPending()
@@ -118,7 +118,7 @@ public class RevisionsController : ControllerBase
         return Ok(rows.Select(MapToDto).ToList());
     }
 
-    /// <summary>GET /api/revisions — all revisions (optionally filtered by status).</summary>
+    /// <summary>GET /api/revisions - all revisions (optionally filtered by status).</summary>
     [HttpGet]
     [Authorize(Policy = Permissions.SubmissionsModerate)]
     public async Task<ActionResult<IEnumerable<RevisionDto>>> GetAll([FromQuery] string? status)
@@ -133,7 +133,7 @@ public class RevisionsController : ControllerBase
         return Ok(rows.Select(MapToDto).ToList());
     }
 
-    /// <summary>POST /api/revisions/{id}/approve — apply the proposed edit and audit it.</summary>
+    /// <summary>POST /api/revisions/{id}/approve - apply the proposed edit and audit it.</summary>
     [HttpPost("{id:int}/approve")]
     [Authorize(Policy = Permissions.SubmissionsModerate)]
     public async Task<IActionResult> Approve(int id)
@@ -198,7 +198,7 @@ public class RevisionsController : ControllerBase
         return Ok(MapToDto(revision));
     }
 
-    /// <summary>POST /api/revisions/{id}/reject — discard the proposed edit.</summary>
+    /// <summary>POST /api/revisions/{id}/reject - discard the proposed edit.</summary>
     [HttpPost("{id:int}/reject")]
     [Authorize(Policy = Permissions.SubmissionsModerate)]
     public async Task<IActionResult> Reject(int id, [FromBody] RejectRequest? body)

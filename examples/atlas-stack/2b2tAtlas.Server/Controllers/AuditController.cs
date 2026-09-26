@@ -25,7 +25,7 @@ public class AuditController : ControllerBase
         _context = context;
     }
 
-    /// <summary>GET /api/audit — the most recent audit entries (newest first).</summary>
+    /// <summary>GET /api/audit - the most recent audit entries (newest first).</summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AuditLogEntry>>> GetAudit([FromQuery] int take = 200)
     {

@@ -29,7 +29,7 @@ public sealed class RendersController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/renders — every per-location render with its owning location, optionally filtered.
+    /// GET /api/renders - every per-location render with its owning location, optionally filtered.
     /// </summary>
     /// <param name="locationId">When set, only renders for this location.</param>
     /// <param name="dimension">When set, only renders in this dimension (0 Overworld, 1 Nether, 2 End).</param>
@@ -95,7 +95,7 @@ public sealed class RendersController : ControllerBase
             legacyJobs.GetValueOrDefault(row.render.Id))).ToList());
     }
 
-    /// <summary>GET /api/renders/{id} — a single render with its owning location.</summary>
+    /// <summary>GET /api/renders/{id} - a single render with its owning location.</summary>
     /// <param name="id">The render id.</param>
     /// <param name="cancellationToken">Token that cancels the request.</param>
     /// <returns>The render, or 404 when it does not exist.</returns>
@@ -126,7 +126,7 @@ public sealed class RendersController : ControllerBase
         return Ok(MapToDto(row.render, row.location, warp, legacyJobs.GetValueOrDefault(row.render.Id)));
     }
 
-    /// <summary>GET /api/locations/{locationId}/renders — the renders attached to a location.</summary>
+    /// <summary>GET /api/locations/{locationId}/renders - the renders attached to a location.</summary>
     /// <param name="locationId">The owning location's row id.</param>
     /// <param name="cancellationToken">Token that cancels the request.</param>
     /// <returns>The location's renders (possibly empty), or 404 when the location does not exist.</returns>

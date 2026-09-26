@@ -11,7 +11,7 @@ namespace _2b2tAtlas.Server.Controllers;
 [ApiController]
 public sealed class ApiIndexController : ControllerBase
 {
-    /// <summary>GET /api — a discovery index of public endpoints and the OpenAPI document location.</summary>
+    /// <summary>GET /api - a discovery index of public endpoints and the OpenAPI document location.</summary>
     /// <returns>A static description of the public API surface.</returns>
     [HttpGet("api")]
     [AllowAnonymous]

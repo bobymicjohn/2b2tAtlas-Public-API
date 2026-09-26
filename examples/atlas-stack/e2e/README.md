@@ -1,12 +1,12 @@
 # WDL ingestion E2E harness (Playwright)
 
-Drives the real upload flow end-to-end — logs in, cleans up prior jobs for the slug, uploads a
+Drives the real upload flow end-to-end - logs in, cleans up prior jobs for the slug, uploads a
 WDL through the **Add Location from World Download** dialog, and verifies the resulting ingestion
 jobs (dimensions, attached location, status) via the API. This is the automated version of the
 manual flow validated on 2026-08-12.
 
 ## Requirements
-- **Node 18+** (the workspace default `node` is v12 — too old; use `nvm`/`fnm` or a newer install).
+- **Node 18+** (the workspace default `node` is v12 - too old; use `nvm`/`fnm` or a newer install).
 - Chromium via Playwright.
 
 ## Setup

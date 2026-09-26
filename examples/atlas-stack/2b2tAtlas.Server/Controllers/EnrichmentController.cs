@@ -12,7 +12,7 @@ namespace _2b2tAtlas.Server.Controllers;
 /// <summary>
 /// Exposes the local AI wiki-enrichment engine to location editors. It returns a reviewable suggestion
 /// (matched wiki page plus a drafted description) for a location without persisting anything, so an editor
-/// can inspect the evidence — coordinate agreement and confidence — before saving. Applying a suggestion is
+/// can inspect the evidence - coordinate agreement and confidence - before saving. Applying a suggestion is
 /// done through the normal location edit and revision flow.
 /// </summary>
 [ApiController]

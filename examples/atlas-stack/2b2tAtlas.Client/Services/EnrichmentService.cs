@@ -6,9 +6,9 @@ using Atlas.Enrichment;
 namespace _2b2tAtlas.Client.Services;
 
 /// <summary>
-/// Client-side service for the local AI wiki-enrichment engine. It drives the admin enrichment surface —
+/// Client-side service for the local AI wiki-enrichment engine. It drives the admin enrichment surface -
 /// reading engine status, launching batch runs, listing AI suggestions, and applying, keeping, rejecting,
-/// or reverting them — and provides the interactive per-location preview used by the location editor. All
+/// or reverting them - and provides the interactive per-location preview used by the location editor. All
 /// calls require the moderator token except <see cref="PreviewAsync"/>, which needs edit rights.
 /// </summary>
 public class EnrichmentService

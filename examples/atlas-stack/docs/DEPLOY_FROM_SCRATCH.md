@@ -1,6 +1,8 @@
 # Deploying 2b2t Atlas in a new environment
 
-This runbook rebuilds the complete v2 system from source. It covers the public Blazor application, ASP.NET API, SQLite data, tile and attachment storage, hostile-WDL ingestion worker, optional Archive acquisition clients, SEO/entity generation, backups, and validation.
+Use this guide to set up your own Atlas. Start with the browser app, API, and
+database. Add world downloads, rendering, collectors, and public exports when
+you need them. Each service needs its own configuration and storage paths.
 
 For the shorter first-WDL route and a map of the relevant source files, start with
 [From a ZIP to a point on the map](WDL_GETTING_STARTED.md). Minimal private-file

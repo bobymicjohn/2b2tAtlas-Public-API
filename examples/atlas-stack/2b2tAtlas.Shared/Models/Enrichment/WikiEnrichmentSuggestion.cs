@@ -2,7 +2,7 @@ namespace Atlas.Enrichment;
 
 /// <summary>
 /// An AI-assisted wiki match and draft description for a single Atlas location. It is produced by the
-/// server's local enrichment engine for an operator to review — either before it is saved (interactive
+/// server's local enrichment engine for an operator to review - either before it is saved (interactive
 /// "Generate description") or after it is auto-applied (the review queue). It carries the evidence
 /// (coordinate agreement, confidence, source attribution) needed to trust or revert the suggestion.
 /// </summary>

@@ -1,6 +1,8 @@
 # Map coordinates, layers and performance
 
-This file explains executable map math and layer behavior. End-user operation belongs in `docs/MAP_GUIDE.md`; WDL tile generation belongs in `WDL_INGESTION.md`.
+Use this guide when changing map coordinates, tile placement, or layers.
+For map controls, see [the user guide](../MAP_GUIDE.md). For generating tiles
+from a save, see [WDL ingestion](WDL_INGESTION.md).
 
 BlueMap adds an optional 3D view for a dated render. Its setup and quality checks are in the [BlueMap guide](../BLUEMAP_PIPELINE.md).
 

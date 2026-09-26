@@ -26,3 +26,6 @@ The original catalog/SEO implementation is retained as
 reference includes checks for the original site's curated content and metadata; adapt
 those checks and canonical origins to your own catalog before using it. The local
 example defaults to noindex and does not claim to host the original site's artifacts.
+
+For a first API request, start with [API usage](API.md). Maintainers can use
+[admin and worker operations](API_OPERATIONS.md) for authenticated routes.

@@ -4,7 +4,7 @@ namespace _2b2tAtlas.Server.Models;
 /// A single role→permission grant (GAMEPLAN §15). When any rows exist for a role
 /// they REPLACE that role's code-defined default bundle; when none exist the
 /// code default (<c>Atlas.Auth.RolePermissions.ForRole</c>) applies. SuperAdmin is
-/// never stored here — it always has every permission.
+/// never stored here - it always has every permission.
 /// Physical table created by <c>SchemaUpgrader</c>.
 /// </summary>
 public class RolePermission

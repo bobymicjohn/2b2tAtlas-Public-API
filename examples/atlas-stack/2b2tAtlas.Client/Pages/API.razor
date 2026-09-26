@@ -8,7 +8,7 @@
 
 <PageTitle>API - 2b2t Atlas</PageTitle>
 <HeadContent>
-    <meta name="description" content="Public 2b2t Atlas JSON API and MCP server documentation for locations, groups, Archive warps, bounded Minecraft worlds, renders, attachments, highways, bots, mods, LLMs, and research agents." />
+    <meta name="description" content="Use the Atlas API to read locations, maps, world downloads, groups, highways, and historical sources. Includes examples and MCP setup." />
     <link rel="canonical" href="https://atlas.example/api" />
 </HeadContent>
 
@@ -18,11 +18,11 @@
             <h1>Atlas Example API</h1>
             @if (isAuthenticated)
             {
-                <p>Stable public read endpoints. Administrative writes require a JWT and the listed permission.</p>
+                <p>Public reads need no API key. Edits require a login token and the listed permission.</p>
             }
             else
             {
-                <p>Stable public read endpoints returning JSON.</p>
+                <p>Read Atlas data as JSON. No account or API key required.</p>
             }
         </div>
         <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="v2" />
@@ -41,24 +41,31 @@
         <RadzenIcon Icon="code" />
         <div>
             <strong>Building a mod, bot, map, or research tool?</strong>
-            <span>Start with runnable C#, JavaScript, Python, and Fabric-oriented examples in the public developer repository.</span>
+            <span>Try the C#, JavaScript, Python, and Java examples on GitHub.</span>
         </div>
         <a href="https://github.com/bobymicjohn/2b2tAtlas-Public-API" target="_blank" rel="noopener noreferrer">
             View GitHub examples
         </a>
     </aside>
 
+    <section class="api-notes quick-start">
+        <h2>Quick start</h2>
+        <p>Open the location list to read JSON. A new installation returns an empty
+            list until you add a location in Admin. Replace an <code>{id}</code>
+            placeholder in a route with the matching record's ID.</p>
+        <a href="@(ApiBase + "/locations")" target="_blank" rel="noopener">Open the location list</a>
+    </section>
+
     <section class="mcp-panel" id="mcp" aria-labelledby="mcp-heading">
         <div class="mcp-intro">
             <span class="mcp-icon" aria-hidden="true"><RadzenIcon Icon="smart_toy" /></span>
             <div>
-                <span class="mcp-kicker">Agent-native access</span>
+                <span class="mcp-kicker">AI clients</span>
                 <h2 id="mcp-heading">2b2t Atlas MCP server</h2>
                 <p>
-                    Connect an AI client or research agent directly to the reviewed Atlas knowledge graph.
-                    The public server exposes deterministic, read-only tools for locations, nearby searches,
-                    groups and their builds, highways, Archive warps, render metadata, historical capture dates,
-                    and downloadable bounded WDL metadata.
+                    MCP (Model Context Protocol) lets an AI client search Atlas locations,
+                    history, groups, highways, and world downloads. These tools only read data;
+                    they cannot change the catalog.
                 </p>
             </div>
         </div>
@@ -76,18 +83,16 @@
                 <pre><code>@McpClientConfig</code></pre>
             </div>
             <div>
-                <h3>Purpose-built research tools</h3>
+                <h3>Choose a tool</h3>
                 <p>
                     Start with <code>research_location</code>, <code>search_locations</code>,
                     <code>find_locations_near</code>, <code>search_groups</code>,
                     <code>get_group_builds</code>, <code>search_highways</code>, or
-                    <code>find_preserved_builds</code>. Fifteen bounded tools and four URI resources
-                    are discoverable through the protocol itself.
+                    <code>find_preserved_builds</code>. Use <code>tools/list</code> to see the available tools and their parameters.
                 </p>
                 <p class="mcp-note">
-                    WDL and render tools return metadata plus stable HTTPS URLs, never multi-megabyte
-                    binary payloads inside model context. Cite the returned canonical entity URL and
-                    retain original-source attribution when publishing a result.
+                    Tools return source information and download links, not the files themselves.
+                    Keep those source links with your research so readers can check the evidence.
                 </p>
             </div>
         </div>

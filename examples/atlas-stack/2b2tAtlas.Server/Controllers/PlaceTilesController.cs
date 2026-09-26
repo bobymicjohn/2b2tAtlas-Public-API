@@ -7,7 +7,7 @@ namespace _2b2tAtlas.Server.Controllers;
 /// <summary>
 /// Reverse-proxy for 2b2t.place live map tiles (used with explicit permission from
 /// the 2b2t.place team). Serving them from our own origin lets Cloudflare cache them
-/// at the edge — offloading 2b2t.place's bandwidth and avoiding browser CORS/taint.
+/// at the edge - offloading 2b2t.place's bandwidth and avoiding browser CORS/taint.
 /// The client resamples these onto our CRS grid (see atlas-map.js).
 /// </summary>
 [ApiController]
@@ -35,7 +35,7 @@ public class PlaceTilesController : ControllerBase
     }
 
     /// <summary>
-    /// GET /tiles/place/{layer}/{lod}/{dim}/{sx}/{sy}/t.{tx}.{ty}.webp — proxies the
+    /// GET /tiles/place/{layer}/{lod}/{dim}/{sx}/{sy}/t.{tx}.{ty}.webp - proxies the
     /// matching 2b2t.place tile. All path components are validated so the upstream URL
     /// is built only from known-safe values (no SSRF / path traversal).
     /// </summary>

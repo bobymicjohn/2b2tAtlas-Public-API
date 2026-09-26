@@ -54,3 +54,11 @@ worlds and temporary databases in tests. Keep dependency and third-party notices
 Run all checks locally. GitHub Actions is disabled; do not add, enable, or dispatch
 workflows. Test with synthetic fixtures and disposable databases. Never pass
 deployment secrets to untrusted code or test against production state.
+
+## Documentation style
+
+Write for someone using Atlas for the first time. Start with a working example,
+explain unfamiliar terms once, and link to deeper details. Use short, direct
+sentences. Cut repeated warnings, filler, and promotional language. Avoid em
+dashes; use a period, comma, parentheses, or a spaced hyphen instead. Check
+commands, links, and API fields against the code before publishing.

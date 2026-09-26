@@ -7,7 +7,7 @@ namespace _2b2tAtlas.Server.Services;
 /// <summary>
 /// Applies additive, idempotent schema changes to the existing SQLite database.
 /// The app uses <c>EnsureCreated</c> (no EF migrations), which never alters an
-/// already-created database — so new columns on existing tables must be added
+/// already-created database - so new columns on existing tables must be added
 /// with guarded <c>ALTER TABLE ... ADD COLUMN</c> statements. Safe to run on
 /// every startup: each column is only added if it is missing.
 /// </summary>

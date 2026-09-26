@@ -1,7 +1,7 @@
 namespace _2b2tAtlas.Server.Models;
 
 /// <summary>
-/// An immutable record of a canonical mutation (GAMEPLAN §15) — who did what,
+/// An immutable record of a canonical mutation (GAMEPLAN §15) - who did what,
 /// when, and an optional before→after detail payload. Created by the
 /// <c>SchemaUpgrader</c> table; never updated after insert.
 /// </summary>

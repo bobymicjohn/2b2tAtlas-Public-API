@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^https://')]
@@ -399,7 +399,7 @@ function New-LocationHtml {
         if ([string]::IsNullOrWhiteSpace($mediaUrl)) { continue }
         $mediaLabel = if ([string]::IsNullOrWhiteSpace([string]$attachment.fileName)) { 'Historical media' } else { [string]$attachment.fileName }
         $mediaDetail = @([string]$attachment.caption, [string]$attachment.attribution | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join ' | '
-        $detailHtml = if ($mediaDetail) { ' &mdash; {0}' -f (Encode-Html $mediaDetail) } else { '' }
+        $detailHtml = if ($mediaDetail) { ' - {0}' -f (Encode-Html $mediaDetail) } else { '' }
         $sourceHtml = if (-not [string]::IsNullOrWhiteSpace([string]$attachment.sourceUrl)) {
             ' <a href="{0}" rel="external nofollow">[source]</a>' -f (Encode-Html $attachment.sourceUrl)
         } else { '' }

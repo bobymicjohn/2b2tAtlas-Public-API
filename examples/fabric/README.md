@@ -31,7 +31,7 @@ The example client:
 ## Cache lifecycle
 
 - Load a last-known-good snapshot from the mod config directory.
-- Refresh on explicit user action, game startup, or a long TTL—not every tick.
+- Refresh on explicit user action, game startup, or a long TTL - not every tick.
 - Build a local dimension/spatial index after parsing.
 - If refresh fails, keep the previous snapshot and show a quiet stale indicator.
 - Cancel or ignore responses after the user changes server/world context.

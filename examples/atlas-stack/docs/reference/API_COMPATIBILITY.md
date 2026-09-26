@@ -4,7 +4,7 @@ These are the API routes to check when changing public reads, authenticated edit
 
 ## Modern Public Reads
 
-public JSON endpoints are:
+Common public JSON routes include:
 
 - `GET /api/locations` and `GET /api/locations/{id}`.
 - `GET /api/highways` and `GET /api/highways/{id}`.

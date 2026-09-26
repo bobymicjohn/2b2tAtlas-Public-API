@@ -1,6 +1,8 @@
 # Authentication, RBAC, Security, And Trust Boundaries
 
-This file covers user identity, authorization, worker credentials, and system trust boundaries. WDL archive defenses are summarized in `WDL_INGESTION.md` and detailed in `docs/INGESTION_SECURITY.md`.
+This guide explains who can sign in, what each permission allows, and how
+workers authenticate. See [WDL ingestion](WDL_INGESTION.md) and
+[archive security](../INGESTION_SECURITY.md) for handling untrusted world files.
 
 ## JWT Authentication
 

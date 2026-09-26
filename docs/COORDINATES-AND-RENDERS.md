@@ -1,12 +1,16 @@
 # Coordinates, dimensions, and render tiles
 
-2b2tAtlas combines point locations, infrastructure geometry, and sparse WDL-derived tile pyramids. They are related but not interchangeable.
+A location is a point on the map. A highway is a line through several points.
+A render is a set of map images made from a saved world. This guide explains
+how to place each one correctly.
 
 ## Coordinate rules
 
 - Location `x`, `y`, and `z` are Minecraft block coordinates in the record's native dimension.
 - Highway `points[].x` and `points[].z` are also native to the highway's dimension.
-- Render bounds use half-open intervals: `[minX, maxXExclusive)` and `[minZ, maxZExclusive)`.
+- Render bounds include the minimum and exclude the maximum. For example,
+  `[0, 16)` covers blocks 0 through 15. The fields are `minX`, `minZ`,
+  `maxXExclusive`, and `maxZExclusive`.
 - Bounds describe the captured/rendered footprint, which may not be centered on the location marker.
 - A render's `locationX`/`locationZ` identifies the Atlas location; it is not necessarily the geometric center of every WDL footprint.
 
@@ -30,7 +34,7 @@ A per-location render may return a template such as:
 https://.../AtlasTiles/example/overworld/g-.../{dn}/{z}/{y}/{x}.png
 ```
 
-Important distinctions:
+Fill the template fields as follows:
 
 - `{dn}` is the lighting variant, generally `day` or `night` when `hasDayNight` is true.
 - `{z}` is the map tile zoom level.
@@ -38,7 +42,8 @@ Important distinctions:
 - `maxNativeZoom` is the highest native tile zoom available for that render.
 - `coordinateScheme` tells Atlas-aware clients how the sparse tile grid is anchored. Do not assume a generic Web Mercator slippy-map transform.
 
-For a new map integration, use the footprint to cull off-screen renders, honor `maxNativeZoom`, and fetch only visible tiles. Never enumerate every possible tile URL.
+Load only tiles that overlap the visible map and respect `maxNativeZoom`.
+Do not try every possible tile URL; many tiles are intentionally absent.
 
 ## Loading tiles
 
@@ -46,9 +51,10 @@ For a new map integration, use the footprint to cull off-screen renders, honor `
 2. Index footprints by dimension and bounding box.
 3. At low zoom, show location markers or aggregate counts only.
 4. At close zoom, query the spatial index for intersecting footprints.
-5. Load visible tile images asynchronously with an LRU cache and a concurrency cap.
+5. Load visible images in the background. Limit simultaneous requests and remove
+   the least recently used images when the cache fills.
 6. Cancel obsolete tile requests after a pan, zoom, dimension change, or disconnect.
-7. Keep day/night variants in the same cache key.
+7. Include the day/night variant in the cache key so the two images stay distinct.
 8. Link an overlay or tooltip back to the render's `apiUrl` and location's canonical page.
 
 ## Multiple historical renders
@@ -76,17 +82,11 @@ the old images when combining them with that grid; assigning the original PNGs
 directly to current tile coordinates produces a scale and origin mismatch.
 These are preserved historical alternatives, not default terrain layers.
 
-## BlueMap 3D derivatives
+## BlueMap 3D views
 
-A render can optionally advertise `blueMapUrl`, `blueMapPath`, and
-`blueMapProfileVersion`. BlueMap uses the same exact historical render identity,
-dimension, source, and location relationship, but its output is an interactive
-3D web application rather than a `{z}/{y}/{x}` tile template. Its initial camera
-is anchored to the canonical `locationX`/`locationZ`, not necessarily the WDL
-footprint midpoint.
+Open the render's `blueMapUrl` when the user selects 3D. It is a browser viewer,
+not a 2D tile template. Its starting position follows the location marker, which
+may differ from the center of the saved terrain. Keep the render's date and
+dimension visible and use 2D when no 3D link is available.
 
-Do not convert the BlueMap path into Leaflet bounds or combine its model files
-with another render. Open the returned `blueMapUrl` only after a user requests
-3D, label it with the render date/dimension, and preserve the normal 2D overlay
-when the field is null. Full discovery, embedding, caching, and fallback
-guidance is in [BlueMap 3D render derivatives](BLUEMAP-3D.md).
+See [the BlueMap guide](BLUEMAP-3D.md) for discovery and embedding.

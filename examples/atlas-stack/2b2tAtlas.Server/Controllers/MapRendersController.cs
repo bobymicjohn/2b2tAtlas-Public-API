@@ -36,7 +36,7 @@ public class MapRendersController : ControllerBase
         _allowedUrlPrefixes = configuration.GetSection("MapRenders:AllowedUrlPrefixes").Get<string[]>() ?? [];
     }
 
-    /// <summary>GET /api/maprenders — published world renders (public map layers).</summary>
+    /// <summary>GET /api/maprenders - published world renders (public map layers).</summary>
     [HttpGet]
     [AllowAnonymous]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByHeader = "Origin")]
@@ -50,7 +50,7 @@ public class MapRendersController : ControllerBase
         return Ok(rows.Select(MapToDto).ToList());
     }
 
-    /// <summary>GET /api/maprenders/all — every render regardless of publish state.</summary>
+    /// <summary>GET /api/maprenders/all - every render regardless of publish state.</summary>
     [HttpGet("all")]
     [Authorize(Policy = Permissions.RendersManage)]
     public async Task<ActionResult<IEnumerable<MapRenderDto>>> GetAll()
@@ -62,7 +62,7 @@ public class MapRendersController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/maprenders/catalog — a combined, external read-only view of every render the
+    /// GET /api/maprenders/catalog - a combined, external read-only view of every render the
     /// atlas exposes: the dimension-level primary layers (full tile pyramids) and every
     /// per-location base render (with its owning location and block bounds).
     /// </summary>
@@ -123,7 +123,7 @@ public class MapRendersController : ControllerBase
     }
 
     /// <summary>
-    /// PUT /api/maprenders — idempotent upsert by slug. The ingestor calls this on
+    /// PUT /api/maprenders - idempotent upsert by slug. The ingestor calls this on
     /// completion to register (or refresh) a world render as a map layer.
     /// </summary>
     [HttpPut]
@@ -177,7 +177,7 @@ public class MapRendersController : ControllerBase
         return Ok(MapToDto(row));
     }
 
-    /// <summary>DELETE /api/maprenders/{id} — remove a world render.</summary>
+    /// <summary>DELETE /api/maprenders/{id} - remove a world render.</summary>
     [HttpDelete("{id:int}")]
     [Authorize(Policy = Permissions.RendersManage)]
     public async Task<IActionResult> Delete(int id)

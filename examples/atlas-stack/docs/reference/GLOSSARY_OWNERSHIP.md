@@ -16,18 +16,18 @@ A sparse `Renders` row linked to one `Location`, placed by exact chunk bounds wh
 
 A `MapRenders` row for a dimension-level tile layer. Public `GET /api/maprenders` returns only published rows.
 
-### BlueMap Derivative
+### BlueMap view
 
-An optional immutable 3D webroot generated downstream from one completed,
-source-backed `Render`. It is discovered from durable database provenance,
-relit and exact-footprint-audited in a disposable world, and projected onto the
-render DTO only while its manifest passes the current quality gate. It is not a
-database identity, global map, playable WDL, ingestion stage, or completion
-requirement.
+An optional 3D browser view generated from one completed render's saved world.
+Atlas publishes its URL after checking the output and saved chunk coverage.
+Generation runs separately from ingestion, so a finished 2D render may not yet
+have a 3D view. The view itself is not a playable save.
 
 ### WDL
 
-A Minecraft Java world download treated as hostile input. Structural validity, renderer compatibility, geographic alignment, and 2b2t provenance are separate gates.
+A Minecraft Java world download. Atlas checks the archive, saved chunks,
+coordinates, source, and renderer compatibility before publishing it. Opening
+or rendering an untrusted archive must not give it access to the public server.
 
 ### Worker Key
 
@@ -59,7 +59,9 @@ Minecraft block coordinates in the record's own dimension. Overworld/Nether disp
 
 ### Sparse Coordinate Scheme
 
-A named, certified transform from chunk-backed renderer output into Atlas `z/y/x` URLs. `atlas-sparse-v1` is the API completion contract; dimension-specific adapter profiles define the actual zoom/origin mapping.
+The rule for converting saved-world coordinates into tile `z/y/x` URLs.
+`atlas-sparse-v1` allows signed tile coordinates and missing tiles. Each dimension
+has its own origin and zoom settings; see [map rendering](MAP_RENDERING.md).
 
 ## Server Ownership
 

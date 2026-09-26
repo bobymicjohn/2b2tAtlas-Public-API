@@ -1,9 +1,7 @@
 # BlueMap 3D derivative pipeline
 
-This is the canonical implementation and operations guide for 2b2tAtlas's
-location-level BlueMap output. The capacity study and the history behind the
-current profile remain in
-[`BLUEMAP_PIPELINE.md`](BLUEMAP_PIPELINE.md).
+This guide covers generating, checking, publishing, and recovering BlueMap 3D
+views. For the source world and 2D pipeline, see [ingestion](INGESTION_PIPELINE.md).
 
 ## Contract and ownership
 

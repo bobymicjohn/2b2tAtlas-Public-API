@@ -63,7 +63,7 @@ public sealed class RenderSettingsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>GET /api/render-settings — the current render flags and raw colour/biome/style config.</summary>
+    /// <summary>GET /api/render-settings - the current render flags and raw colour/biome/style config.</summary>
     /// <param name="cancellationToken">Token that cancels the request.</param>
     /// <returns>The current settings, or 500 when the renderer profile cannot be read.</returns>
     [HttpGet]
@@ -110,7 +110,7 @@ public sealed class RenderSettingsController : ControllerBase
         return Ok(dto);
     }
 
-    /// <summary>PUT /api/render-settings — persist the render flags and raw config files.</summary>
+    /// <summary>PUT /api/render-settings - persist the render flags and raw config files.</summary>
     /// <param name="dto">The settings to save.</param>
     /// <param name="cancellationToken">Token that cancels the request.</param>
     /// <returns>No content on success, or 400 with validation errors.</returns>
@@ -282,7 +282,7 @@ public sealed class RenderSettingsController : ControllerBase
         });
     }
 
-    /// <summary>POST /api/render-settings/preview — render a bounded sample area with the current settings.</summary>
+    /// <summary>POST /api/render-settings/preview - render a bounded sample area with the current settings.</summary>
     /// <param name="world">The staged sample world name to render.</param>
     /// <param name="dimension">Which dimension to preview (overworld/nether/end).</param>
     /// <param name="cancellationToken">Token that cancels the request.</param>

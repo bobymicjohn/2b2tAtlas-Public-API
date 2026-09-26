@@ -6,7 +6,7 @@ downloads, dated renders and Nocom observations. This repository has small API
 examples and the [full Atlas application](examples/atlas-stack/README.md).
 
 **Base URL:** `https://api.blackportal.cloud`. Public reads require no API key.
-JSON responses support browser CORS.
+You can make requests from a browser, a command line, or your own code.
 
 - [API reference](docs/API-REFERENCE.md)
 - [Live OpenAPI schema](https://api.blackportal.cloud/openapi/v1.json)
@@ -15,9 +15,12 @@ JSON responses support browser CORS.
 - [Nocom data](docs/NOCOM.md)
 - [MCP setup and tools](docs/MCP.md)
 - [Changelog](CHANGELOG.md)
-- [Full Atlas stack source](examples/atlas-stack/README.md) — UI, API, ingestion, collectors and rendering, with local setup and example configuration.
+- [Full Atlas stack source](examples/atlas-stack/README.md) - UI, API, ingestion, collectors and rendering, with local setup and example configuration.
 
-## Requests
+## Try it
+
+Open [the location list](https://api.blackportal.cloud/api/locations) in a browser,
+or run one of these commands. On Windows PowerShell 5.1, use `curl.exe`.
 
 ```sh
 curl --fail "https://api.blackportal.cloud/api/locations"
@@ -93,7 +96,7 @@ fields, filters, caching, and errors.
 Endpoint: `https://api.blackportal.cloud/mcp`. Transport: Streamable HTTP.
 The server is stateless and read-only, with no authentication required.
 
-The [MCP guide](docs/MCP.md) includes client configuration, the 18 tools, and
+The [MCP guide](docs/MCP.md) includes client configuration, the current tools, and
 resource URIs. The registry name is
 [`io.github.bobymicjohn/2b2t-atlas`](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas);
 its manifest is [server.json](server.json).

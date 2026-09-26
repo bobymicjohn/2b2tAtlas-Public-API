@@ -1,13 +1,13 @@
 # Changes
 
-## Reuse policy — 2026-09-08
+## Reuse policy - 2026-09-08
 
 Atlas-authored stack code now uses the Unlicense alongside the API examples.
 Aligned the application license, coverage-mod metadata and contributor guidance.
 Credit remains optional; source and hosting courtesies are requests, not added
 license conditions. Third-party notices and terms remain in place.
 
-## Full-stack source example — 2026-09-08
+## Full-stack source example - 2026-09-08
 
 Added `examples/atlas-stack`: the Blazor frontend, ASP.NET Core API, SQLite models,
 WDL ingestion and publication, Archive collectors and Fabric coverage companion,
@@ -16,7 +16,7 @@ generalized host configuration, MIT license, setup guides and CI. Production
 databases, credentials, game state, private history and operator incident reports
 are excluded. Existing public API clients remain standalone.
 
-## Since 1.1.0 — 2026-09-08
+## Since 1.1.0 - 2026-09-08
 
 Use the documented August 15–17, 2019 capture dates in the 43k Nether layer name.
 
@@ -30,7 +30,7 @@ Python example that prints a location's media links and source credits. The
 Atlas research runner and contributor workflow live in the main source repo;
 this repository remains the public read-only API reference.
 
-## 1.1.0 — 2026-09-07
+## 1.1.0 - 2026-09-07
 
 Documents the historical aggregates Atlas serves from the public Nerds Inc release: fixed
 30-day buckets, dimension totals and compass-direction highway series.
@@ -53,7 +53,7 @@ HTML/JSONL exports are included in the pending frontend package. This repository
 release does not deploy that package or change the wire protocol; the running
 MCP server/registry still reports its existing 1.0.0 implementation version.
 
-## 1.0.0 — 2026-09-05
+## 1.0.0 - 2026-09-05
 
 Initial public API documentation, C#/JavaScript/Python/Fabric examples, coordinate
 and provenance guidance, offline contract checks, and MCP Registry discovery.

@@ -2396,7 +2396,7 @@ public sealed class IngestionJobsController : ControllerBase
 
     /// <summary>
     /// Loads the location candidates a render of the given dimension should match. There are no separate
-    /// nether locations — an overworld location simply appears on the nether map at its /8 position — so a
+    /// nether locations - an overworld location simply appears on the nether map at its /8 position - so a
     /// nether render is matched against overworld locations projected into nether coordinates.
     /// </summary>
     private async Task<List<LocationMatchCandidate>> LoadMatchCandidatesAsync(int renderDimension)

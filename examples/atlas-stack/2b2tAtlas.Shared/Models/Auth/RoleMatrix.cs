@@ -6,7 +6,7 @@ namespace Atlas.Auth;
 /// </summary>
 public class RoleMatrix
 {
-    /// <summary>Editable roles (SuperAdmin is excluded — it always has everything).</summary>
+    /// <summary>Editable roles (SuperAdmin is excluded - it always has everything).</summary>
     public List<string> Roles { get; set; } = new();
 
     /// <summary>All permission keys in the system.</summary>

@@ -97,8 +97,8 @@ Large releases packaged as SquashFS, ZVCR, tarballs, or loose region trees are o
 - [Terbin's WorldTools fork](https://github.com/terbin/WorldTools) - capture metadata, player NBT, raw dimension paths, and historical-save fixes.
 - [Archive Paper](https://github.com/thearchive-world/archive-paper) - the Archive's tolerance and upgrade work for historical NBT/world data.
 
-- [WorldTools README](https://github.com/Avanatiker/WorldTools) — captured content, metadata files, and the warning that Dimension Tree lists all server dimensions.
-- [World Mirror output format](https://github.com/billstark001/world-mirror) — a current example of `dimensions/<namespace>/<path>` storage for vanilla and custom dimensions.
-- [Archive+](https://2b2tarchive.org/) — public catalog/download surface for 2b2t WDLs.
-- [The Archive introduction](https://www.reddit.com/r/2b2t/comments/dz13m5) — museum restoration and compositing context.
-- [2b2tplace 1m release](https://github.com/2b2tplace/1m_release/blob/main/README.md) — a large preservation release that is not a single ordinary playable ZIP and therefore needs a separate import path.
+- [WorldTools README](https://github.com/Avanatiker/WorldTools) - captured content, metadata files, and the warning that Dimension Tree lists all server dimensions.
+- [World Mirror output format](https://github.com/billstark001/world-mirror) - a current example of `dimensions/<namespace>/<path>` storage for vanilla and custom dimensions.
+- [Archive+](https://2b2tarchive.org/) - public catalog/download surface for 2b2t WDLs.
+- [The Archive introduction](https://www.reddit.com/r/2b2t/comments/dz13m5) - museum restoration and compositing context.
+- [2b2tplace 1m release](https://github.com/2b2tplace/1m_release/blob/main/README.md) - a large preservation release that is not a single ordinary playable ZIP and therefore needs a separate import path.

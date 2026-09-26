@@ -3,8 +3,8 @@ namespace Atlas;
 /// <summary>
 /// A per-location base render (a tile pyramid anchored at one base's coordinates) together with the owning
 /// location's identity and position. This is the external-facing shape for the <c>/api/renders</c> resource:
-/// it carries everything a map or tooling client needs to place and fetch a render's tiles — the tile URL
-/// template, coordinate scheme, native zoom depth, block bounds, and the location it belongs to — without a
+/// it carries everything a map or tooling client needs to place and fetch a render's tiles - the tile URL
+/// template, coordinate scheme, native zoom depth, block bounds, and the location it belongs to - without a
 /// second lookup. These are distinct from the dimension-level primary layers served by <c>/api/maprenders</c>.
 /// </summary>
 public sealed class LocationRenderDto

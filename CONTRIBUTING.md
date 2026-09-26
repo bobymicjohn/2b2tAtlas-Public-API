@@ -58,3 +58,11 @@ For endpoint or response-field changes, also check the
 [live OpenAPI schema](https://api.blackportal.cloud/openapi/v1.json).
 
 In the pull request, describe the change and the checks you ran.
+
+## Documentation style
+
+Write for someone using Atlas for the first time. Start with a working example,
+explain unfamiliar terms once, and link to deeper details. Use short, direct
+sentences. Cut repeated warnings, filler, and promotional language. Avoid em
+dashes; use a period, comma, parentheses, or a spaced hyphen instead. Check
+commands, links, and API fields against the code before publishing.

@@ -28,7 +28,7 @@ public enum HighwayCategory
     Custom,
 }
 
-/// <summary>Paving material — durability + prestige on 2b2t.</summary>
+/// <summary>Paving material - durability + prestige on 2b2t.</summary>
 public enum PavingMaterial
 {
     /// <summary>The paving material has not been recorded.</summary>

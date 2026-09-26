@@ -20,7 +20,7 @@ namespace _2b2tAtlas.Server.Controllers;
 /// Every change is recorded as a <see cref="Revision"/> tagged <c>Source = "AI"</c> so it is auditable and
 /// reversible: confident, coordinate-confirmed matches are auto-applied (status <c>Applied</c>) but stay in
 /// the review queue, while weaker matches are queued (<c>Pending</c>) without touching the location.
-/// Enrichment only ever fills a blank wiki link or description — it never overwrites human-entered text and
+/// Enrichment only ever fills a blank wiki link or description - it never overwrites human-entered text and
 /// never changes coordinates.
 /// </summary>
 [ApiController]
@@ -67,7 +67,7 @@ public class EnrichmentAdminController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>GET /api/enrichment/status — current engine state and outstanding work counts.</summary>
+    /// <summary>GET /api/enrichment/status - current engine state and outstanding work counts.</summary>
     /// <param name="cancellationToken">Token that cancels the request.</param>
     /// <returns>The engine status snapshot.</returns>
     [HttpGet("status")]
@@ -108,7 +108,7 @@ public class EnrichmentAdminController : ControllerBase
         });
     }
 
-    /// <summary>GET /api/enrichment/revisions — AI enrichment revisions, optionally filtered by status.</summary>
+    /// <summary>GET /api/enrichment/revisions - AI enrichment revisions, optionally filtered by status.</summary>
     /// <param name="status">Optional status filter (Applied/Pending/Approved/Rejected/Reverted).</param>
     /// <param name="cancellationToken">Token that cancels the request.</param>
     /// <returns>The matching AI revisions, newest first.</returns>
@@ -131,7 +131,7 @@ public class EnrichmentAdminController : ControllerBase
         return Ok(rows.Select(MapToDto).ToList());
     }
 
-    /// <summary>POST /api/enrichment/run — match and describe every eligible location.</summary>
+    /// <summary>POST /api/enrichment/run - match and describe every eligible location.</summary>
     /// <param name="request">The run options; a null body uses defaults.</param>
     /// <returns>The new server-owned run, or the already-active run.</returns>
     [HttpPost("run")]
@@ -160,7 +160,7 @@ public class EnrichmentAdminController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/enrichment/groups/run — creates review-only proposals for unrepresented wiki groups that
+    /// POST /api/enrichment/groups/run - creates review-only proposals for unrepresented wiki groups that
     /// explicitly name an existing Atlas build. The model drafts prose, but never creates a group directly.
     /// </summary>
     [HttpPost("groups/run")]
@@ -254,7 +254,7 @@ public class EnrichmentAdminController : ControllerBase
         return Ok(summary);
     }
 
-    /// <summary>POST /api/enrichment/{id}/apply — apply a queued (Pending) AI suggestion.</summary>
+    /// <summary>POST /api/enrichment/{id}/apply - apply a queued (Pending) AI suggestion.</summary>
     /// <param name="id">The revision id.</param>
     /// <returns>The updated revision.</returns>
     [HttpPost("{id:int}/apply")]
@@ -289,7 +289,7 @@ public class EnrichmentAdminController : ControllerBase
         return Ok(MapToDto(revision));
     }
 
-    /// <summary>POST /api/enrichment/{id}/keep — accept an already auto-applied (Applied) suggestion.</summary>
+    /// <summary>POST /api/enrichment/{id}/keep - accept an already auto-applied (Applied) suggestion.</summary>
     /// <param name="id">The revision id.</param>
     /// <returns>The updated revision.</returns>
     [HttpPost("{id:int}/keep")]
@@ -315,7 +315,7 @@ public class EnrichmentAdminController : ControllerBase
         return Ok(MapToDto(revision));
     }
 
-    /// <summary>POST /api/enrichment/{id}/reject — discard a queued (Pending) suggestion without applying it.</summary>
+    /// <summary>POST /api/enrichment/{id}/reject - discard a queued (Pending) suggestion without applying it.</summary>
     /// <param name="id">The revision id.</param>
     /// <returns>The updated revision.</returns>
     [HttpPost("{id:int}/reject")]
@@ -341,7 +341,7 @@ public class EnrichmentAdminController : ControllerBase
         return Ok(MapToDto(revision));
     }
 
-    /// <summary>POST /api/enrichment/{id}/revert — undo an auto-applied (Applied) suggestion.</summary>
+    /// <summary>POST /api/enrichment/{id}/revert - undo an auto-applied (Applied) suggestion.</summary>
     /// <param name="id">The revision id.</param>
     /// <returns>The updated revision.</returns>
     [HttpPost("{id:int}/revert")]
