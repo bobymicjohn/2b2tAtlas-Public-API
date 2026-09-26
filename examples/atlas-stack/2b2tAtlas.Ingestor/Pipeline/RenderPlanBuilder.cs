@@ -19,7 +19,9 @@ public static class RenderPlanBuilder
         string extractedRoot)
     {
         if (worlds.Count == 0)
+        {
             throw new InputValidationException("No Minecraft worlds were discovered.");
+        }
 
         WorldInfo selected;
         if (manifest.WorldRoot is not null)
@@ -43,12 +45,17 @@ public static class RenderPlanBuilder
             ? selected.Dimensions
             : selected.Dimensions.Where(dimension => manifest.Dimensions.Contains(dimension.Key, StringComparer.Ordinal)).ToArray();
         if (dimensions.Count == 0)
+        {
             throw new InputValidationException("None of the requested dimensions contain recognized chunks.");
+        }
+
         if (manifest.Dimensions is not null)
         {
             var missing = manifest.Dimensions.Except(dimensions.Select(value => value.Key), StringComparer.Ordinal).ToArray();
             if (missing.Length > 0)
+            {
                 throw new InputValidationException($"Requested dimensions were not found: {string.Join(", ", missing)}");
+            }
         }
 
         return new RenderPlan(

@@ -49,25 +49,25 @@ public static class GroupAliases
 /// </summary>
 public class Group
 {
-    /// <summary>Gets or sets the group's persistent identifier.</summary>
+    /// <summary>Group's persistent identifier.</summary>
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the canonical crawlable entity URL for this group.</summary>
+    /// <summary>Canonical crawlable entity URL for this group.</summary>
     public string? CanonicalUrl { get; set; }
 
-    /// <summary>Gets or sets the interactive Atlas group-page URL.</summary>
+    /// <summary>Interactive Atlas group-page URL.</summary>
     public string? InteractiveUrl { get; set; }
 
-    /// <summary>Gets or sets the public API URL for this group record.</summary>
+    /// <summary>Public API URL for this group record.</summary>
     public string? ApiUrl { get; set; }
 
-    /// <summary>Gets or sets the group's public name.</summary>
+    /// <summary>Group's public name.</summary>
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Gets or sets reviewed alternate names; this public projection is derived from the canonical name.</summary>
     public List<string> Aliases { get; set; } = [];
 
-    /// <summary>Gets or sets the group's primary activity category.</summary>
+    /// <summary>Group's primary activity category.</summary>
     public GroupType Type { get; set; } = GroupType.Other;
 
     /// <summary>Gets or sets an optional description of the group.</summary>
@@ -79,28 +79,28 @@ public class Group
     /// <summary>Gets or sets an optional absolute URL for the group's wiki article.</summary>
     public string? WikiUrl { get; set; }
 
-    /// <summary>Gets or sets the group's official website, when one is known.</summary>
+    /// <summary>Group's official website, when one is known.</summary>
     public string? WebsiteUrl { get; set; }
 
-    /// <summary>Gets or sets the group's public Discord invite, when one is known and still current.</summary>
+    /// <summary>Group's public Discord invite, when one is known and still current.</summary>
     public string? DiscordUrl { get; set; }
 
-    /// <summary>Gets or sets a public logo or representative emblem URL.</summary>
+    /// <summary>A public logo or representative emblem URL.</summary>
     public string? LogoUrl { get; set; }
 
-    /// <summary>Gets or sets the page that identifies the source and licensing context of the logo.</summary>
+    /// <summary>Page that identifies the source and licensing context of the logo.</summary>
     public string? LogoSourceUrl { get; set; }
 
-    /// <summary>Gets or sets a human-readable founding date because many historical dates are approximate.</summary>
+    /// <summary>A human-readable founding date because many historical dates are approximate.</summary>
     public string? Founded { get; set; }
 
-    /// <summary>Gets or sets the group's documented state, such as Active, Inactive, or Disbanded.</summary>
+    /// <summary>Group's documented state, such as Active, Inactive, or Disbanded.</summary>
     public string? Status { get; set; }
 
-    /// <summary>Gets or sets the number of Atlas locations explicitly attributed to the group.</summary>
+    /// <summary>Number of Atlas locations explicitly attributed to the group.</summary>
     public int LocationCount { get; set; }
 
-    /// <summary>Gets or sets the number of Atlas highways explicitly attributed to the group.</summary>
+    /// <summary>Number of Atlas highways explicitly attributed to the group.</summary>
     public int HighwayCount { get; set; }
 
     /// <summary>Gets or sets locations explicitly attributed to this group on the detail endpoint.</summary>
@@ -121,36 +121,36 @@ public class GroupLocationSummary
 {
     /// <summary>Gets or sets the Atlas location identifier.</summary>
     public int LocationId { get; set; }
-    /// <summary>Gets or sets the canonical crawlable URL for the location.</summary>
+    /// <summary>Canonical crawlable URL for the location.</summary>
     public string LocationUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the interactive Atlas URL for the location.</summary>
+    /// <summary>Interactive Atlas URL for the location.</summary>
     public string LocationInteractiveUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the public API URL for the location.</summary>
+    /// <summary>Public API URL for the location.</summary>
     public string LocationApiUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the public location name.</summary>
+    /// <summary>Public location name.</summary>
     public string Name { get; set; } = string.Empty;
-    /// <summary>Gets or sets the group's role at the location.</summary>
+    /// <summary>Group's role at the location.</summary>
     public string Role { get; set; } = "Builder";
     /// <summary>Gets or sets the Minecraft dimension identifier.</summary>
     public int Dimension { get; set; }
-    /// <summary>Gets or sets the location's X coordinate.</summary>
+    /// <summary>Location's X coordinate.</summary>
     public int X { get; set; }
-    /// <summary>Gets or sets the location's Z coordinate.</summary>
+    /// <summary>Location's Z coordinate.</summary>
     public int Z { get; set; }
-    /// <summary>Gets or sets the number of public renders linked to the location.</summary>
+    /// <summary>Number of public renders linked to the location.</summary>
     public int RenderCount { get; set; }
 }
 
 /// <summary>A compact, navigable highway attributed to a group.</summary>
 public class GroupHighwaySummary
 {
-    /// <summary>Gets or sets the highway identifier.</summary>
+    /// <summary>Highway identifier.</summary>
     public int HighwayId { get; set; }
-    /// <summary>Gets or sets the public API URL for the highway record.</summary>
+    /// <summary>Public API URL for the highway record.</summary>
     public string HighwayApiUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets a map URL centered on the highway's dimension.</summary>
+    /// <summary>A map URL centered on the highway's dimension.</summary>
     public string MapUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the public highway name.</summary>
+    /// <summary>Public highway name.</summary>
     public string Name { get; set; } = string.Empty;
     /// <summary>Gets or sets the Minecraft dimension identifier.</summary>
     public int Dimension { get; set; }
@@ -162,20 +162,20 @@ public class GroupHighwaySummary
 /// <summary>Public group attribution embedded in a location record.</summary>
 public class LocationGroupAttribution
 {
-    /// <summary>Gets or sets the attributed group's identifier.</summary>
+    /// <summary>Attributed group's identifier.</summary>
     public int GroupId { get; set; }
-    /// <summary>Gets or sets the group's canonical crawlable entity URL.</summary>
+    /// <summary>Group's canonical crawlable entity URL.</summary>
     public string GroupUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the group's interactive Atlas URL.</summary>
+    /// <summary>Group's interactive Atlas URL.</summary>
     public string GroupInteractiveUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the group's public API URL.</summary>
+    /// <summary>Group's public API URL.</summary>
     public string GroupApiUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the attributed group's public name.</summary>
+    /// <summary>Attributed group's public name.</summary>
     public string GroupName { get; set; } = string.Empty;
-    /// <summary>Gets or sets the group's role at the location.</summary>
+    /// <summary>Group's role at the location.</summary>
     public string Role { get; set; } = "Builder";
-    /// <summary>Gets or sets the group's display color.</summary>
+    /// <summary>Group's display color.</summary>
     public string? Color { get; set; }
-    /// <summary>Gets or sets the group's optional logo URL.</summary>
+    /// <summary>Group's optional logo URL.</summary>
     public string? LogoUrl { get; set; }
 }

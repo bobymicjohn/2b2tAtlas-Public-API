@@ -35,7 +35,10 @@ public sealed class IngestionUploadService
     {
         var token = await _auth.GetTokenAsync();
         if (string.IsNullOrWhiteSpace(token))
+        {
             throw new InvalidOperationException("Your session has expired. Sign in again to upload.");
+        }
+
         using var startRequest = new HttpRequestMessage(HttpMethod.Post, "api/ingestion-jobs/upload-sessions")
         {
             Content = JsonContent.Create(new ChunkedUploadStartRequest
@@ -48,7 +51,10 @@ public sealed class IngestionUploadService
         startRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         using var startResponse = await _http.SendAsync(startRequest, cancellationToken);
         if (!startResponse.IsSuccessStatusCode)
+        {
             throw await UploadFailureAsync("start", startResponse, cancellationToken);
+        }
+
         var session = await startResponse.Content.ReadFromJsonAsync<ChunkedUploadSession>(cancellationToken)
             ?? throw new InvalidOperationException("Upload session response was empty.");
 
@@ -62,7 +68,11 @@ public sealed class IngestionUploadService
             while (read < wanted)
             {
                 var count = await stream.ReadAsync(buffer.AsMemory(read, wanted - read), cancellationToken);
-                if (count == 0) throw new EndOfStreamException("Browser file ended before its declared size.");
+                if (count == 0)
+                {
+                    throw new EndOfStreamException("Browser file ended before its declared size.");
+                }
+
                 read += count;
             }
 
@@ -75,7 +85,10 @@ public sealed class IngestionUploadService
             chunkRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             using var chunkResponse = await _http.SendAsync(chunkRequest, cancellationToken);
             if (!chunkResponse.IsSuccessStatusCode)
+            {
                 throw await UploadFailureAsync("chunk", chunkResponse, cancellationToken);
+            }
+
             offset += read;
             progress?.Report(offset);
         }
@@ -85,7 +98,10 @@ public sealed class IngestionUploadService
         completeRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         using var completeResponse = await _http.SendAsync(completeRequest, cancellationToken);
         if (!completeResponse.IsSuccessStatusCode)
+        {
             throw await UploadFailureAsync("complete", completeResponse, cancellationToken);
+        }
+
         return await completeResponse.Content.ReadFromJsonAsync<IngestionJobDto>(cancellationToken);
     }
 

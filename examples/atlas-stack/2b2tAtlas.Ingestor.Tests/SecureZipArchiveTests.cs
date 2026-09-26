@@ -55,7 +55,10 @@ public sealed class SecureZipArchiveTests
         {
             var level = archive.CreateEntry("world/level.dat");
             await using (var stream = level.Open())
+            {
                 await stream.WriteAsync(ZipFixture.MinimalLevelDat(), TestContext.Current.CancellationToken);
+            }
+
             var link = archive.CreateEntry("world/link");
             link.ExternalAttributes = 0xA1FF << 16;
             await using var linkStream = link.Open();
@@ -72,7 +75,10 @@ public sealed class SecureZipArchiveTests
         var zip = ZipFixture.Create(temporary,
             ("world/level.dat", ZipFixture.MinimalLevelDat()),
             ("world/region/r.0.0.mca", new byte[2 * IngestLimits.MiB]));
-        var restrictive = Limits with { MaxCompressionRatio = 2 };
+        var restrictive = Limits with
+        {
+            MaxCompressionRatio = 2
+        };
 
         await Assert.ThrowsAsync<InputSecurityException>(() => SecureZipArchive.InspectAsync(zip, restrictive, cancellationToken: TestContext.Current.CancellationToken));
     }
@@ -155,7 +161,10 @@ public sealed class SecureZipArchiveTests
             System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 8), updateFlags(flags));
         }
         if (method.HasValue)
+        {
             System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 10), method.Value);
+        }
+
         await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
     }
 }

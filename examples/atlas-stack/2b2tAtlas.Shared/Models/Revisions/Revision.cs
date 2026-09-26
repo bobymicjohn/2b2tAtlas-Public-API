@@ -27,7 +27,7 @@ public enum RevisionStatus
 /// </summary>
 public class RevisionDto
 {
-    /// <summary>Gets or sets the revision's persistent identifier.</summary>
+    /// <summary>Revision's persistent identifier.</summary>
     public int Id { get; set; }
 
     /// <summary>Target entity type: "Location" or "Highway".</summary>
@@ -51,16 +51,16 @@ public class RevisionDto
     /// <summary>The target entity payload (JSON) captured before an auto-applied change, enabling revert.</summary>
     public string? PreviousJson { get; set; }
 
-    /// <summary>Gets or sets the revision's moderation state.</summary>
+    /// <summary>Revision's moderation state.</summary>
     public RevisionStatus Status { get; set; } = RevisionStatus.Pending;
 
-    /// <summary>Gets or sets the identifier of the contributor who submitted the revision.</summary>
+    /// <summary>Identifier of the contributor who submitted the revision.</summary>
     public int? SubmittedByUserId { get; set; }
 
-    /// <summary>Gets or sets the contributor name captured for moderation display and audit history.</summary>
+    /// <summary>Contributor name captured for moderation display and audit history.</summary>
     public string? SubmittedByUsername { get; set; }
 
-    /// <summary>Gets or sets the identifier of the moderator who reviewed the revision.</summary>
+    /// <summary>Identifier of the moderator who reviewed the revision.</summary>
     public int? ReviewedByUserId { get; set; }
 
     /// <summary>Moderator reason when rejected.</summary>

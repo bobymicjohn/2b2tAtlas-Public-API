@@ -116,7 +116,9 @@ public sealed class AiEnrichmentService
         CancellationToken cancellationToken)
     {
         if (!IsAvailable || string.IsNullOrWhiteSpace(group.Intro))
+        {
             return null;
+        }
 
         var builds = group.Locations.Count == 0
             ? "none"
@@ -151,14 +153,18 @@ public sealed class AiEnrichmentService
     {
         var hits = await _wiki.SearchAsync(location.Name, _options.MaxCandidates, cancellationToken);
         if (hits.Count == 0)
+        {
             return null;
+        }
 
         (WikiPage Page, double Confidence, CoordinateAgreement Agreement, string Reason)? best = null;
         foreach (var hit in hits)
         {
             var page = await _wiki.GetPageAsync(hit.Title, cancellationToken);
             if (page is null)
+            {
                 continue;
+            }
 
             var coordinates = WikiCoordinateExtractor.Extract(page.Value.Wikitext);
             var agreement = CoordinateMatcher.Evaluate(
@@ -167,7 +173,9 @@ public sealed class AiEnrichmentService
             var confidence = ScoreConfidence(nameScore, agreement, out var reason);
 
             if (best is null || confidence > best.Value.Confidence)
+            {
                 best = (page.Value, confidence, agreement, reason);
+            }
         }
 
         // Discard matches too weak to be worth surfacing at all.
@@ -296,7 +304,10 @@ public sealed class AiEnrichmentService
     private static string TrimToSentence(string value, int max)
     {
         if (value.Length <= max)
+        {
             return value;
+        }
+
         var slice = value[..max];
         var lastStop = slice.LastIndexOfAny(['.', '!', '?']);
         return lastStop > max / 2 ? slice[..(lastStop + 1)] : slice.TrimEnd() + "…";

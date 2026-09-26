@@ -10,11 +10,8 @@ using ServerLocation = _2b2tAtlas.Server.Models.Location;
 namespace _2b2tAtlas.Server.Controllers;
 
 /// <summary>
-/// Per-location base renders (tile pyramids anchored at individual bases, produced by WDL ingestion). These
-/// are distinct from the dimension-level primary layers in <see cref="MapRendersController"/>: there are many
-/// of them, each tied to a location. All reads are public and cached so external map/tool builders can
-/// enumerate every render, fetch one, or list the renders for a given location, with enough tile and
-/// coordinate metadata to place and load the tiles directly.
+/// Lists dated renders attached to locations, including tile bounds and available downloads.
+/// Dimension-wide map layers are served by <see cref="MapRendersController"/>.
 /// </summary>
 [ApiController]
 public sealed class RendersController : ControllerBase
@@ -54,38 +51,48 @@ public sealed class RendersController : ControllerBase
     {
         var query =
             from render in _context.Renders.AsNoTracking()
-            join loc in _context.Locations.AsNoTracking() on render.LocationRowid equals loc.Rowid
+            join location in _context.Locations.AsNoTracking() on render.LocationRowid equals location.Rowid
             where render.IsPublic == 1
-            select new { render, loc };
+            select new
+            {
+                render,
+                location
+            };
 
-        if (locationId is int lid)
-            query = query.Where(x => x.loc.Rowid == lid);
-        if (dimension is int dim)
-            query = query.Where(x => x.render.Dimension == dim);
+        if (locationId is int locationRowId)
+        {
+            query = query.Where(row => row.location.Rowid == locationRowId);
+        }
+
+        if (dimension is int renderDimension)
+        {
+            query = query.Where(row => row.render.Dimension == renderDimension);
+        }
+
         if (!string.IsNullOrWhiteSpace(scale))
         {
             var normalized = scale.Trim().ToLowerInvariant();
-            query = query.Where(x => x.render.Scale.ToLower() == normalized);
+            query = query.Where(row => row.render.Scale.ToLower() == normalized);
         }
 
         var take = Math.Clamp(limit ?? 500, 1, 1000);
         var skip = Math.Max(offset ?? 0, 0);
         var rows = await query
-            .OrderBy(x => x.render.Dimension).ThenBy(x => x.render.Id)
+            .OrderBy(row => row.render.Dimension).ThenBy(row => row.render.Id)
             .Skip(skip).Take(take)
             .ToListAsync(cancellationToken);
 
-        var warpIds = rows.Where(x => x.render.ArchiveWarpId.HasValue)
-            .Select(x => x.render.ArchiveWarpId!.Value).Distinct().ToList();
+        var warpIds = rows.Where(row => row.render.ArchiveWarpId.HasValue)
+            .Select(row => row.render.ArchiveWarpId!.Value).Distinct().ToList();
         var warps = await _context.Warps.AsNoTracking()
             .Where(warp => warpIds.Contains(warp.Id))
             .ToDictionaryAsync(warp => warp.Id, cancellationToken);
         var legacyJobs = await GetLegacySourceJobsAsync(rows.Select(row => row.render.Id), cancellationToken);
 
-        return Ok(rows.Select(x => MapToDto(
-            x.render, x.loc,
-            x.render.ArchiveWarpId is int warpId ? warps.GetValueOrDefault(warpId) : null,
-            legacyJobs.GetValueOrDefault(x.render.Id))).ToList());
+        return Ok(rows.Select(row => MapToDto(
+            row.render, row.location,
+            row.render.ArchiveWarpId is int warpId ? warps.GetValueOrDefault(warpId) : null,
+            legacyJobs.GetValueOrDefault(row.render.Id))).ToList());
     }
 
     /// <summary>GET /api/renders/{id} — a single render with its owning location.</summary>
@@ -99,16 +106,24 @@ public sealed class RendersController : ControllerBase
     {
         var row = await (
             from render in _context.Renders.AsNoTracking()
-            join loc in _context.Locations.AsNoTracking() on render.LocationRowid equals loc.Rowid
+            join location in _context.Locations.AsNoTracking() on render.LocationRowid equals location.Rowid
             where render.Id == id && render.IsPublic == 1
-            select new { render, loc }).SingleOrDefaultAsync(cancellationToken);
+            select new
+            {
+                render,
+                location
+            }).SingleOrDefaultAsync(cancellationToken);
 
-        if (row is null) return NotFound();
+        if (row is null)
+        {
+            return NotFound();
+        }
+
         var warp = row.render.ArchiveWarpId is int warpId
             ? await _context.Warps.AsNoTracking().SingleOrDefaultAsync(value => value.Id == warpId, cancellationToken)
             : null;
         var legacyJobs = await GetLegacySourceJobsAsync([row.render.Id], cancellationToken);
-        return Ok(MapToDto(row.render, row.loc, warp, legacyJobs.GetValueOrDefault(row.render.Id)));
+        return Ok(MapToDto(row.render, row.location, warp, legacyJobs.GetValueOrDefault(row.render.Id)));
     }
 
     /// <summary>GET /api/locations/{locationId}/renders — the renders attached to a location.</summary>
@@ -123,11 +138,13 @@ public sealed class RendersController : ControllerBase
         var location = await _context.Locations.AsNoTracking()
             .FirstOrDefaultAsync(l => l.Rowid == locationId, cancellationToken);
         if (location is null)
+        {
             return NotFound();
+        }
 
         var renders = await _context.Renders.AsNoTracking()
-            .Where(r => r.LocationRowid == locationId && r.IsPublic == 1)
-            .OrderBy(r => r.Dimension).ThenBy(r => r.Id)
+            .Where(render => render.LocationRowid == locationId && render.IsPublic == 1)
+            .OrderBy(render => render.Dimension).ThenBy(render => render.Id)
             .ToListAsync(cancellationToken);
         var warpIds = renders.Where(render => render.ArchiveWarpId.HasValue)
             .Select(render => render.ArchiveWarpId!.Value).Distinct().ToList();
@@ -136,72 +153,70 @@ public sealed class RendersController : ControllerBase
             .ToDictionaryAsync(warp => warp.Id, cancellationToken);
         var legacyJobs = await GetLegacySourceJobsAsync(renders.Select(render => render.Id), cancellationToken);
 
-        return Ok(renders.Select(r => MapToDto(
-            r, location, r.ArchiveWarpId is int warpId ? warps.GetValueOrDefault(warpId) : null,
-            legacyJobs.GetValueOrDefault(r.Id))).ToList());
+        return Ok(renders.Select(render => MapToDto(
+            render, location, render.ArchiveWarpId is int warpId ? warps.GetValueOrDefault(warpId) : null,
+            legacyJobs.GetValueOrDefault(render.Id))).ToList());
     }
 
     private async Task<Dictionary<int, IngestionJob>> GetLegacySourceJobsAsync(
         IEnumerable<int> renderIds, CancellationToken cancellationToken)
     {
         var ids = renderIds.Distinct().ToList();
-        if (ids.Count == 0) return [];
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
         var jobs = await _context.IngestionJobs.AsNoTracking()
             .Where(job => job.RenderId.HasValue && ids.Contains(job.RenderId.Value) &&
                 job.Status == "completed" && job.WarpId == null && job.ArchiveSha256 != null)
             .OrderByDescending(job => job.Id)
             .ToListAsync(cancellationToken);
-        return jobs.Where(IsPublicRenderSourceJob)
+        return jobs.Where(PublicWorldDownloadRules.HasRenderSource)
             .GroupBy(job => job.RenderId!.Value)
             .ToDictionary(group => group.Key, group => group.First());
     }
 
-    private static bool IsPublicRenderSourceJob(IngestionJob job) =>
-        job.RenderId.HasValue && job.WarpId is null &&
-        job.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) &&
-        job.ArchiveSha256 is { Length: 64 } sha && sha.All(Uri.IsHexDigit) &&
-        !string.IsNullOrWhiteSpace(job.Source);
-
-    private LocationRenderDto MapToDto(ServerRender r, ServerLocation loc, Warp? warp, IngestionJob? sourceJob)
+    private LocationRenderDto MapToDto(ServerRender render, ServerLocation location, Warp? warp, IngestionJob? sourceJob)
     {
-        var blueMap = _blueMap?.Find(r.Id);
+        var blueMap = _blueMap?.Find(render.Id);
         return new LocationRenderDto
         {
-        RenderId = r.Id,
-        ApiUrl = PublicAtlasUrls.RenderApi(r.Id),
-        LocationId = loc.Rowid,
-        LocationUrl = PublicAtlasUrls.Location(loc.Rowid),
-        LocationApiUrl = PublicAtlasUrls.LocationApi(loc.Rowid),
-        LocationName = loc.Name ?? string.Empty,
-        LocationX = loc.X,
-        LocationZ = loc.Z,
-        Dimension = r.Dimension,
-        DimensionName = DimensionName(r.Dimension),
-        Name = r.Name,
-        Description = r.Description,
-        Source = r.Source,
-        ArchiveWarpId = r.ArchiveWarpId,
-        ArchiveWarpApiUrl = r.ArchiveWarpId is int warpId ? PublicAtlasUrls.WarpApi(warpId) : null,
-        ArchiveWarpName = warp?.Name,
-        Scale = r.Scale,
-        TileUrlTemplate = r.TilesPath,
-        HasDayNight = r.HasDayNight == 1,
-        MaxNativeZoom = r.MaxNativeZoom,
-        CoordinateScheme = r.CoordinateScheme,
-        WorldDownloadDate = r.WorldDownloadDate,
-        WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, loc.Name, sourceJob.ArchiveSha256),
-        WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(r.Id),
-        WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
-        WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),
-        WorldDownloadSource = sourceJob?.Source,
-        BlueMapUrl = blueMap?.PublicUrl,
-        BlueMapPath = blueMap?.RelativeUrl,
-        BlueMapProfileVersion = blueMap?.RendererProfileVersion,
-        MinX = r.MinX,
-        MinZ = r.MinZ,
-        MaxXExclusive = r.MaxXExclusive,
-        MaxZExclusive = r.MaxZExclusive,
-        DateAddedUtc = r.DateAddedUtc,
+            RenderId = render.Id,
+            ApiUrl = PublicAtlasUrls.RenderApi(render.Id),
+            LocationId = location.Rowid,
+            LocationUrl = PublicAtlasUrls.Location(location.Rowid),
+            LocationApiUrl = PublicAtlasUrls.LocationApi(location.Rowid),
+            LocationName = location.Name ?? string.Empty,
+            LocationX = location.X,
+            LocationZ = location.Z,
+            Dimension = render.Dimension,
+            DimensionName = DimensionName(render.Dimension),
+            Name = render.Name,
+            Description = render.Description,
+            Source = render.Source,
+            ArchiveWarpId = render.ArchiveWarpId,
+            ArchiveWarpApiUrl = render.ArchiveWarpId is int warpId ? PublicAtlasUrls.WarpApi(warpId) : null,
+            ArchiveWarpName = warp?.Name,
+            Scale = render.Scale,
+            TileUrlTemplate = render.TilesPath,
+            HasDayNight = render.HasDayNight == 1,
+            MaxNativeZoom = render.MaxNativeZoom,
+            CoordinateScheme = render.CoordinateScheme,
+            WorldDownloadDate = render.WorldDownloadDate,
+            WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(render.Id, location.Name, sourceJob.ArchiveSha256),
+            WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(render.Id),
+            WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
+            WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),
+            WorldDownloadSource = sourceJob?.Source,
+            BlueMapUrl = blueMap?.PublicUrl,
+            BlueMapPath = blueMap?.RelativeUrl,
+            BlueMapProfileVersion = blueMap?.RendererProfileVersion,
+            MinX = render.MinX,
+            MinZ = render.MinZ,
+            MaxXExclusive = render.MaxXExclusive,
+            MaxZExclusive = render.MaxZExclusive,
+            DateAddedUtc = render.DateAddedUtc,
         };
     }
 

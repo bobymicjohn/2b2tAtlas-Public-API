@@ -44,7 +44,11 @@ public class HighwayService
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, $"api/highways/{id}");
             var token = await _auth.GetTokenAsync();
-            if (!string.IsNullOrEmpty(token)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (!string.IsNullOrEmpty(token))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
             using var response = await _http.SendAsync(request);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<Highway>();
@@ -59,11 +63,19 @@ public class HighwayService
     public async Task<List<Highway>> GetPendingAsync()
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return new();
+        if (string.IsNullOrEmpty(token))
+        {
+            return new();
+        }
+
         var req = new HttpRequestMessage(HttpMethod.Get, "api/highways/pending");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _http.SendAsync(req);
-        if (!resp.IsSuccessStatusCode) return new();
+        if (!resp.IsSuccessStatusCode)
+        {
+            return new();
+        }
+
         return await resp.Content.ReadFromJsonAsync<List<Highway>>() ?? new();
     }
 
@@ -71,11 +83,19 @@ public class HighwayService
     public async Task<List<Highway>> GetAllAsync()
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return new();
+        if (string.IsNullOrEmpty(token))
+        {
+            return new();
+        }
+
         var req = new HttpRequestMessage(HttpMethod.Get, "api/highways/all");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _http.SendAsync(req);
-        if (!resp.IsSuccessStatusCode) return new();
+        if (!resp.IsSuccessStatusCode)
+        {
+            return new();
+        }
+
         return await resp.Content.ReadFromJsonAsync<List<Highway>>() ?? new();
     }
 
@@ -88,7 +108,11 @@ public class HighwayService
     private async Task<bool> PostActionAsync(string url)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return false;
+        if (string.IsNullOrEmpty(token))
+        {
+            return false;
+        }
+
         var req = new HttpRequestMessage(HttpMethod.Post, url);
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _http.SendAsync(req);
@@ -99,7 +123,11 @@ public class HighwayService
     public async Task<(bool Ok, Highway? Saved, string? Error)> CreateAsync(Highway highway)
     {
         var req = await BuildRequestAsync(HttpMethod.Post, "api/highways", highway);
-        if (req == null) return (false, null, "Not authenticated");
+        if (req == null)
+        {
+            return (false, null, "Not authenticated");
+        }
+
         return await SendAsync(req);
     }
 
@@ -107,7 +135,11 @@ public class HighwayService
     public async Task<(bool Ok, Highway? Saved, string? Error)> UpdateAsync(int id, Highway highway)
     {
         var req = await BuildRequestAsync(HttpMethod.Put, $"api/highways/{id}", highway);
-        if (req == null) return (false, null, "Not authenticated");
+        if (req == null)
+        {
+            return (false, null, "Not authenticated");
+        }
+
         return await SendAsync(req);
     }
 
@@ -115,7 +147,11 @@ public class HighwayService
     public async Task<bool> DeleteAsync(int id)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return false;
+        if (string.IsNullOrEmpty(token))
+        {
+            return false;
+        }
+
         var req = new HttpRequestMessage(HttpMethod.Delete, $"api/highways/{id}");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _http.SendAsync(req);
@@ -136,7 +172,9 @@ public class HighwayService
     public async Task<(bool Ok, Highway? Saved, string? Error)> RestoreAsync(int auditId, string expectedVersion)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"api/highways/history/{auditId}/restore")
-        { Content = JsonContent.Create(new HighwayRestoreRequest { ExpectedVersion = expectedVersion }) };
+        {
+            Content = JsonContent.Create(new HighwayRestoreRequest { ExpectedVersion = expectedVersion })
+        };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _auth.GetTokenAsync());
         return await SendAsync(request);
     }
@@ -144,7 +182,11 @@ public class HighwayService
     private async Task<HttpRequestMessage?> BuildRequestAsync(HttpMethod method, string url, Highway body)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return null;
+        if (string.IsNullOrEmpty(token))
+        {
+            return null;
+        }
+
         var req = new HttpRequestMessage(method, url)
         {
             Content = JsonContent.Create(body),
@@ -169,7 +211,10 @@ public class HighwayService
             try
             {
                 var detail = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-                if (detail.TryGetProperty("message", out var message)) msg = message.GetString() ?? msg;
+                if (detail.TryGetProperty("message", out var message))
+                {
+                    msg = message.GetString() ?? msg;
+                }
             }
             catch (System.Text.Json.JsonException) { }
             return (false, null, msg);

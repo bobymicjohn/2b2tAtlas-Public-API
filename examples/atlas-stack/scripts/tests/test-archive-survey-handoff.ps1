@@ -5,6 +5,12 @@ function Assert([bool]$Value,[string]$Message) { if (-not $Value) { throw $Messa
 $now=[datetimeoffset]::UtcNow
 $r=[pscustomobject]@{schemaVersion=1;planningOnly=$true;server='thearchive.world';warp='Base_2022-07-20';dimension='minecraft:overworld';x=-111;z=222;createdUtc=$now.AddHours(-1).ToString('o')}
 Assert (Test-SurveyHandoffIdentity $r 'thearchive.world' 'Base_2022-07-20' 'minecraft:overworld' -111 222 $now) 'Exact dated identity rejected'
+$createdText = $r.createdUtc
+$r.createdUtc = $now.AddHours(-1).UtcDateTime
+Assert (Test-SurveyHandoffIdentity $r 'thearchive.world' 'Base_2022-07-20' 'minecraft:overworld' -111 222 $now) 'UTC DateTime from PowerShell JSON lost its offset'
+$r.createdUtc = $now.AddHours(-1).ToOffset([timespan]::FromHours(-6))
+Assert (Test-SurveyHandoffIdentity $r 'thearchive.world' 'Base_2022-07-20' 'minecraft:overworld' -111 222 $now) 'DateTimeOffset rejected'
+$r.createdUtc = $createdText
 Assert (-not (Test-SurveyHandoffIdentity $r 'elsewhere' 'Base_2022-07-20' 'minecraft:overworld' -111 222 $now)) 'Server mismatch accepted'
 Assert (-not (Test-SurveyHandoffIdentity $r 'thearchive.world' 'Base_2023-07-20' 'minecraft:overworld' -111 222 $now)) 'Snapshot mismatch accepted'
 Assert (-not (Test-SurveyHandoffIdentity $r 'thearchive.world' 'Base_2022-07-20' 'minecraft:the_nether' -111 222 $now)) 'Dimension mismatch accepted'

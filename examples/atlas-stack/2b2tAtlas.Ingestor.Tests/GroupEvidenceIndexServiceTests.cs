@@ -296,7 +296,10 @@ public sealed class GroupEvidenceIndexServiceTests
                 NullLogger<GroupEvidenceIndexService>.Instance);
         }
 
-        public GroupEvidenceIndexService Service { get; }
+        public GroupEvidenceIndexService Service
+        {
+            get;
+        }
 
         public void WriteIndex(object value) => File.WriteAllText(_path,
             JsonSerializer.Serialize(value, new JsonSerializerOptions(JsonSerializerDefaults.Web)));

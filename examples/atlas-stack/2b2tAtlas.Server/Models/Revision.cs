@@ -8,7 +8,7 @@ namespace _2b2tAtlas.Server.Models;
 /// </summary>
 public class Revision
 {
-    /// <summary>Gets or sets the database-generated proposal identifier.</summary>
+    /// <summary>Database-generated proposal identifier.</summary>
     public int Id { get; set; }
 
     /// <summary>Target entity type: "Location" or "Highway".</summary>
@@ -35,13 +35,13 @@ public class Revision
     /// <summary>Pending / Approved / Rejected / Applied / Reverted.</summary>
     public string Status { get; set; } = "Pending";
 
-    /// <summary>Gets or sets the authenticated contributor who submitted the proposal.</summary>
+    /// <summary>Authenticated contributor who submitted the proposal.</summary>
     public int? SubmittedByUserId { get; set; }
 
-    /// <summary>Gets or sets the submitter username snapshot retained for moderation history.</summary>
+    /// <summary>Submitter username snapshot retained for moderation history.</summary>
     public string? SubmittedByUsername { get; set; }
 
-    /// <summary>Gets or sets the trusted moderator who approved or rejected the proposal.</summary>
+    /// <summary>Trusted moderator who approved or rejected the proposal.</summary>
     public int? ReviewedByUserId { get; set; }
 
     /// <summary>Gets or sets an optional moderator explanation, primarily for rejected proposals.</summary>

@@ -42,8 +42,16 @@ public class RolesController : ControllerBase
     private static bool TryResolveEditableRole(string? role, out string canonicalRole)
     {
         canonicalRole = string.Empty;
-        if (string.IsNullOrWhiteSpace(role)) return false;
-        if (!EditableRoleLookup.TryGetValue(role.Trim(), out var resolved)) return false;
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return false;
+        }
+
+        if (!EditableRoleLookup.TryGetValue(role.Trim(), out var resolved))
+        {
+            return false;
+        }
+
         canonicalRole = resolved;
         return true;
     }
@@ -88,12 +96,16 @@ public class RolesController : ControllerBase
     public async Task<ActionResult<RoleMatrix>> SetRole(string role, [FromBody] List<string> permissions)
     {
         if (!TryResolveEditableRole(role, out var canonicalRole))
+        {
             return BadRequest("Unknown or non-editable role.");
+        }
 
         permissions ??= new List<string>();
 
         if (permissions.Count > Permissions.All.Count())
+        {
             return BadRequest("Too many permissions supplied.");
+        }
 
         var normalized = permissions
             .Where(p => !string.IsNullOrWhiteSpace(p))
@@ -103,13 +115,17 @@ public class RolesController : ControllerBase
 
         var invalid = normalized.Where(p => !Permissions.All.Contains(p)).ToList();
         if (invalid.Count > 0)
+        {
             return BadRequest($"Unknown permission(s): {string.Join(", ", invalid)}");
+        }
 
         var existing = await _context.RolePermissions.Where(rp => rp.Role == canonicalRole).ToListAsync();
         _context.RolePermissions.RemoveRange(existing);
 
         foreach (var p in normalized)
+        {
             _context.RolePermissions.Add(new RolePermission { Role = canonicalRole, Permission = p });
+        }
 
         await _context.SaveChangesAsync();
 
@@ -125,7 +141,9 @@ public class RolesController : ControllerBase
     public async Task<ActionResult<RoleMatrix>> ResetRole(string role)
     {
         if (!TryResolveEditableRole(role, out var canonicalRole))
+        {
             return BadRequest("Unknown or non-editable role.");
+        }
 
         var existing = await _context.RolePermissions.Where(rp => rp.Role == canonicalRole).ToListAsync();
         _context.RolePermissions.RemoveRange(existing);

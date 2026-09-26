@@ -36,6 +36,17 @@ function get(path) {
 
 const normalize = value => value.normalize("NFKC").trim().toLocaleLowerCase("en-US");
 
+async function getPages(path, filters = {}) {
+  const rows = [];
+  const pageSize = 1000;
+  for (let offset = 0; ; offset += pageSize) {
+    const query = new URLSearchParams({ ...filters, limit: pageSize, offset });
+    const page = await get(`${path}?${query}`);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 async function main() {
   const locations = await get("/api/locations");
   const needle = normalize(search);
@@ -48,8 +59,8 @@ async function main() {
   console.log(location.interactiveUrl);
 
   const [warps, renders] = await Promise.all([
-    get(`/api/warps?locationId=${location.rowid}&limit=1000`),
-    get(`/api/renders?locationId=${location.rowid}&limit=1000`),
+    getPages('/api/warps', { locationId: location.rowid }),
+    getPages('/api/renders', { locationId: location.rowid }),
   ]);
   console.log("warps:", warps.map(item => `/warp ${item.name}`));
   console.log("renders:", renders.map(item => ({

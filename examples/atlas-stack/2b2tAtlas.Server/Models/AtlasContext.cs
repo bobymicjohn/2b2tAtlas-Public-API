@@ -18,7 +18,7 @@ public partial class AtlasContext : DbContext
     /// <summary>Gets or sets public HTTPS metadata links associated with Atlas locations.</summary>
     public virtual DbSet<Attachment> Attachments { get; set; }
 
-    /// <summary>Gets or sets the public catalog of named Minecraft locations and native-dimension coordinates.</summary>
+    /// <summary>Public catalog of named Minecraft locations and native-dimension coordinates.</summary>
     public virtual DbSet<Location> Locations { get; set; }
 
     /// <summary>Gets or sets tile-pyramid renders anchored to individual Atlas locations.</summary>

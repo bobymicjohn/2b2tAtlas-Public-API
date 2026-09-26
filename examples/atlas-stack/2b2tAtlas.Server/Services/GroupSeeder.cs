@@ -344,11 +344,19 @@ public class GroupSeeder
         var linked = 0;
         foreach (var canonical in Canonical.Where(item => item.Locations is { Length: > 0 }))
         {
-            if (!canonicalByName.TryGetValue(canonical.Name, out var group)) continue;
+            if (!canonicalByName.TryGetValue(canonical.Name, out var group))
+            {
+                continue;
+            }
+
             foreach (var locationName in canonical.Locations!)
             {
                 if (!locationByName.TryGetValue(locationName, out var location) ||
-                    !existingLinks.Add((location.Rowid, group.Id))) continue;
+                    !existingLinks.Add((location.Rowid, group.Id)))
+                {
+                    continue;
+                }
+
                 _context.LocationGroups.Add(new LocationGroup
                 {
                     LocationRowid = location.Rowid,
@@ -362,9 +370,16 @@ public class GroupSeeder
 
         // Reuse the same rules that run during ingestion and enrichment; startup also repairs
         // older rows without waiting for wiki indexing or a model response.
-        if (linked > 0) await _context.SaveChangesAsync();
+        if (linked > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
+
         linked += await new ArchiveGroupAttributionService(_context).StageAsync();
-        if (linked > 0) await _context.SaveChangesAsync();
+        if (linked > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
 
         _logger.LogInformation(
             "Group seed: {Added} added, {Updated} legacy row(s) enriched, {Linked} location attribution(s) added ({Total} canonical).",

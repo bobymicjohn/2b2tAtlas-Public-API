@@ -126,11 +126,20 @@ namespace _2b2tAtlas.Server.Controllers
             {
                 var requestedRole = request.Role ?? RoleNames.User;
                 if (!RoleNames.TryNormalize(requestedRole, out var canonicalRole))
+                {
                     return BadRequest("Unknown role.");
+                }
+
                 if (canonicalRole == RoleNames.SuperAdmin)
+                {
                     return BadRequest("Founder is reserved for the existing atlas-owner account.");
+                }
+
                 if (canonicalRole != RoleNames.User && !CallerCanAssignRoles)
+                {
                     return Forbid();
+                }
+
                 if (!RoleNames.CanAssign(CallerRole, canonicalRole, CallerIsSuperAdmin))
                 {
                     return Forbid();
@@ -168,7 +177,10 @@ namespace _2b2tAtlas.Server.Controllers
                 _logger.LogInformation("User '{Username}' created successfully with ID {UserId}", serverUser.Username, serverUser.Id);
 
                 var createdUser = MapToSharedUser(serverUser);
-                return CreatedAtAction(nameof(GetUser), new { id = serverUser.Id }, createdUser);
+                return CreatedAtAction(nameof(GetUser), new
+                {
+                    id = serverUser.Id
+                }, createdUser);
             }
             catch (Exception ex)
             {
@@ -216,15 +228,26 @@ namespace _2b2tAtlas.Server.Controllers
 
                 var requestedRole = request.Role ?? serverUser.Role;
                 if (!RoleNames.TryNormalize(requestedRole, out var canonicalRole))
+                {
                     return BadRequest("Unknown role.");
+                }
+
                 if (id == 1 && (request.Username != "atlas-owner" || canonicalRole != RoleNames.SuperAdmin || request.IsActive == false))
+                {
                     return BadRequest("The owner account cannot be renamed, demoted or disabled.");
+                }
+
                 if (id != 1 && canonicalRole == RoleNames.SuperAdmin)
+                {
                     return BadRequest("Founder is reserved for atlas-owner.");
+                }
+
                 if (!string.Equals(canonicalRole, serverUser.Role, StringComparison.Ordinal))
                 {
                     if (!CallerCanAssignRoles || !RoleNames.CanAssign(CallerRole, canonicalRole, CallerIsSuperAdmin))
+                    {
                         return Forbid();
+                    }
                 }
 
                 var discordHandle = NormalizeDiscordHandle(request.DiscordHandle);
@@ -247,7 +270,9 @@ namespace _2b2tAtlas.Server.Controllers
                 serverUser.Role = canonicalRole;
 
                 if (request.IsActive.HasValue)
+                {
                     serverUser.IsActive = request.IsActive.Value.ToInt();
+                }
 
                 serverUser.IsAdmin = canonicalRole is RoleNames.Admin or RoleNames.SuperAdmin ? 1 : 0;
 
@@ -279,7 +304,11 @@ namespace _2b2tAtlas.Server.Controllers
         [HttpDelete("users/{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            if (id == 1) return BadRequest("The owner account cannot be deleted.");
+            if (id == 1)
+            {
+                return BadRequest("The owner account cannot be deleted.");
+            }
+
             _logger.LogInformation("DeleteUser called for user ID: {UserId}", id);
 
             try

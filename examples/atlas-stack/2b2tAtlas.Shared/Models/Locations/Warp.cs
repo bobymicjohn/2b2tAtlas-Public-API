@@ -7,11 +7,11 @@ namespace Atlas.Locations;
 public class Warp
 {
     /// <summary>
-    /// Gets or sets the unique identifier for the warp.
+    /// Unique identifier for the warp.
     /// </summary>
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the public API URL for this Archive warp record.</summary>
+    /// <summary>Public API URL for this Archive warp record.</summary>
     public string? ApiUrl { get; set; }
 
     /// <summary>
@@ -21,18 +21,18 @@ public class Warp
     public string? WarpUuid { get; set; }
 
     /// <summary>
-    /// Gets or sets the location UUID foreign key.
+    /// Location UUID foreign key.
     /// </summary>
     [StringLength(36)]
     public string? LocationUuidFk { get; set; }
 
     /// <summary>
-    /// Gets or sets the foreign key to the location.
+    /// Foreign key to the location.
     /// </summary>
     public int? LocationRowid { get; set; }
 
     /// <summary>
-    /// Gets or sets the warp name.
+    /// Warp name.
     /// </summary>
     [Required]
     [StringLength(255)]
@@ -42,35 +42,35 @@ public class Warp
     public bool IsSinglePlayerConcept => ArchiveWarpResolver.IsSinglePlayerConcept(Name);
 
     /// <summary>
-    /// Gets or sets the date and time when the warp was added.
+    /// Date and time when the warp was added.
     /// </summary>
     public DateTime TimeAdded { get; set; }
 
-    /// <summary>Gets or sets the immutable WDL digest associated with this Archive warp.</summary>
+    /// <summary>Immutable WDL digest associated with this Archive warp.</summary>
     public string? ArchiveSha256 { get; set; }
 
-    /// <summary>Gets or sets the public URL of the immutable, bounded Minecraft world ZIP.</summary>
+    /// <summary>Public URL of the immutable, bounded Minecraft world ZIP.</summary>
     public string? WorldDownloadUrl { get; set; }
 
-    /// <summary>Gets or sets the public JSON metadata URL for the bounded world download.</summary>
+    /// <summary>Public JSON metadata URL for the bounded world download.</summary>
     public string? WorldDownloadMetadataUrl { get; set; }
 
-    /// <summary>Gets or sets the capture scope, currently <c>bounded-footprint</c> for collector WDLs.</summary>
+    /// <summary>Capture scope, currently <c>bounded-footprint</c> for collector WDLs.</summary>
     public string? WorldDownloadScope { get; set; }
 
-    /// <summary>Gets or sets the declared date of this warp's world download.</summary>
+    /// <summary>Declared date of this warp's world download.</summary>
     public string? WorldDownloadDate { get; set; }
 
-    /// <summary>Gets or sets the human-readable provenance attribution for this warp.</summary>
+    /// <summary>Human-readable provenance attribution for this warp.</summary>
     public string? Source { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing X coordinate for this WDL warp.</summary>
+    /// <summary>Live Archive landing X coordinate for this WDL warp.</summary>
     public double? ArchiveX { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing Y coordinate for this WDL warp.</summary>
+    /// <summary>Live Archive landing Y coordinate for this WDL warp.</summary>
     public double? ArchiveY { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing Z coordinate for this WDL warp.</summary>
+    /// <summary>Live Archive landing Z coordinate for this WDL warp.</summary>
     public double? ArchiveZ { get; set; }
 
     // Navigation property temporarily commented out to fix build
@@ -80,16 +80,16 @@ public class Warp
 /// <summary>A public Archive warp record with its owning Atlas location and navigable links.</summary>
 public sealed class WarpRecord : Warp
 {
-    /// <summary>Gets or sets the owning location's display name.</summary>
+    /// <summary>Owning location's display name.</summary>
     public string LocationName { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the owning location's Minecraft dimension.</summary>
+    /// <summary>Owning location's Minecraft dimension.</summary>
     public Dimension Dimension { get; set; }
 
-    /// <summary>Gets or sets the owning location's canonical entity URL.</summary>
+    /// <summary>Owning location's canonical entity URL.</summary>
     public string LocationUrl { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the owning location's public API URL.</summary>
+    /// <summary>Owning location's public API URL.</summary>
     public string LocationApiUrl { get; set; } = string.Empty;
 }
 
@@ -100,67 +100,67 @@ public sealed class WorldDownloadRecord
     public int? WarpId { get; set; }
     /// <summary>Gets or sets the Archive warp name.</summary>
     public string? WarpName { get; set; }
-    /// <summary>Gets or sets the source render identifier for a preserved pre-Archive WDL.</summary>
+    /// <summary>Source render identifier for a preserved pre-Archive WDL.</summary>
     public int? RenderId { get; set; }
-    /// <summary>Gets or sets the source render name for a preserved pre-Archive WDL.</summary>
+    /// <summary>Source render name for a preserved pre-Archive WDL.</summary>
     public string? RenderName { get; set; }
     /// <summary>Gets whether this source is a preserved single-player concept rather than a live 2b2t snapshot.</summary>
     public bool IsSinglePlayerConcept =>
         ArchiveWarpResolver.IsSinglePlayerConcept(WarpName) ||
         ArchiveWarpResolver.IsSinglePlayerConcept(RenderName);
-    /// <summary>Gets or sets the owning Atlas location identifier.</summary>
+    /// <summary>Owning Atlas location identifier.</summary>
     public int LocationId { get; set; }
-    /// <summary>Gets or sets the owning Atlas location name.</summary>
+    /// <summary>Owning Atlas location name.</summary>
     public string LocationName { get; set; } = string.Empty;
-    /// <summary>Gets or sets the canonical location entity URL.</summary>
+    /// <summary>Canonical location entity URL.</summary>
     public string LocationUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the public location API URL.</summary>
+    /// <summary>Public location API URL.</summary>
     public string LocationApiUrl { get; set; } = string.Empty;
     /// <summary>Gets or sets this record's public metadata URL.</summary>
     public string MetadataUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the immutable ZIP download URL.</summary>
+    /// <summary>Immutable ZIP download URL.</summary>
     public string DownloadUrl { get; set; } = string.Empty;
-    /// <summary>Gets or sets the suggested download file name.</summary>
+    /// <summary>Suggested download file name.</summary>
     public string FileName { get; set; } = string.Empty;
     /// <summary>Gets or sets the ZIP media type.</summary>
     public string ContentType { get; set; } = "application/zip";
     /// <summary>Gets or sets the ZIP size in bytes.</summary>
     public long ByteLength { get; set; }
-    /// <summary>Gets or sets the lowercase SHA-256 digest of the ZIP.</summary>
+    /// <summary>Lowercase SHA-256 digest of the ZIP.</summary>
     public string Sha256 { get; set; } = string.Empty;
-    /// <summary>Gets or sets the capture scope.</summary>
+    /// <summary>Capture scope.</summary>
     public string CaptureType { get; set; } = "bounded-footprint";
-    /// <summary>Gets or sets the saved-world format.</summary>
+    /// <summary>Saved-world format.</summary>
     public string WorldFormat { get; set; } = "Minecraft Java Edition save";
-    /// <summary>Gets or sets the save's playability classification.</summary>
+    /// <summary>Save's playability classification.</summary>
     public string Playability { get; set; } = "partial-java-save";
-    /// <summary>Gets or sets whether the ZIP represents a complete world.</summary>
+    /// <summary>Whether the ZIP represents a complete world.</summary>
     public bool IsCompleteWorld { get; set; }
-    /// <summary>Gets or sets the historical-fidelity warning.</summary>
+    /// <summary>Historical-fidelity warning.</summary>
     public string Warning { get; set; } = string.Empty;
-    /// <summary>Gets or sets the retained Minecraft dimension.</summary>
+    /// <summary>Retained Minecraft dimension.</summary>
     public string Dimension { get; set; } = string.Empty;
-    /// <summary>Gets or sets the number of retained chunks when known.</summary>
+    /// <summary>Number of retained chunks when known.</summary>
     public int? ChunkCount { get; set; }
-    /// <summary>Gets or sets the half-open retained block bounds when known.</summary>
+    /// <summary>Half-open retained block bounds when known.</summary>
     public WorldDownloadBounds? Bounds { get; set; }
-    /// <summary>Gets or sets the declared source-world date.</summary>
+    /// <summary>Declared source-world date.</summary>
     public string? WorldDownloadDate { get; set; }
-    /// <summary>Gets or sets the capture provenance.</summary>
+    /// <summary>Capture provenance.</summary>
     public string? Source { get; set; }
-    /// <summary>Gets or sets the human-readable preservation attribution.</summary>
+    /// <summary>Human-readable preservation attribution.</summary>
     public string Attribution { get; set; } = string.Empty;
 }
 
 /// <summary>Half-open native-dimension block bounds retained with a bounded world download.</summary>
 public sealed class WorldDownloadBounds
 {
-    /// <summary>Gets or sets the inclusive minimum block X coordinate.</summary>
+    /// <summary>Inclusive minimum block X coordinate.</summary>
     public int MinX { get; set; }
-    /// <summary>Gets or sets the inclusive minimum block Z coordinate.</summary>
+    /// <summary>Inclusive minimum block Z coordinate.</summary>
     public int MinZ { get; set; }
-    /// <summary>Gets or sets the exclusive maximum block X coordinate.</summary>
+    /// <summary>Exclusive maximum block X coordinate.</summary>
     public int MaxXExclusive { get; set; }
-    /// <summary>Gets or sets the exclusive maximum block Z coordinate.</summary>
+    /// <summary>Exclusive maximum block Z coordinate.</summary>
     public int MaxZExclusive { get; set; }
 }

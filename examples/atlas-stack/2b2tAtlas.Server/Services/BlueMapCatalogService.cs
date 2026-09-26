@@ -31,7 +31,11 @@ public sealed class BlueMapCatalogService
     /// </summary>
     public bool IsAdvertisedGeneration(string generationName)
     {
-        if (string.IsNullOrWhiteSpace(generationName)) return false;
+        if (string.IsNullOrWhiteSpace(generationName))
+        {
+            return false;
+        }
+
         EnsureCurrent();
         return _snapshot.GenerationNames.Contains(generationName);
     }
@@ -45,10 +49,18 @@ public sealed class BlueMapCatalogService
 
     private void EnsureCurrent()
     {
-        if (DateTime.UtcNow < _expiresUtc) return;
+        if (DateTime.UtcNow < _expiresUtc)
+        {
+            return;
+        }
+
         lock (_gate)
         {
-            if (DateTime.UtcNow < _expiresUtc) return;
+            if (DateTime.UtcNow < _expiresUtc)
+            {
+                return;
+            }
+
             _snapshot = LoadCatalog();
             _expiresUtc = DateTime.UtcNow.AddSeconds(Math.Clamp(_options.CatalogCacheSeconds, 5, 300));
         }
@@ -56,7 +68,10 @@ public sealed class BlueMapCatalogService
 
     private CatalogSnapshot LoadCatalog()
     {
-        if (!Directory.Exists(_options.OutputRoot)) return CatalogSnapshot.Empty;
+        if (!Directory.Exists(_options.OutputRoot))
+        {
+            return CatalogSnapshot.Empty;
+        }
 
         var candidates = new List<BlueMapGeneration>();
         var diagnosticGenerationCount = 0;
@@ -66,7 +81,10 @@ public sealed class BlueMapCatalogService
         foreach (var generationRoot in Directory.EnumerateDirectories(_options.OutputRoot))
         {
             var path = Path.Combine(generationRoot, "manifest.json");
-            if (!System.IO.File.Exists(path)) continue;
+            if (!System.IO.File.Exists(path))
+            {
+                continue;
+            }
 
             try
             {
@@ -74,23 +92,38 @@ public sealed class BlueMapCatalogService
                 var root = document.RootElement;
                 if (!root.TryGetProperty("Status", out var status) ||
                     !string.Equals(status.GetString(), "complete", StringComparison.OrdinalIgnoreCase) ||
-                    !root.TryGetProperty("RenderId", out var renderIdValue)) continue;
+                    !root.TryGetProperty("RenderId", out var renderIdValue))
+                {
+                    continue;
+                }
 
                 diagnosticGenerationCount++;
                 if (root.TryGetProperty("OutputBytes", out var outputBytesValue) && outputBytesValue.TryGetInt64(out var manifestBytes) && manifestBytes > 0)
+                {
                     outputBytes += manifestBytes;
+                }
 
                 if (Path.GetFileName(generationRoot).Contains(".superseded-", StringComparison.OrdinalIgnoreCase) ||
-                    !System.IO.File.Exists(Path.Combine(generationRoot, "web", "index.html"))) continue;
+                    !System.IO.File.Exists(Path.Combine(generationRoot, "web", "index.html")))
+                {
+                    continue;
+                }
 
                 var renderId = renderIdValue.GetInt32();
                 var profile = root.TryGetProperty("RendererProfileVersion", out var profileValue) ? profileValue.GetInt32() : 1;
-                if (profile < Math.Max(1, _options.MinimumProfileVersion)) continue;
+                if (profile < Math.Max(1, _options.MinimumProfileVersion))
+                {
+                    continue;
+                }
                 // Profile 7 is the first Atlas profile whose source chunks are
                 // relit in an isolated derivative and then audited back to the
                 // exact original Anvil footprint. Do not advertise a partial or
                 // pre-gate profile-7 directory merely because it has an index.
-                if (profile >= 7 && !HasValidatedLightingAndPayload(root)) continue;
+                if (profile >= 7 && !HasValidatedLightingAndPayload(root))
+                {
+                    continue;
+                }
+
                 var generated = root.TryGetProperty("GeneratedUtc", out var generatedValue) &&
                     DateTime.TryParse(generatedValue.GetString(), out var parsed) ? parsed.ToUniversalTime() : DateTime.MinValue;
                 var dimension = root.TryGetProperty("Dimension", out var dimensionValue)
@@ -143,7 +176,10 @@ public sealed class BlueMapCatalogService
         IReadOnlySet<string> GenerationNames,
         BlueMapCatalogSummary Summary)
     {
-        public static CatalogSnapshot Empty { get; } = new(
+        public static CatalogSnapshot Empty
+        {
+            get;
+        } = new(
             new Dictionary<int, BlueMapGeneration>(),
             new HashSet<string>(StringComparer.OrdinalIgnoreCase),
             BlueMapCatalogSummary.Empty);

@@ -31,7 +31,10 @@ public sealed class IngestionMatchAiService
         CancellationToken cancellationToken)
     {
         if (!_options.Enabled || File.Exists(_options.GameModeLockPath) || suggestions.Count is 0 or > 8)
+        {
             return null;
+        }
+
         var candidateIds = suggestions.Select(value => value.LocationId).ToHashSet();
         var rows = candidates.Where(value => candidateIds.Contains(value.LocationId)).Take(8).Select(value => new
         {
@@ -68,10 +71,18 @@ public sealed class IngestionMatchAiService
             // matching/manual review, never turn a valid WDL upload into a server error.
             return null;
         }
-        if (string.IsNullOrWhiteSpace(output)) return null;
+        if (string.IsNullOrWhiteSpace(output))
+        {
+            return null;
+        }
+
         var start = output.IndexOf('{');
         var end = output.LastIndexOf('}');
-        if (start < 0 || end <= start) return null;
+        if (start < 0 || end <= start)
+        {
+            return null;
+        }
+
         try
         {
             var parsed = JsonSerializer.Deserialize<AiResponse>(output[start..(end + 1)],
@@ -79,7 +90,10 @@ public sealed class IngestionMatchAiService
             if (parsed?.Decision != "existing" || parsed.LocationId is not int locationId ||
                 !candidateIds.Contains(locationId) || parsed.Confidence is < 0 or > 1 ||
                 parsed.Reason is null || parsed.Reason.Length is < 1 or > 240 || parsed.Reason.Any(char.IsControl))
+            {
                 return null;
+            }
+
             return new IngestionAiMatch(locationId, parsed.Confidence, parsed.Reason);
         }
         catch (JsonException)

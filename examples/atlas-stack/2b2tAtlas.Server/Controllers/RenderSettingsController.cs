@@ -70,7 +70,9 @@ public sealed class RenderSettingsController : ControllerBase
     public async Task<ActionResult<RenderSettingsDto>> Get(CancellationToken cancellationToken)
     {
         if (!System.IO.File.Exists(_options.RendererJsonPath))
+        {
             return Problem($"Renderer profile not found at {_options.RendererJsonPath}.");
+        }
 
         JsonNode root;
         try
@@ -99,7 +101,9 @@ public sealed class RenderSettingsController : ControllerBase
             foreach (var (dim, args) in dims)
             {
                 if (args is JsonArray array)
+                {
                     dto.Dimensions.Add(ParseArgs(dim, array));
+                }
             }
         }
 
@@ -113,13 +117,24 @@ public sealed class RenderSettingsController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> Save([FromBody] RenderSettingsDto dto, CancellationToken cancellationToken)
     {
-        if (dto is null) return BadRequest("Request body is required.");
+        if (dto is null)
+        {
+            return BadRequest("Request body is required.");
+        }
 
         var errors = Validate(dto);
-        if (errors.Count > 0) return BadRequest(new { errors });
+        if (errors.Count > 0)
+        {
+            return BadRequest(new
+            {
+                errors
+            });
+        }
 
         if (!System.IO.File.Exists(_options.RendererJsonPath))
+        {
             return Problem($"Renderer profile not found at {_options.RendererJsonPath}.");
+        }
 
         JsonNode root;
         try
@@ -134,7 +149,10 @@ public sealed class RenderSettingsController : ControllerBase
         // Rebuild only the dimension argument arrays; executablePath, expectedSha256, version stay untouched.
         var dims = root["dimensionArguments"] as JsonObject ?? new JsonObject();
         foreach (var option in dto.Dimensions)
+        {
             dims[option.Dimension.ToLowerInvariant()] = BuildArgs(option);
+        }
+
         root["dimensionArguments"] = dims;
         root["nightColorGrade"] = new JsonObject
         {
@@ -181,27 +199,41 @@ public sealed class RenderSettingsController : ControllerBase
     public async Task<ActionResult<BulkRerenderResult>> RerenderAll(CancellationToken cancellationToken)
     {
         if (!Directory.Exists(_archiveOptions.Root))
+        {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, "The WDL archive is unavailable.");
+        }
 
         var active = await _context.IngestionJobs.AnyAsync(job =>
             job.RerenderRequested == 1 &&
             (job.Status == "queued" || job.Status == "claimed" || job.Status == "running" || job.Status == "completing"),
             cancellationToken);
-        if (active) return Conflict("A bulk re-render is already queued or running.");
+        if (active)
+        {
+            return Conflict("A bulk re-render is already queued or running.");
+        }
 
         var jobs = await _context.IngestionJobs
             .Where(job => job.RenderId != null && job.ArchiveSha256 != null &&
                 (job.Status == "completed" || job.RerenderRequested == 1 && job.Status == "failed"))
             .OrderBy(job => job.Id)
             .ToListAsync(cancellationToken);
-        if (jobs.Count == 0) return Conflict("No completed renders are eligible for rebuilding.");
+        if (jobs.Count == 0)
+        {
+            return Conflict("No completed renders are eligible for rebuilding.");
+        }
 
         var missing = jobs.Select(job => job.ArchiveSha256!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Where(sha => !System.IO.File.Exists(WdlArchiveStore.ObjectPath(_archiveOptions.Root, sha)))
             .ToList();
         if (missing.Count > 0)
-            return Conflict(new { message = "Bulk re-render was not queued because archived WDL sources are missing.", missing });
+        {
+            return Conflict(new
+            {
+                message = "Bulk re-render was not queued because archived WDL sources are missing.",
+                missing
+            });
+        }
 
         var renderIds = jobs.Select(job => job.RenderId!.Value).ToList();
         var renders = await _context.Renders
@@ -212,7 +244,10 @@ public sealed class RenderSettingsController : ControllerBase
         foreach (var job in jobs)
         {
             if (!renders.TryGetValue(job.RenderId!.Value, out var render))
+            {
                 return Conflict($"Render {job.RenderId} for ingestion job {job.Id} is missing.");
+            }
+
             job.Dimension = render.Dimension switch
             {
                 0 => "overworld",
@@ -256,21 +291,33 @@ public sealed class RenderSettingsController : ControllerBase
     public async Task<ActionResult<RenderPreviewResult>> Preview([FromQuery] string world, [FromQuery] string dimension, CancellationToken cancellationToken)
     {
         if (!ValidDimensions.Contains(dimension ?? string.Empty))
+        {
             return BadRequest("dimension must be overworld, nether, or end.");
+        }
+
         var worldPath = ResolveSampleWorld(world);
         if (worldPath is null)
+        {
             return Ok(new RenderPreviewResult { Ok = false, Error = "Unknown or unavailable sample world." });
+        }
+
         if (!System.IO.File.Exists(_options.RendererJsonPath))
+        {
             return Ok(new RenderPreviewResult { Ok = false, Error = "Renderer profile not found." });
+        }
 
         var root = JsonNode.Parse(await System.IO.File.ReadAllTextAsync(_options.RendererJsonPath, cancellationToken))!;
         var exe = root["executablePath"]?.GetValue<string>();
         if (string.IsNullOrWhiteSpace(exe) || !System.IO.File.Exists(exe))
+        {
             return Ok(new RenderPreviewResult { Ok = false, Error = "unMINED executable not found." });
+        }
 
         var area = AutoDetectArea(worldPath, dimension!);
         if (area is null)
+        {
             return Ok(new RenderPreviewResult { Ok = false, Error = "The sample world has no region files to preview." });
+        }
 
         var outputRoot = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"atlas-preview-{Guid.NewGuid():N}");
         var dayOutput = System.IO.Path.Combine(outputRoot, "day");
@@ -291,13 +338,26 @@ public sealed class RenderSettingsController : ControllerBase
         if (root["dimensionArguments"]?[dimension.ToLowerInvariant()] is JsonArray dimensionArgs)
         {
             var renderOptions = ParseArgs(dimension, dimensionArgs);
-            if (renderOptions.TopY is int topY) args.Add($"--topY={topY}");
-            if (renderOptions.BottomY is int bottomY) args.Add($"--bottomY={bottomY}");
+            if (renderOptions.TopY is int topY)
+            {
+                args.Add($"--topY={topY}");
+            }
+
+            if (renderOptions.BottomY is int bottomY)
+            {
+                args.Add($"--bottomY={bottomY}");
+            }
+
             if (!string.IsNullOrWhiteSpace(renderOptions.Shadows) &&
                 !string.Equals(renderOptions.Shadows, "default", StringComparison.OrdinalIgnoreCase))
+            {
                 args.Add($"--shadows={renderOptions.Shadows}");
+            }
+
             if (!string.IsNullOrWhiteSpace(renderOptions.Background))
+            {
                 args.Add($"--background={renderOptions.Background}");
+            }
         }
         var stopwatch = Stopwatch.StartNew();
         var dayArgs = args.Append($"--output={dayOutput}").ToList();
@@ -320,7 +380,10 @@ public sealed class RenderSettingsController : ControllerBase
             if (nightComposition.MinX != composition.MinX || nightComposition.MinZ != composition.MinZ ||
                 nightComposition.MaxXExclusive != composition.MaxXExclusive ||
                 nightComposition.MaxZExclusive != composition.MaxZExclusive)
+            {
                 throw new InvalidOperationException("Day and night previews do not share identical bounds.");
+            }
+
             var nightPng = ApplyNightColorGrade(
                 composition.Png,
                 nightComposition.Png,
@@ -341,7 +404,11 @@ public sealed class RenderSettingsController : ControllerBase
         }
         finally
         {
-            try { System.IO.Directory.Delete(outputRoot, recursive: true); } catch (IOException) { /* best-effort cleanup */ }
+            try
+            {
+                System.IO.Directory.Delete(outputRoot, recursive: true);
+            }
+            catch (IOException) { /* best-effort cleanup */ }
         }
     }
 
@@ -349,7 +416,11 @@ public sealed class RenderSettingsController : ControllerBase
 
     private List<string> ListSampleWorlds()
     {
-        if (!System.IO.Directory.Exists(_options.SampleWorldsRoot)) return [];
+        if (!System.IO.Directory.Exists(_options.SampleWorldsRoot))
+        {
+            return [];
+        }
+
         return System.IO.Directory.EnumerateDirectories(_options.SampleWorldsRoot)
             .Where(path => System.IO.File.Exists(System.IO.Path.Combine(path, "level.dat")))
             .Select(System.IO.Path.GetFileName)
@@ -360,10 +431,17 @@ public sealed class RenderSettingsController : ControllerBase
 
     private string? ResolveSampleWorld(string? name)
     {
-        if (string.IsNullOrWhiteSpace(name)) return null;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
         var match = ListSampleWorlds().FirstOrDefault(candidate =>
             string.Equals(candidate, name, StringComparison.OrdinalIgnoreCase));
-        if (match is null) return null;
+        if (match is null)
+        {
+            return null;
+        }
 
         var root = System.IO.Path.GetFullPath(_options.SampleWorldsRoot)
             .TrimEnd(System.IO.Path.DirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar;
@@ -380,7 +458,10 @@ public sealed class RenderSettingsController : ControllerBase
             _ => "region",
         };
         var regionDir = System.IO.Path.Combine(worldPath, relativeRegionPath);
-        if (!System.IO.Directory.Exists(regionDir)) return null;
+        if (!System.IO.Directory.Exists(regionDir))
+        {
+            return null;
+        }
 
         var pattern = new Regex(@"^r\.(-?\d+)\.(-?\d+)\.mca$", RegexOptions.CultureInvariant);
         var anchor = System.IO.Directory.EnumerateFiles(regionDir, "r.*.*.mca")
@@ -395,7 +476,11 @@ public sealed class RenderSettingsController : ControllerBase
             .OrderByDescending(item => item.Size)
             .FirstOrDefault();
 
-        if (anchor is null) return null;
+        if (anchor is null)
+        {
+            return null;
+        }
+
         var regionX = anchor.X - 1;
         var regionZ = anchor.Z - 1;
         return new PreviewArea(
@@ -433,14 +518,20 @@ public sealed class RenderSettingsController : ControllerBase
         var fullDir = System.IO.Path.GetFullPath(configDir);
         var fullPath = System.IO.Path.GetFullPath(path);
         if (System.IO.Path.GetDirectoryName(fullPath) != fullDir)
+        {
             throw new InvalidOperationException("Refusing to write outside the unMINED config directory.");
+        }
+
         BackupThenWrite(path, content ?? string.Empty);
     }
 
     private static void BackupThenWrite(string path, string content)
     {
         if (System.IO.File.Exists(path))
+        {
             System.IO.File.Copy(path, path + ".bak", overwrite: true);
+        }
+
         System.IO.File.WriteAllText(path, content, new UTF8Encoding(false));
     }
 
@@ -450,27 +541,65 @@ public sealed class RenderSettingsController : ControllerBase
         foreach (var option in dto.Dimensions)
         {
             if (!ValidDimensions.Contains(option.Dimension ?? string.Empty))
+            {
                 errors.Add($"Unknown dimension '{option.Dimension}'.");
+            }
+
             if (!ValidShadows.Contains(option.Shadows ?? "default"))
+            {
                 errors.Add($"Invalid shadows value '{option.Shadows}' for {option.Dimension}.");
+            }
+
             if (!ValidFormats.Contains(option.ImageFormat ?? "png"))
+            {
                 errors.Add($"Invalid image format '{option.ImageFormat}' for {option.Dimension}.");
+            }
+
             if (!string.IsNullOrWhiteSpace(option.Background) && !HexColor.IsMatch(option.Background))
+            {
                 errors.Add($"Background must be #rrggbb for {option.Dimension}.");
+            }
+
             if (option.TopY is int ty && ty is < -64 or > 384)
+            {
                 errors.Add($"topY out of range for {option.Dimension}.");
+            }
+
             if (option.BottomY is int by && by is < -64 or > 384)
+            {
                 errors.Add($"bottomY out of range for {option.Dimension}.");
+            }
+
             if (option.TopY is int topY && option.BottomY is int bottomY && bottomY > topY)
+            {
                 errors.Add($"bottomY cannot be greater than topY for {option.Dimension}.");
+            }
         }
-        if ((dto.ColorsText?.Length ?? 0) > _options.MaxConfigFileBytes) errors.Add("Colours file is too large.");
-        if ((dto.BiomeTintsText?.Length ?? 0) > _options.MaxConfigFileBytes) errors.Add("Biome tints file is too large.");
-        if ((dto.BlockStylesText?.Length ?? 0) > _options.MaxConfigFileBytes) errors.Add("Block styles file is too large.");
+        if ((dto.ColorsText?.Length ?? 0) > _options.MaxConfigFileBytes)
+        {
+            errors.Add("Colours file is too large.");
+        }
+
+        if ((dto.BiomeTintsText?.Length ?? 0) > _options.MaxConfigFileBytes)
+        {
+            errors.Add("Biome tints file is too large.");
+        }
+
+        if ((dto.BlockStylesText?.Length ?? 0) > _options.MaxConfigFileBytes)
+        {
+            errors.Add("Block styles file is too large.");
+        }
+
         if (!double.IsFinite(dto.NightColorGrade.Saturation) || dto.NightColorGrade.Saturation is < 0 or > 2)
+        {
             errors.Add("Night saturation must be between 0 and 2.");
+        }
+
         if (!double.IsFinite(dto.NightColorGrade.Lightness) || dto.NightColorGrade.Lightness is < 0.5 or > 2)
+        {
             errors.Add("Night lightness must be between 0.5 and 2.");
+        }
+
         return errors;
     }
 
@@ -486,14 +615,19 @@ public sealed class RenderSettingsController : ControllerBase
         byte[] nightPng,
         NightColorGradeOptions options)
     {
-        if (!options.Enabled) return nightPng;
+        if (!options.Enabled)
+        {
+            return nightPng;
+        }
 
         using var day = SKBitmap.Decode(dayPng)
             ?? throw new InvalidOperationException("The daytime preview could not be decoded.");
         using var night = SKBitmap.Decode(nightPng)
             ?? throw new InvalidOperationException("The night preview could not be decoded.");
         if (day.Width != night.Width || day.Height != night.Height)
+        {
             throw new InvalidOperationException("Day and night preview dimensions differ.");
+        }
 
         var dayPixels = day.Pixels;
         var nightPixels = night.Pixels;
@@ -536,19 +670,42 @@ public sealed class RenderSettingsController : ControllerBase
             Background = Value("--background="),
             ImageFormat = Value("--imageformat=") ?? "png",
         };
-        if (int.TryParse(Value("--topY="), out var topY)) option.TopY = topY;
-        if (int.TryParse(Value("--bottomY="), out var bottomY)) option.BottomY = bottomY;
+        if (int.TryParse(Value("--topY="), out var topY))
+        {
+            option.TopY = topY;
+        }
+
+        if (int.TryParse(Value("--bottomY="), out var bottomY))
+        {
+            option.BottomY = bottomY;
+        }
+
         return option;
     }
 
     private static JsonArray BuildArgs(DimensionRenderOptions option)
     {
         var args = new List<string> { "web", "render", "--world={world}", $"--dimension={option.Dimension.ToLowerInvariant()}" };
-        if (option.TopY is int topY) args.Add($"--topY={topY}");
-        if (option.BottomY is int bottomY) args.Add($"--bottomY={bottomY}");
+        if (option.TopY is int topY)
+        {
+            args.Add($"--topY={topY}");
+        }
+
+        if (option.BottomY is int bottomY)
+        {
+            args.Add($"--bottomY={bottomY}");
+        }
+
         if (!string.IsNullOrWhiteSpace(option.Shadows) && !string.Equals(option.Shadows, "default", StringComparison.OrdinalIgnoreCase))
+        {
             args.Add($"--shadows={option.Shadows}");
-        if (!string.IsNullOrWhiteSpace(option.Background)) args.Add($"--background={option.Background}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(option.Background))
+        {
+            args.Add($"--background={option.Background}");
+        }
+
         args.Add("--imageformat=png");
         args.Add("--output={output}");
         return new JsonArray(args.Select(a => (JsonNode)JsonValue.Create(a)!).ToArray());
@@ -564,12 +721,15 @@ public sealed class RenderSettingsController : ControllerBase
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-        foreach (var arg in args) psi.ArgumentList.Add(arg);
+        foreach (var arg in args)
+        {
+            psi.ArgumentList.Add(arg);
+        }
 
         using var process = new Process { StartInfo = psi };
         var diagnostics = new StringBuilder();
-        process.OutputDataReceived += (_, e) => { if (e.Data is not null) diagnostics.AppendLine(e.Data); };
-        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) diagnostics.AppendLine(e.Data); };
+        process.OutputDataReceived += (_, e) => { if (e.Data is not null) { diagnostics.AppendLine(e.Data); } };
+        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) { diagnostics.AppendLine(e.Data); } };
         process.Start();
         process.BeginErrorReadLine();
         process.BeginOutputReadLine();
@@ -582,7 +742,11 @@ public sealed class RenderSettingsController : ControllerBase
         }
         catch (OperationCanceledException)
         {
-            try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { /* already exited */ }
+            try
+            {
+                process.Kill(entireProcessTree: true);
+            }
+            catch (InvalidOperationException) { /* already exited */ }
             return (-1, "Preview render timed out.");
         }
         return (process.ExitCode, diagnostics.ToString());

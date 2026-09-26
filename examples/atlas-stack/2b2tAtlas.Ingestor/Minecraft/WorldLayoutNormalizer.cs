@@ -32,7 +32,11 @@ public static class WorldLayoutNormalizer
     {
         var root = Path.GetFullPath(rootPath);
         var levelDat = Contained(root, Path.Combine(root, "level.dat"));
-        if (File.Exists(levelDat)) return;
+        if (File.Exists(levelDat))
+        {
+            return;
+        }
+
         var backup = Contained(root, Path.Combine(root, "level.dat_old"));
         if (File.Exists(backup))
         {
@@ -88,10 +92,17 @@ public static class WorldLayoutNormalizer
             .Where(value => value is "overworld" or "nether" or "end")
             .Distinct(StringComparer.Ordinal)
             .ToArray() ?? [];
-        if (requested.Length != 1 || HasCanonicalStorage(root, requested[0])) return;
+        if (requested.Length != 1 || HasCanonicalStorage(root, requested[0]))
+        {
+            return;
+        }
 
         var customRoots = FindCustomDimensionRoots(root).ToArray();
-        if (customRoots.Length == 0) return;
+        if (customRoots.Length == 0)
+        {
+            return;
+        }
+
         if (customRoots.Length > 1)
         {
             var choices = string.Join(", ", customRoots.Select(path =>
@@ -127,19 +138,31 @@ public static class WorldLayoutNormalizer
     private static IEnumerable<string> FindCustomDimensionRoots(string root)
     {
         var dimensionsRoot = Path.Combine(root, "dimensions");
-        if (!Directory.Exists(dimensionsRoot)) yield break;
+        if (!Directory.Exists(dimensionsRoot))
+        {
+            yield break;
+        }
+
         var found = 0;
         foreach (var region in Directory.EnumerateDirectories(dimensionsRoot, "region", SearchOption.AllDirectories))
         {
             if (++found > 128)
+            {
                 throw new InputValidationException("World contains more than 128 custom dimension candidates.");
+            }
+
             var dimensionRoot = Contained(root, Path.GetDirectoryName(region)!);
             var relative = Path.GetRelativePath(dimensionsRoot, dimensionRoot).Replace('\\', '/');
             if (relative is "minecraft/overworld" or "minecraft/the_nether" or "minecraft/the_end")
+            {
                 continue;
+            }
+
             if (Directory.EnumerateFiles(region, "r.*.*.mca", SearchOption.TopDirectoryOnly).Any() ||
                 Directory.EnumerateFiles(region, "r.*.*.mcr", SearchOption.TopDirectoryOnly).Any())
+            {
                 yield return dimensionRoot;
+            }
         }
     }
 
@@ -156,11 +179,18 @@ public static class WorldLayoutNormalizer
         foreach (var storageName in new[] { "region", "entities", "poi" })
         {
             var sourceStorage = Contained(root, Path.Combine(source, storageName));
-            if (!Directory.Exists(sourceStorage)) continue;
+            if (!Directory.Exists(sourceStorage))
+            {
+                continue;
+            }
+
             var targetStorage = Contained(root, Path.Combine(root, storageName));
             if (Directory.Exists(targetStorage) || File.Exists(targetStorage))
+            {
                 throw new InputValidationException(
                     $"{label} conflicts with existing root storage '{storageName}'. Normalize one source before ingestion.");
+            }
+
             Directory.Move(sourceStorage, targetStorage);
         }
     }
@@ -169,26 +199,40 @@ public static class WorldLayoutNormalizer
     {
         var target = Contained(root, Path.Combine(root, targetRelative));
         if (Directory.Exists(target) || File.Exists(target))
+        {
             throw new InputValidationException(
                 $"Custom {label} conflicts with existing '{targetRelative}' storage. Normalize one source before ingestion.");
+        }
+
         Directory.Move(source, target);
     }
 
     private static void NormalizeOverworld(string root)
     {
         var source = Contained(root, Path.Combine(root, "dimensions", "minecraft", "overworld"));
-        if (!Directory.Exists(source)) return;
+        if (!Directory.Exists(source))
+        {
+            return;
+        }
+
         MoveStorageChildren(root, source, "Namespaced overworld");
     }
 
     private static void NormalizeWholeDimension(string root, string sourceRelative, string targetRelative, string label)
     {
         var source = Contained(root, Path.Combine(root, sourceRelative.Replace('/', Path.DirectorySeparatorChar)));
-        if (!Directory.Exists(source)) return;
+        if (!Directory.Exists(source))
+        {
+            return;
+        }
+
         var target = Contained(root, Path.Combine(root, targetRelative));
         if (Directory.Exists(target) || File.Exists(target))
+        {
             throw new InputValidationException(
                 $"Namespaced {label} conflicts with existing '{targetRelative}' storage. Normalize one source before ingestion.");
+        }
+
         Directory.Move(source, target);
     }
 
@@ -197,7 +241,10 @@ public static class WorldLayoutNormalizer
         var full = Path.GetFullPath(candidate);
         var prefix = Path.TrimEndingDirectorySeparator(root) + Path.DirectorySeparatorChar;
         if (!full.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
             throw new InputSecurityException("Dimension normalization path escapes the extracted world root.");
+        }
+
         return full;
     }
 }

@@ -1,7 +1,5 @@
 # API reference
 
-> **AI-Generated documentation.**
-
 Base path: `/api`. Public responses use JSON unless noted.
 
 `/openapi/v1.json` documents only anonymous public GET endpoints. The complete
@@ -11,7 +9,7 @@ per-operation security, permission requirements, and 401/403 responses. Schema
 visibility does not replace endpoint authorization. Login and registration remain
 available at their existing routes but are omitted from the public data schema.
 
-Public integration guide and runnable examples: [atlas-owner/2b2tAtlas-Public-API](https://github.com/bobymicjohn/2b2tAtlas-Public-API). The public repository documents only anonymous read contracts and contains no Atlas application source, credentials, collector internals, or moderation operations.
+The [public API examples](../../../README.md) show anonymous reads. This stack also contains the application, worker and collector source, with example configuration and synthetic tests. It includes no production credentials or database.
 
 ## Model Context Protocol (MCP)
 
@@ -24,9 +22,9 @@ These are observations, not unique players, visits or ownership. MCP tools are
 `get_nocom_dataset`, `get_nocom_periods` and `get_nocom_highway_activity`.
 The crawlable `/nocom/` dataset and JSONL exports ship in the static-site package.
 
-The production API also exposes a public MCP server at `http://127.0.0.1:5297/mcp`. It uses stateless Streamable HTTP and is intentionally read-only. The server runs inside the Atlas API process and queries the EF Core data layer directly; it does not call the public HTTP API or maintain a second copy of Atlas data.
+The local example exposes MCP at `http://127.0.0.1:5297/mcp`. It uses stateless Streamable HTTP and is intentionally read-only. The server runs inside the Atlas API process and queries the EF Core data layer directly; it does not call the public HTTP API or maintain a second copy of Atlas data.
 
-The server is published in the official MCP Registry as [`io.github.example/2b2t-atlas`](https://registry.modelcontextprotocol.io/?q=io.github.example%2F2b2t-atlas). The versioned registry manifest and GitHub OIDC publication workflow live in the public API examples repository.
+See the [public MCP guide](../../../docs/MCP.md) for the live service and client setup. Your local installation is separate from that service. GitHub Actions is disabled in this repository.
 
 Generic MCP client configuration:
 

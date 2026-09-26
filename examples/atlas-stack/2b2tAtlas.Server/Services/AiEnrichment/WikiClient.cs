@@ -35,7 +35,9 @@ public sealed class WikiClient
         _http = http;
         _options = options.Value;
         if (!_http.DefaultRequestHeaders.Contains("User-Agent"))
+        {
             _http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", _options.UserAgent);
+        }
     }
 
     /// <summary>Searches article space for pages relevant to the given name.</summary>
@@ -52,7 +54,10 @@ public sealed class WikiClient
             var payload = await _http.GetFromJsonAsync<SearchEnvelope>(url, cancellationToken);
             var hits = payload?.Query?.Search;
             if (hits is null)
+            {
                 return [];
+            }
+
             return hits
                 .Where(h => !string.IsNullOrWhiteSpace(h.Title))
                 .Select(h => new WikiSearchHit(h.Title!, h.Score))
@@ -78,7 +83,10 @@ public sealed class WikiClient
             var payload = await _http.GetFromJsonAsync<PageEnvelope>(url, cancellationToken);
             var page = payload?.Query?.Pages?.FirstOrDefault();
             if (page is null || page.Missing || string.IsNullOrWhiteSpace(page.Title))
+            {
                 return null;
+            }
+
             var wikitext = page.Revisions?.FirstOrDefault()?.Slots?.Main?.Content ?? string.Empty;
             var canonicalUrl = string.IsNullOrWhiteSpace(page.CanonicalUrl)
                 ? _options.WikiSiteBase + Uri.EscapeDataString(page.Title!.Replace(' ', '_'))

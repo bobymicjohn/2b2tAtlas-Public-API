@@ -41,33 +41,59 @@ public sealed class WorldDownloadEndpointTests
             var now = DateTime.UtcNow.ToString("o");
             var location = new ServerLocation
             {
-                LocationUuid = Guid.NewGuid().ToString(), Name = "Preserved Build", X = 128, Y = 64, Z = -256,
-                Dimension = 0, DateAddedUtc = now, ModifiedUtc = now,
+                LocationUuid = Guid.NewGuid().ToString(),
+                Name = "Preserved Build",
+                X = 128,
+                Y = 64,
+                Z = -256,
+                Dimension = 0,
+                DateAddedUtc = now,
+                ModifiedUtc = now,
             };
             context.Locations.Add(location);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
             var warp = new ServerWarp
             {
-                WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-                LocationRowid = location.Rowid, Name = "Preserved_Build_2021-02-03", TimeAdded = now,
-                ArchiveSha256 = sha, WorldDownloadDate = "2021-02-03",
+                WarpUuid = Guid.NewGuid().ToString(),
+                LocationUuidFk = location.LocationUuid,
+                LocationRowid = location.Rowid,
+                Name = "Preserved_Build_2021-02-03",
+                TimeAdded = now,
+                ArchiveSha256 = sha,
+                WorldDownloadDate = "2021-02-03",
                 Source = "The Archive automated sync (live /warps catalog)",
             };
             context.Warps.Add(warp);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
             context.Renders.Add(new ServerRender
             {
-                LocationRowid = location.Rowid, ArchiveWarpId = warp.Id, Name = "Preserved Build",
-                Dimension = 0, Scale = "base", TilesPath = "https://example.test/tiles/{z}/{y}/{x}.png",
-                MinX = 96, MinZ = -288, MaxXExclusive = 176, MaxZExclusive = -208,
-                IsPublic = 1, DateAddedUtc = now,
+                LocationRowid = location.Rowid,
+                ArchiveWarpId = warp.Id,
+                Name = "Preserved Build",
+                Dimension = 0,
+                Scale = "base",
+                TilesPath = "https://example.test/tiles/{z}/{y}/{x}.png",
+                MinX = 96,
+                MinZ = -288,
+                MaxXExclusive = 176,
+                MaxZExclusive = -208,
+                IsPublic = 1,
+                DateAddedUtc = now,
             });
             context.IngestionJobs.Add(new IngestionJob
             {
-                PublicId = Guid.NewGuid().ToString("N"), IntakeFileName = "fixture.zip", Slug = "fixture",
-                Name = "Preserved Build", WorldDownloadDate = "2021-02-03", Source = warp.Source,
-                Scale = "base", Dimension = "overworld", Status = "completed", WarpId = warp.Id,
-                ArchiveSha256 = sha, RequestedUtc = now,
+                PublicId = Guid.NewGuid().ToString("N"),
+                IntakeFileName = "fixture.zip",
+                Slug = "fixture",
+                Name = "Preserved Build",
+                WorldDownloadDate = "2021-02-03",
+                Source = warp.Source,
+                Scale = "base",
+                Dimension = "overworld",
+                Status = "completed",
+                WarpId = warp.Id,
+                ArchiveSha256 = sha,
+                RequestedUtc = now,
                 InspectionJson = JsonSerializer.Serialize(new IngestionWorldInspection
                 {
                     Dimensions =
@@ -121,7 +147,10 @@ public sealed class WorldDownloadEndpointTests
         }
         finally
         {
-            if (Directory.Exists(archiveRoot)) Directory.Delete(archiveRoot, recursive: true);
+            if (Directory.Exists(archiveRoot))
+            {
+                Directory.Delete(archiveRoot, recursive: true);
+            }
         }
     }
 
@@ -141,22 +170,33 @@ public sealed class WorldDownloadEndpointTests
             var now = DateTime.UtcNow.ToString("o");
             var location = new ServerLocation
             {
-                LocationUuid = Guid.NewGuid().ToString(), Name = "Manual WDL", Dimension = 0,
-                DateAddedUtc = now, ModifiedUtc = now,
+                LocationUuid = Guid.NewGuid().ToString(),
+                Name = "Manual WDL",
+                Dimension = 0,
+                DateAddedUtc = now,
+                ModifiedUtc = now,
             };
             context.Locations.Add(location);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
             var manual = new ServerWarp
             {
-                WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-                LocationRowid = location.Rowid, Name = "Manual", TimeAdded = now,
-                ArchiveSha256 = new string('a', 64), Source = "Community upload",
+                WarpUuid = Guid.NewGuid().ToString(),
+                LocationUuidFk = location.LocationUuid,
+                LocationRowid = location.Rowid,
+                Name = "Manual",
+                TimeAdded = now,
+                ArchiveSha256 = new string('a', 64),
+                Source = "Community upload",
             };
             var missing = new ServerWarp
             {
-                WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-                LocationRowid = location.Rowid, Name = "Missing", TimeAdded = now,
-                ArchiveSha256 = new string('b', 64), Source = "The Archive automated sync",
+                WarpUuid = Guid.NewGuid().ToString(),
+                LocationUuidFk = location.LocationUuid,
+                LocationRowid = location.Rowid,
+                Name = "Missing",
+                TimeAdded = now,
+                ArchiveSha256 = new string('b', 64),
+                Source = "The Archive automated sync",
             };
             context.Warps.AddRange(manual, missing);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -174,7 +214,10 @@ public sealed class WorldDownloadEndpointTests
         }
         finally
         {
-            if (Directory.Exists(archiveRoot)) Directory.Delete(archiveRoot, recursive: true);
+            if (Directory.Exists(archiveRoot))
+            {
+                Directory.Delete(archiveRoot, recursive: true);
+            }
         }
     }
 
@@ -200,27 +243,49 @@ public sealed class WorldDownloadEndpointTests
             var now = DateTime.UtcNow.ToString("o");
             var location = new ServerLocation
             {
-                LocationUuid = Guid.NewGuid().ToString(), Name = "Mu Megabase", X = 35931, Y = 64, Z = 102450,
-                Dimension = 0, DateAddedUtc = now, ModifiedUtc = now,
+                LocationUuid = Guid.NewGuid().ToString(),
+                Name = "Mu Megabase",
+                X = 35931,
+                Y = 64,
+                Z = 102450,
+                Dimension = 0,
+                DateAddedUtc = now,
+                ModifiedUtc = now,
             };
             context.Locations.Add(location);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
             var render = new ServerRender
             {
-                LocationRowid = location.Rowid, Name = "Mu Megabase", Source = "wdl-ingestion",
-                Dimension = 0, Scale = "base", TilesPath = "https://example.test/mu/{z}/{y}/{x}.png",
-                MinX = 35000, MinZ = 101000, MaxXExclusive = 37000, MaxZExclusive = 104000,
-                WorldDownloadDate = "2020-07-23", IsPublic = 1, DateAddedUtc = now,
+                LocationRowid = location.Rowid,
+                Name = "Mu Megabase",
+                Source = "wdl-ingestion",
+                Dimension = 0,
+                Scale = "base",
+                TilesPath = "https://example.test/mu/{z}/{y}/{x}.png",
+                MinX = 35000,
+                MinZ = 101000,
+                MaxXExclusive = 37000,
+                MaxZExclusive = 104000,
+                WorldDownloadDate = "2020-07-23",
+                IsPublic = 1,
+                DateAddedUtc = now,
             };
             context.Renders.Add(render);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
             context.IngestionJobs.Add(new IngestionJob
             {
-                PublicId = Guid.NewGuid().ToString("N"), IntakeFileName = "mu.zip", Slug = "mu-megabase",
-                Name = "Mu Megabase", WorldDownloadDate = "2020-07-23",
+                PublicId = Guid.NewGuid().ToString("N"),
+                IntakeFileName = "mu.zip",
+                Slug = "mu-megabase",
+                Name = "Mu Megabase",
+                WorldDownloadDate = "2020-07-23",
                 Source = "jumboman32/2b2t-wdl; bases/Mu Megabase; occupied tile verified",
-                Scale = "base", Dimension = "overworld", Status = "completed", RenderId = render.Id,
-                ArchiveSha256 = sha, RequestedUtc = now,
+                Scale = "base",
+                Dimension = "overworld",
+                Status = "completed",
+                RenderId = render.Id,
+                ArchiveSha256 = sha,
+                RequestedUtc = now,
                 InspectionJson = JsonSerializer.Serialize(new IngestionWorldInspection
                 {
                     Dimensions =
@@ -272,7 +337,10 @@ public sealed class WorldDownloadEndpointTests
         }
         finally
         {
-            if (Directory.Exists(archiveRoot)) Directory.Delete(archiveRoot, recursive: true);
+            if (Directory.Exists(archiveRoot))
+            {
+                Directory.Delete(archiveRoot, recursive: true);
+            }
         }
     }
 

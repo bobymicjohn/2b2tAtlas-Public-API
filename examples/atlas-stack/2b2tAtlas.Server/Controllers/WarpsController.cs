@@ -29,10 +29,16 @@ public sealed class WarpsController : ControllerBase
     {
         limit = Math.Clamp(limit, 1, 1000);
         offset = Math.Max(0, offset);
-        var query = _context.Warps.AsNoTracking().Include(warp => warp.LocationRow).AsQueryable();
-        if (locationId.HasValue) query = query.Where(warp => warp.LocationRowid == locationId.Value);
+        // Filter before paging so an unassigned warp cannot hide the next page.
+        var query = _context.Warps.AsNoTracking().Include(warp => warp.LocationRow)
+            .Where(warp => warp.LocationRow != null);
+        if (locationId.HasValue)
+        {
+            query = query.Where(warp => warp.LocationRowid == locationId.Value);
+        }
+
         var rows = await query.OrderBy(warp => warp.Id).Skip(offset).Take(limit).ToListAsync(cancellationToken);
-        return Ok(rows.Where(warp => warp.LocationRow is not null).Select(Map).ToList());
+        return Ok(rows.Select(Map).ToList());
     }
 
     /// <summary>Returns one Archive warp with owning-location context.</summary>
@@ -59,13 +65,13 @@ public sealed class WarpsController : ControllerBase
         Name = warp.Name,
         TimeAdded = DateTime.TryParse(warp.TimeAdded, out var added) ? added : DateTime.MinValue,
         ArchiveSha256 = warp.ArchiveSha256,
-        WorldDownloadUrl = HasPublicWorldDownload(warp) ? PublicAtlasUrls.WorldDownload(
+        WorldDownloadUrl = PublicWorldDownloadRules.HasArchiveSource(warp) ? PublicAtlasUrls.WorldDownload(
             warp.Id,
             Atlas.ArchiveWarpResolver.IsSinglePlayerConcept(warp.Name)
                 ? $"{warp.LocationRow.Name ?? "2b2t-location"} singleplayer concept"
                 : warp.LocationRow.Name, warp.ArchiveSha256) : null,
-        WorldDownloadMetadataUrl = HasPublicWorldDownload(warp) ? PublicAtlasUrls.WorldDownloadMetadata(warp.Id) : null,
-        WorldDownloadScope = HasPublicWorldDownload(warp) ? "bounded-footprint" : null,
+        WorldDownloadMetadataUrl = PublicWorldDownloadRules.HasArchiveSource(warp) ? PublicAtlasUrls.WorldDownloadMetadata(warp.Id) : null,
+        WorldDownloadScope = PublicWorldDownloadRules.HasArchiveSource(warp) ? "bounded-footprint" : null,
         WorldDownloadDate = warp.WorldDownloadDate,
         Source = warp.Source,
         ArchiveX = warp.ArchiveX,
@@ -73,7 +79,4 @@ public sealed class WarpsController : ControllerBase
         ArchiveZ = warp.ArchiveZ,
     };
 
-    private static bool HasPublicWorldDownload(_2b2tAtlas.Server.Models.Warp warp) =>
-        warp.ArchiveSha256 is { Length: 64 } sha && sha.All(Uri.IsHexDigit) &&
-        warp.Source?.StartsWith("The Archive automated sync", StringComparison.OrdinalIgnoreCase) == true;
 }

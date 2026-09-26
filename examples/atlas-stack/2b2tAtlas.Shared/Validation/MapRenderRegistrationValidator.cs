@@ -20,19 +20,39 @@ public static partial class MapRenderRegistrationValidator
         var template = dto.UrlTemplate?.Trim() ?? string.Empty;
 
         if (!SlugPattern().IsMatch(slug))
+        {
             errors.Add("Slug must be 1-64 lowercase letters, numbers, or hyphens.");
+        }
+
         if (!ValidText(name, 100))
+        {
             errors.Add("Name must be 1-100 characters without control characters.");
+        }
+
         if (!ScalePattern().IsMatch(scale))
+        {
             errors.Add("Scale must look like 5k, 256k, or 1m.");
+        }
+
         if (!ValidText(source, 200))
+        {
             errors.Add("Source must be 1-200 characters without control characters.");
+        }
+
         if (dto.Dimension is < 0 or > 2)
+        {
             errors.Add("Dimension must be 0, 1, or 2.");
+        }
+
         if (dto.MaxNativeZoom is < 0 or > 30)
+        {
             errors.Add("MaxNativeZoom must be between 0 and 30.");
+        }
+
         if (dto.SortOrder is < -10_000 or > 10_000)
+        {
             errors.Add("SortOrder must be between -10000 and 10000.");
+        }
 
         if (!DateOnly.TryParseExact(
                 dto.WorldDownloadDate,
@@ -64,14 +84,20 @@ public static partial class MapRenderRegistrationValidator
         foreach (var token in new[] { "{z}", "{y}", "{x}" })
         {
             if (Count(template, token) != 1)
+            {
                 errors.Add($"UrlTemplate must contain exactly one {token} token.");
+            }
         }
         if (hasDayNight != (Count(template, "{dn}") == 1))
+        {
             errors.Add("UrlTemplate must contain exactly one {dn} token if and only if HasDayNight is true.");
+        }
 
         var allowedTokens = new HashSet<string>(StringComparer.Ordinal) { "{z}", "{y}", "{x}", "{dn}" };
         if (PlaceholderPattern().Matches(template).Select(match => match.Value).Any(token => !allowedTokens.Contains(token)))
+        {
             errors.Add("UrlTemplate contains an unknown placeholder.");
+        }
 
         var concrete = template
             .Replace("{z}", "1", StringComparison.Ordinal)
@@ -79,18 +105,28 @@ public static partial class MapRenderRegistrationValidator
             .Replace("{x}", "0", StringComparison.Ordinal)
             .Replace("{dn}", "day", StringComparison.Ordinal);
         if (!IsAllowedUrl(concrete, allowedPrefixes))
+        {
             errors.Add("UrlTemplate must be under an approved HTTPS or same-origin tile prefix.");
+        }
+
         var withoutTokens = template;
         foreach (var token in allowedTokens)
+        {
             withoutTokens = withoutTokens.Replace(token, string.Empty, StringComparison.Ordinal);
+        }
+
         if (withoutTokens.Contains('{') || withoutTokens.Contains('}'))
+        {
             errors.Add("UrlTemplate contains unmatched or nested braces.");
+        }
     }
 
     private static bool IsAllowedUrl(string candidate, IReadOnlyCollection<string> allowedPrefixes)
     {
         if (candidate.Contains('?') || candidate.Contains('#') || allowedPrefixes.Count == 0)
+        {
             return false;
+        }
 
         if (candidate.StartsWith('/') && !candidate.StartsWith("//", StringComparison.Ordinal))
         {

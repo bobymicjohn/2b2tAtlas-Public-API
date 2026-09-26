@@ -29,6 +29,18 @@ def normalize(value: str) -> str:
     return " ".join(value.casefold().split())
 
 
+def get_pages(path: str, params: dict[str, object] | None = None):
+    rows = []
+    page_size = 1000
+    offset = 0
+    while True:
+        page = get(path, {**(params or {}), "limit": page_size, "offset": offset})
+        rows.extend(page)
+        if len(page) < page_size:
+            return rows
+        offset += page_size
+
+
 def main() -> int:
     search = " ".join(sys.argv[1:]) or "Mu Megabase"
     locations = get("/api/locations")
@@ -46,8 +58,8 @@ def main() -> int:
     print(location["interactiveUrl"])
 
     location_id = location["rowid"]
-    warps = get("/api/warps", {"locationId": location_id, "limit": 1000})
-    renders = get("/api/renders", {"locationId": location_id, "limit": 1000})
+    warps = get_pages("/api/warps", {"locationId": location_id})
+    renders = get_pages("/api/renders", {"locationId": location_id})
     print("warps:", [f'/warp {item["name"]}' for item in warps])
     print("renders:", [
         (

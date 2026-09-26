@@ -32,7 +32,9 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
         var sourceReport = await SecureZipArchive.InspectAsync(inputArchive, limits, cancellationToken: cancellationToken);
         var jobRoot = Path.Combine(Path.GetFullPath(workRoot), sourceReport.Sha256);
         if (Directory.Exists(jobRoot))
+        {
             throw new InputValidationException($"Job already exists. Use resume or remove it deliberately: {jobRoot}");
+        }
 
         var partialRoot = jobRoot + $".{Guid.NewGuid():N}.partial";
         try
@@ -45,7 +47,10 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
                 limits,
                 sourceReport.Sha256,
                 cancellationToken);
-            var finalReport = snapshotReport with { ArchivePath = Path.Combine(jobRoot, "input.zip") };
+            var finalReport = snapshotReport with
+            {
+                ArchivePath = Path.Combine(jobRoot, "input.zip")
+            };
 
             var partialPaths = BuildPaths(partialRoot);
             await WriteJsonAsync(partialPaths.ArchiveReport, finalReport, cancellationToken);
@@ -56,7 +61,10 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
         catch
         {
             if (Directory.Exists(partialRoot))
+            {
                 Directory.Delete(partialRoot, recursive: true);
+            }
+
             throw;
         }
     }
@@ -77,7 +85,9 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
         var paths = Open(sourceReport.Sha256);
         var state = await ReadJsonAsync<JobState>(paths.State, cancellationToken);
         if (state.Stage != "snapshotted" && !(state.Stage == "failed" && state.FailedStage == "prepare"))
+        {
             throw new InputValidationException($"Job cannot resume prepare from stage '{state.Stage}'.");
+        }
 
         var savedReport = await ReadJsonAsync<ArchiveReport>(paths.ArchiveReport, cancellationToken);
         var currentReport = await SecureZipArchive.InspectAsync(
@@ -94,7 +104,10 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
         }
 
         PreservePrepareArtifacts(paths);
-        return (paths, currentReport with { ArchivePath = paths.Snapshot });
+        return (paths, currentReport with
+        {
+            ArchivePath = paths.Snapshot
+        });
     }
 
     /// <summary>Opens an existing job by its archive SHA-256 identifier.</summary>
@@ -104,10 +117,16 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
     public JobPaths Open(string jobId)
     {
         if (jobId.Length != 64 || jobId.Any(character => !Uri.IsHexDigit(character)))
+        {
             throw new InputValidationException("Job ID must be a SHA-256 hex digest.");
+        }
+
         var paths = BuildPaths(Path.Combine(Path.GetFullPath(workRoot), jobId.ToLowerInvariant()));
         if (!Directory.Exists(paths.Root))
+        {
             throw new InputValidationException($"Job not found: {jobId}");
+        }
+
         return paths;
     }
 
@@ -148,11 +167,11 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
             ?? throw new InputValidationException($"JSON file is empty or invalid: {path}");
     }
 
-            /// <summary>Computes the lowercase SHA-256 digest of a file.</summary>
-            /// <param name="path">Path to the file.</param>
-            /// <param name="cancellationToken">Token that cancels hashing.</param>
-            /// <returns>The lowercase hexadecimal digest.</returns>
-            /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <summary>Computes the lowercase SHA-256 digest of a file.</summary>
+    /// <param name="path">Path to the file.</param>
+    /// <param name="cancellationToken">Token that cancels hashing.</param>
+    /// <returns>The lowercase hexadecimal digest.</returns>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public static async Task<string> ComputeSha256Async(string path, CancellationToken cancellationToken)
     {
         await using var input = new FileStream(
@@ -179,10 +198,16 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
         {
             var read = await source.ReadAsync(buffer, cancellationToken);
             if (read == 0)
+            {
                 break;
+            }
+
             total = checked(total + read);
             if (total > maxBytes)
+            {
                 throw new InputSecurityException("Archive grew beyond the configured limit while snapshotting.");
+            }
+
             await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
         }
         await destination.FlushAsync(cancellationToken);
@@ -191,7 +216,9 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
     private static void PreservePrepareArtifacts(JobPaths paths)
     {
         if (!Directory.Exists(paths.Extracted) && !File.Exists(paths.RenderPlan))
+        {
             return;
+        }
 
         var retryRoot = Path.Combine(
             paths.Root,
@@ -199,9 +226,14 @@ public sealed class JobStore(string workRoot, IngestLimits limits)
             $"prepare-{DateTimeOffset.UtcNow:yyyyMMddTHHmmssfffffffZ}-{Guid.NewGuid():N}");
         Directory.CreateDirectory(retryRoot);
         if (Directory.Exists(paths.Extracted))
+        {
             Directory.Move(paths.Extracted, Path.Combine(retryRoot, "worlds"));
+        }
+
         if (File.Exists(paths.RenderPlan))
+        {
             File.Move(paths.RenderPlan, Path.Combine(retryRoot, "render-plan.json"));
+        }
     }
 }
 
@@ -227,33 +259,48 @@ public static class JobStatePolicy
     public static void RequireRender(JobState state, bool resume)
     {
         if (state.Stage == "prepared")
+        {
             return;
+        }
+
         if (resume && state.Stage == "failed" && state.FailedStage == "render")
+        {
             return;
+        }
+
         throw new InputValidationException(
             $"Render cannot start from stage '{state.Stage}'{FormatFailedStage(state)}.");
     }
 
-            /// <summary>Requires adapted or already published/registerable output.</summary>
-            /// <param name="state">Current durable job state.</param>
-            /// <exception cref="InputValidationException">Publication is not legal from the current state.</exception>
+    /// <summary>Requires adapted or already published/registerable output.</summary>
+    /// <param name="state">Current durable job state.</param>
+    /// <exception cref="InputValidationException">Publication is not legal from the current state.</exception>
     public static void RequirePublish(JobState state)
     {
         if (state.Stage is "adapted" or "published" or "registered-unpublished")
+        {
             return;
+        }
+
         throw new InputValidationException(
             $"Publish cannot start from stage '{state.Stage}'{FormatFailedStage(state)}.");
     }
 
-            /// <summary>Requires rendered output, an existing downstream state, or a failed adaptation retry.</summary>
-            /// <param name="state">Current durable job state.</param>
-            /// <exception cref="InputValidationException">Adaptation is not legal from the current state.</exception>
+    /// <summary>Requires rendered output, an existing downstream state, or a failed adaptation retry.</summary>
+    /// <param name="state">Current durable job state.</param>
+    /// <exception cref="InputValidationException">Adaptation is not legal from the current state.</exception>
     public static void RequireAdapt(JobState state)
     {
         if (state.Stage is "rendered" or "adapted" or "published" or "registered-unpublished")
+        {
             return;
+        }
+
         if (state.Stage == "failed" && state.FailedStage == "adapt")
+        {
             return;
+        }
+
         throw new InputValidationException(
             $"Tile adaptation cannot start from stage '{state.Stage}'{FormatFailedStage(state)}.");
     }
@@ -293,7 +340,9 @@ internal static class AtomicFile
         finally
         {
             if (File.Exists(temporary))
+            {
                 File.Delete(temporary);
+            }
         }
     }
 }

@@ -17,9 +17,16 @@ public sealed class RenderProvenanceTests
             provenancePath, output, expected, false, TestContext.Current.CancellationToken);
         Directory.CreateDirectory(output);
         await RenderProvenanceStore.ValidateAndWriteAsync(
-            provenancePath, output, expected with { UpdatedAtUtc = DateTimeOffset.UtcNow }, true, TestContext.Current.CancellationToken);
+            provenancePath, output, expected with
+            {
+                UpdatedAtUtc = DateTimeOffset.UtcNow
+            }, true, TestContext.Current.CancellationToken);
 
-        var changed = expected with { PlanSha256 = "plan-b", UpdatedAtUtc = DateTimeOffset.UtcNow };
+        var changed = expected with
+        {
+            PlanSha256 = "plan-b",
+            UpdatedAtUtc = DateTimeOffset.UtcNow
+        };
         await Assert.ThrowsAsync<InputSecurityException>(() => RenderProvenanceStore.ValidateAndWriteAsync(
             provenancePath, output, changed, true, TestContext.Current.CancellationToken));
     }

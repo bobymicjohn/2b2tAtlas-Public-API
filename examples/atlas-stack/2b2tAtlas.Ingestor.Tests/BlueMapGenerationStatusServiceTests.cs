@@ -25,8 +25,12 @@ public sealed class BlueMapGenerationStatusServiceTests
             var path = Path.Combine(root, "status.json");
             await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new
             {
-                SchemaVersion = 2, Coordinated = true, State = "running", UpdatedUtc = DateTimeOffset.UtcNow,
-                Total = 3, Completed = 1,
+                SchemaVersion = 2,
+                Coordinated = true,
+                State = "running",
+                UpdatedUtc = DateTimeOffset.UtcNow,
+                Total = 3,
+                Completed = 1,
                 Workers = new[] {
                     new { WorkerId = 1, State = "running", Stage = "relighting", StartedUtc = DateTimeOffset.UtcNow.AddMinutes(-2), UpdatedUtc = DateTimeOffset.UtcNow,
                         Current = new { RenderId = 10, LocationId = 100, LocationName = "First", Dimension = "overworld", ArchiveSha256 = "private-source-hash" }, ProcessId = 888 },
@@ -194,8 +198,18 @@ public sealed class BlueMapGenerationStatusServiceTests
             RendererProfileVersion = 7,
             GeneratedUtc = DateTimeOffset.UtcNow,
             OutputBytes = outputBytes,
-            QualityGate = new { Passed = true, LocationStartExact = true },
-            RenderingProfile = new { Relight = new { FootprintAuditExact = true } }
+            QualityGate = new
+            {
+                Passed = true,
+                LocationStartExact = true
+            },
+            RenderingProfile = new
+            {
+                Relight = new
+                {
+                    FootprintAuditExact = true
+                }
+            }
         }));
     }
 }

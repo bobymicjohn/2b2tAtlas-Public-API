@@ -29,7 +29,9 @@ public sealed class EnrichmentRunCoordinator
     public EnrichmentRunStatusDto GetStatus()
     {
         lock (_gate)
+        {
             return Snapshot(_status);
+        }
     }
 
     /// <summary>
@@ -105,7 +107,11 @@ public sealed class EnrichmentRunCoordinator
     {
         lock (_gate)
         {
-            if (!_status.IsRunning) return;
+            if (!_status.IsRunning)
+            {
+                return;
+            }
+
             var now = DateTime.UtcNow;
             _status.Total = progress.Total;
             _status.Scanned = progress.Scanned;

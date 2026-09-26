@@ -1,20 +1,8 @@
-# Map Rendering, Coordinates, Layers, And Performance
-
-> **AI-Generated documentation.**
-
-## Scope
+# Map coordinates, layers and performance
 
 This file explains executable map math and layer behavior. End-user operation belongs in `docs/MAP_GUIDE.md`; WDL tile generation belongs in `WDL_INGESTION.md`.
 
-The evaluated BlueMap 3D derivative architecture, measured storage benchmark,
-operational phase-1 canary, and phased capacity plan are in
-[`docs/BLUEMAP_PIPELINE.md`](../BLUEMAP_PIPELINE.md).
-The canonical current operations and API contract is
-[`docs/BLUEMAP_PIPELINE.md`](../BLUEMAP_PIPELINE.md).
-BlueMap is a per-render derivative service, not a replacement for the global
-2D layers described here. Explicit render-ID canaries write content-addressed
-static generations to `F:\AtlasExample\AtlasBlueMap\location-renders`; they do not
-modify the database, source WDLs, collector, uNmINeD tiles, or frontend.
+BlueMap adds an optional 3D view for a dated render. Its setup and quality checks are in the [BlueMap guide](../BLUEMAP_PIPELINE.md).
 
 The location-detail `3D` action snapshots the selected base-render layers that
 intersect the current 2D viewport. Each available derivative remains a separate
@@ -27,73 +15,11 @@ The control stays visible but disabled, with an explanatory tooltip, when none
 of the selected renders in the active dimension advertises a validated
 derivative. It never substitutes another date or dimension silently.
 
-Operational commands:
-
-```powershell
-# Start the ten-render production-shaped canary in the background.
-.\scripts\start-atlas-bluemap-canary.ps1
-
-# Render an explicit set in the foreground. Completed exact-source generations
-# are skipped, making this safe to resume.
-.\scripts\invoke-atlas-bluemap-render.ps1 -RenderId 785,824,927
-
-# Inspect durable progress without parsing renderer logs.
-.\scripts\get-atlas-bluemap-status.ps1
-
-# Refresh the canary index and start a localhost-only inspection route.
-.\scripts\start-atlas-bluemap-preview.ps1
-# Browse http://127.0.0.1:8770/
-```
-
-The preview exposes only currently validated generations. A direct URL for an
-older experimental profile is intentionally unavailable even if its immutable
-diagnostic files remain in the backing output directory.
-
-BlueMap camera starts are anchored to each Atlas location's canonical X/Z. Do
-not derive the initial camera from WDL bounds: sparse and multi-cluster WDLs can
-have a midpoint in empty terrain. The profile-7 static gate verifies this as
-`QualityGate.LocationStartExact`. Repair older profile-7 presentation metadata
-without regenerating terrain models with:
-
-```powershell
-.\scripts\repair-atlas-bluemap-start-positions.ps1
-```
-
-The renderer verifies the immutable source hash before extraction, applies the
-Atlas render footprint and vertical cutoff, records a generation manifest, and
-promotes only validated static output. Active web/model output uses a per-job
-Docker volume and the Minecraft resource cache uses
-`atlas-bluemap-cache-v5-23`; this avoids unreliable small-file writes through a
-Windows bind mount. Renderer profile 7 repairs lighting in a disposable Paper
-derivative using SHA-pinned Light Cleaner/BKCommonLib artifacts. It inventories
-the source dimension, allows temporary neighbor context while relighting,
-prunes every generated Anvil record afterward, and fails unless the final chunk
-set exactly equals the source. Version-keyed Paper runtime caches avoid repeated
-downloads but never share per-render worlds. Block-region corruption remains a
-hard failure; malformed entity/POI sidecars may be omitted from the disposable
-render derivative because BlueMap does not model entities and the source ZIP is
-never modified. BlueMap then uses its stock client with the
-2b2t.info-style Overworld profile (sky 1, ambient 0.1, 500-block lowres tiles,
-LOD factor 5/count 3); Nether and End use sky 0 and ambient 0.6. A static-output
-quality gate verifies settings plus both 2D/3D payloads before promotion. The API
-and local preview reject profiles below 7. The full-batch launcher selects
-distinct render IDs rather than locations, so Overworld, Nether, and End renders
-for the same location are processed independently. The Atlas watchdog resumes
-one missing-generation batch after reboot and polls again after terminal runs;
-BlueMap remains downstream and can never block normal ingestion.
-Relight and BlueMap model containers encode their owning renderer PID; the
-watchdog removes an orphaned disposable container only after proving that the
-exact owner is no longer a matching renderer process.
-
-The production batch runs only one job and one stage at a time. Both the Paper
-relight and BlueMap render stages are capped at eight CPU cores; their memory
-caps are 12 GiB and 8 GiB respectively. This uses no more CPU concurrently than
-the already validated relight lane while avoiding an artificial four-core
-bottleneck during large BlueMap model builds.
+Use your configured render IDs and paths when running BlueMap. The API advertises only generations that pass the manifest, source and footprint checks. Worker counts and resource limits belong in your renderer configuration.
 
 ## Coordinate System
 
-**Production:** `2b2tAtlas.Client/wwwroot/js/atlas-map.js` uses a fresh clone of Leaflet `L.CRS.Simple`, not a geographic projection. Transformation is `(1, 0, -1, 0)` and scale is `2^zoom / 64`.
+`2b2tAtlas.Client/wwwroot/js/atlas-map.js` uses a fresh clone of Leaflet `L.CRS.Simple`, not a geographic projection. Transformation is `(1, 0, -1, 0)` and scale is `2^zoom / 64`.
 
 For dimension configuration `offset` and `scaleFactor`:
 
@@ -186,6 +112,6 @@ The client chooses LOD from blocks per pixel, caps one output tile at 16 source 
 
 ## Coordinate Certification
 
-`docs/TGG_COORDINATE_FIXTURE.md` is the retained Overworld proof. WDL sparse schemes are dimension-specific: the Overworld adapter maps uNmINeD native 256-block tiles to Atlas URL zoom 10 with tile offset 500; End uses URL zoom 8 and offset 82. Never reuse one scheme's offset or Leaflet zoom assumptions for another dimension.
+WDL sparse schemes are dimension-specific: the Overworld adapter maps uNmINeD native 256-block tiles to Atlas URL zoom 10 with tile offset 500; End uses URL zoom 8 and offset 82. Never reuse one scheme's offset or Leaflet zoom assumptions for another dimension.
 
-**Future:** Nether WDL adaptation remains uncertified. Existing Nether display layers do not prove that arbitrary Nether WDL publication is safe.
+The ingestor has separate Overworld, Nether and End adapter profiles. Check `AtlasTileAdapterTests` for their transforms. A passing coordinate test does not establish the source image's real-world origin; that still needs known landmarks.

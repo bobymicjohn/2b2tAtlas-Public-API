@@ -14,18 +14,29 @@ public static class NightTileColorizer
         NightColorGradeOptions options,
         CancellationToken cancellationToken)
     {
-        if (!options.Enabled) return;
+        if (!options.Enabled)
+        {
+            return;
+        }
+
         if (!Directory.Exists(dayRoot) || !Directory.Exists(nightRoot))
+        {
             throw new InputValidationException("Paired day/night native tile roots are required for night grading.");
+        }
 
         var dayFiles = Directory.EnumerateFiles(dayRoot, "*.png", SearchOption.AllDirectories)
             .ToDictionary(path => Path.GetRelativePath(dayRoot, path), StringComparer.OrdinalIgnoreCase);
         var nightFiles = Directory.EnumerateFiles(nightRoot, "*.png", SearchOption.AllDirectories)
             .ToDictionary(path => Path.GetRelativePath(nightRoot, path), StringComparer.OrdinalIgnoreCase);
         if (dayFiles.Count == 0 || nightFiles.Count == 0)
+        {
             throw new InputValidationException("Paired day/night native tile inventories are empty.");
+        }
+
         if (dayFiles.Count != nightFiles.Count || dayFiles.Keys.Any(relative => !nightFiles.ContainsKey(relative)))
+        {
             throw new InputSecurityException("Day and night native tile inventories differ; night grading was refused.");
+        }
 
         await Parallel.ForEachAsync(dayFiles, new ParallelOptions
         {
@@ -46,7 +57,9 @@ public static class NightTileColorizer
         using var night = SKBitmap.Decode(nightPath)
             ?? throw new InputValidationException($"Night tile is not a valid PNG: {nightPath}");
         if (day.Width != night.Width || day.Height != night.Height)
+        {
             throw new InputSecurityException($"Paired day/night tile dimensions differ: {nightPath}");
+        }
 
         var dayPixels = day.Pixels;
         var nightPixels = night.Pixels;
@@ -75,12 +88,19 @@ public static class NightTileColorizer
         var temporary = nightPath + "." + Guid.NewGuid().ToString("N") + ".partial";
         try
         {
-            using (var stream = File.Create(temporary)) encoded.SaveTo(stream);
+            using (var stream = File.Create(temporary))
+            {
+                encoded.SaveTo(stream);
+            }
+
             File.Move(temporary, nightPath, overwrite: true);
         }
         finally
         {
-            if (File.Exists(temporary)) File.Delete(temporary);
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
         }
     }
 }

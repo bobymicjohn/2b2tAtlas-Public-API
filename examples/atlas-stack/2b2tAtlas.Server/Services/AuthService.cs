@@ -259,7 +259,9 @@ public class AuthService
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null || !(user.IsActive == 1))
+        {
             return null;
+        }
 
         return MapToDto(user);
     }
@@ -273,7 +275,9 @@ public class AuthService
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null || !(user.IsActive == 1))
+            {
                 return false;
+            }
 
             user.LastLoginAt = DateTime.UtcNow.ToString("o");
             await _context.SaveChangesAsync();
@@ -327,7 +331,10 @@ public class AuthService
     private static bool IsLockoutActive(ServerUser user, out DateTime? lockoutUntilUtc)
     {
         lockoutUntilUtc = null;
-        if (string.IsNullOrWhiteSpace(user.LockoutEndUtc)) return false;
+        if (string.IsNullOrWhiteSpace(user.LockoutEndUtc))
+        {
+            return false;
+        }
 
         // Parse as an offset-aware timestamp to avoid locale/timezone ambiguity.
         if (!DateTimeOffset.TryParse(user.LockoutEndUtc, out var parsed))
@@ -347,7 +354,10 @@ public class AuthService
         user.FailedLoginAttempts = attempts;
         user.LastFailedLoginAt = utcNow.ToString("o");
 
-        if (attempts < _maxFailedLoginAttempts) return false;
+        if (attempts < _maxFailedLoginAttempts)
+        {
+            return false;
+        }
 
         user.LockoutEndUtc = utcNow.Add(_lockoutDuration).ToString("o");
         user.FailedLoginAttempts = 0;
@@ -372,7 +382,11 @@ public class AuthService
         var exponent = Math.Clamp(Math.Max(0, failedAttempts), 0, 6);
         var multiplier = 1 << exponent;
         var delayMs = Math.Min(_maxFailedLoginDelayMs, _baseFailedLoginDelayMs * multiplier);
-        if (delayMs <= 0) return;
+        if (delayMs <= 0)
+        {
+            return;
+        }
+
         await Task.Delay(delayMs);
     }
 
@@ -395,7 +409,9 @@ public class AuthService
             if (extraDetails != null)
             {
                 foreach (var pair in extraDetails)
+                {
                     details[pair.Key] = pair.Value;
+                }
             }
 
             await _audit.LogAsync(
@@ -416,7 +432,10 @@ public class AuthService
     private string? GetRemoteIp()
     {
         var ctx = _httpContextAccessor.HttpContext;
-        if (ctx == null) return null;
+        if (ctx == null)
+        {
+            return null;
+        }
 
         var forwarded = ctx.Request.Headers["X-Forwarded-For"].ToString();
         if (!string.IsNullOrWhiteSpace(forwarded))
@@ -431,7 +450,11 @@ public class AuthService
     private string? GetUserAgent()
     {
         var ctx = _httpContextAccessor.HttpContext;
-        if (ctx == null) return null;
+        if (ctx == null)
+        {
+            return null;
+        }
+
         var ua = ctx.Request.Headers.UserAgent.ToString();
         return string.IsNullOrWhiteSpace(ua) ? null : ua;
     }
@@ -443,12 +466,20 @@ public class AuthService
     /// </summary>
     private List<string> ResolveEffectivePermissions(string role, bool isSuper)
     {
-        if (isSuper) return Atlas.Auth.Permissions.All.ToList();
+        if (isSuper)
+        {
+            return Atlas.Auth.Permissions.All.ToList();
+        }
+
         var overrides = _context.RolePermissions
             .Where(rp => rp.Role == role)
             .Select(rp => rp.Permission)
             .ToList();
-        if (overrides.Count > 0) return overrides;
+        if (overrides.Count > 0)
+        {
+            return overrides;
+        }
+
         return RolePermissions.ForRole(role, false).ToList();
     }
 
@@ -469,13 +500,20 @@ public class AuthService
             new Claim("atlas_session", AtlasSessionValidator.Stamp(user, secretKey)),
         };
         if (!string.IsNullOrWhiteSpace(user.DiscordHandle))
+        {
             claims.Add(new Claim("discord_handle", user.DiscordHandle));
+        }
+
         if (user.IsSuperAdmin == 1)
+        {
             claims.Add(new Claim("superadmin", "true"));
+        }
         // Effective permissions resolved from the role (DB overrides or code default)
         // → one claim each so the server's per-permission authorization policies match.
         foreach (var perm in ResolveEffectivePermissions(user.Role, user.IsSuperAdmin == 1))
+        {
             claims.Add(new Claim("perm", perm));
+        }
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {

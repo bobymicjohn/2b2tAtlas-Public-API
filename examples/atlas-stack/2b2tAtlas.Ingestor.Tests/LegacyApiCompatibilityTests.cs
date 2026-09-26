@@ -56,9 +56,18 @@ public sealed class LegacyApiCompatibilityTests
     private sealed class LegacyFixture : IAsyncDisposable
     {
         private readonly SqliteConnection _connection;
-        public AtlasContext Context { get; }
-        public LegacyApiController Controller { get; }
-        public string NearUuid { get; }
+        public AtlasContext Context
+        {
+            get;
+        }
+        public LegacyApiController Controller
+        {
+            get;
+        }
+        public string NearUuid
+        {
+            get;
+        }
 
         private LegacyFixture(SqliteConnection connection, AtlasContext context,
             LegacyApiController controller, string nearUuid)

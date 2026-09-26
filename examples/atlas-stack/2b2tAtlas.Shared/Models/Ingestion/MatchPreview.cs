@@ -9,10 +9,10 @@ public sealed record MatchPreviewCandidate(string Dimension, int CenterX, int Ce
 /// <summary>A drop-time request to preview which existing locations a WDL's dimensions would match.</summary>
 public sealed class MatchPreviewRequest
 {
-    /// <summary>Gets or sets the render name used for name-similarity scoring.</summary>
+    /// <summary>Render name used for name-similarity scoring.</summary>
     public string? Name { get; set; }
 
-    /// <summary>Gets or sets the per-dimension centroids to score against existing locations.</summary>
+    /// <summary>Per-dimension centroids to score against existing locations.</summary>
     public IReadOnlyList<MatchPreviewCandidate> Candidates { get; set; } = [];
 }
 

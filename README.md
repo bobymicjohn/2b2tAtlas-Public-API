@@ -1,8 +1,9 @@
 # 2b2tAtlas Public API
 
-Documentation and examples for the [2b2tAtlas](https://2b2tatlas.com) public API:
-historical locations, groups, highways, Archive warps, world downloads, map renders,
-and Nocom observation aggregates.
+Use the [2b2tAtlas](https://2b2tatlas.com) catalog in your own map, mod or research
+tool. It includes historical locations, groups, highways, Archive warps, world
+downloads, dated renders and Nocom observations. This repository has small API
+examples and the [full Atlas application](examples/atlas-stack/README.md).
 
 **Base URL:** `https://api.blackportal.cloud`. Public reads require no API key.
 JSON responses support browser CORS.

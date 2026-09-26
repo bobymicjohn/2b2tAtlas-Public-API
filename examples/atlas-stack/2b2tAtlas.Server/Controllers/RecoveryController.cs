@@ -22,7 +22,16 @@ public sealed class RecoveryController : ControllerBase
             var path = Path.Combine(@"C:\AtlasExample\Recovery", $"{tier}-status.json");
             try
             {
-                if (!System.IO.File.Exists(path)) { backups.Add(new { tier, state = "not-started", needsAttention = true }); continue; }
+                if (!System.IO.File.Exists(path))
+                {
+                    backups.Add(new
+                    {
+                        tier,
+                        state = "not-started",
+                        needsAttention = true
+                    });
+                    continue;
+                }
                 using var json = JsonDocument.Parse(System.IO.File.ReadAllText(path));
                 var status = json.RootElement.Clone();
                 var complete = status.TryGetProperty("completedUtc", out var value) && DateTimeOffset.TryParse(value.GetString(), out var timestamp)
@@ -32,12 +41,24 @@ public sealed class RecoveryController : ControllerBase
                 var log = status.TryGetProperty("log", out var logValue) ? logValue.GetString() : null;
                 var lastActivity = log != null && System.IO.File.Exists(log)
                     ? new DateTimeOffset(System.IO.File.GetLastWriteTimeUtc(log)) : (DateTimeOffset?)null;
-                backups.Add(new { tier, status, needsAttention = state == "failed" ||
+                backups.Add(new
+                {
+                    tier,
+                    status,
+                    needsAttention = state == "failed" ||
                     (state == "running" && (!lastActivity.HasValue || DateTimeOffset.UtcNow - lastActivity.Value > TimeSpan.FromMinutes(30))) ||
-                    (state != "running" && (!complete.HasValue || DateTimeOffset.UtcNow - complete.Value > maxAge)) });
+                    (state != "running" && (!complete.HasValue || DateTimeOffset.UtcNow - complete.Value > maxAge))
+                });
             }
             catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
-            { backups.Add(new { tier, state = "unavailable", needsAttention = true }); }
+            {
+                backups.Add(new
+                {
+                    tier,
+                    state = "unavailable",
+                    needsAttention = true
+                });
+            }
         }
         var capacity = new List<object>();
         foreach (var path in new[] { @"B:\", @"E:\", @"X:\" })
@@ -45,13 +66,39 @@ public sealed class RecoveryController : ControllerBase
             try
             {
                 var drive = new DriveInfo(path);
-                capacity.Add(new { drive = path, available = true, availableBytes = drive.AvailableFreeSpace, totalBytes = drive.TotalSize });
+                capacity.Add(new
+                {
+                    drive = path,
+                    available = true,
+                    availableBytes = drive.AvailableFreeSpace,
+                    totalBytes = drive.TotalSize
+                });
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            { capacity.Add(new { drive = path, available = false, needsAttention = true }); }
+            {
+                capacity.Add(new
+                {
+                    drive = path,
+                    available = false,
+                    needsAttention = true
+                });
+            }
         }
-        return Ok(new { checkedUtc = DateTimeOffset.UtcNow, owner = "atlas-owner", backups, capacity,
-            editLimits = new { perMinute = 10, perHour = 60, perDay = 200, sharedPerHour = 120, sharedPerDay = 400 },
-            protection = "Verified pre-edit snapshots; versioned encrypted backups; connected storage is not offline or immutable." });
+        return Ok(new
+        {
+            checkedUtc = DateTimeOffset.UtcNow,
+            owner = "atlas-owner",
+            backups,
+            capacity,
+            editLimits = new
+            {
+                perMinute = 10,
+                perHour = 60,
+                perDay = 200,
+                sharedPerHour = 120,
+                sharedPerDay = 400
+            },
+            protection = "Verified pre-edit snapshots; versioned encrypted backups; connected storage is not offline or immutable."
+        });
     }
 }

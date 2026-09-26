@@ -71,7 +71,9 @@ public class HighwaySeeder
             spawnwardCanal.DisplayWeight = Math.Max(spawnwardCanal.DisplayWeight ?? 0, 12);
             if (string.IsNullOrWhiteSpace(spawnwardCanal.Description) ||
                 spawnwardCanal.Description.StartsWith("Main +Z Overworld canal from the spawn region", StringComparison.Ordinal))
+            {
                 spawnwardCanal.Description = "Main +Z Overworld canal from the spawn region to approximately Z +1.1M. The route was started by independent builders, extended by several infrastructure groups, taken to roughly 540k by the Southern Canal Association, and subsequently widened to 32 blocks and extended by WaterWay Union. This is not connected to the separate world-border excavation.";
+            }
         }
         await _context.SaveChangesAsync();
 
@@ -130,7 +132,9 @@ public class HighwaySeeder
             ("500 Ring Road", 500, 4), ("200 Ring Road", 200, 4),
         };
         foreach (var (name, r, w) in rings)
+        {
             list.Add(Make(name, "Ring", SquareRing(r), w, ringRadius: r));
+        }
 
         // Diamond ring roads (width 4).
         var diamonds = new (string Name, int R)[]
@@ -143,7 +147,9 @@ public class HighwaySeeder
             ("2k Diamond Ring Road", 2000), ("1k Diamond Ring Road", 1000),
         };
         foreach (var (name, r) in diamonds)
+        {
             list.Add(Make(name, "DiamondRing", DiamondRing(r), 4, ringRadius: r));
+        }
 
         // Nether Star Ring Road.
         var star = new[]
@@ -163,10 +169,15 @@ public class HighwaySeeder
         }
 
         foreach (var highway in list.Where(highway => highway.Category is "Axis" or "Diagonal" or "Grid"))
+        {
             highway.BuilderGroupId = hwuId;
+        }
+
         foreach (var highway in list.Where(highway =>
                      highway.Name is "125k Diamond Ring Road" or "250k Diamond Ring Road" or "500k Diamond Ring Road"))
+        {
             highway.BuilderGroupId = hwuId;
+        }
 
         AddEndAxis(list, "+X End Highway", 505_000, 0,
             "Extended to 505k by BRABcraft in late 2023; earlier sections include ice, rail, and End-stone.");
@@ -226,7 +237,11 @@ public class HighwaySeeder
         {
             if (!highways.TryGetValue(slug, out var highway) ||
                 !groups.TryGetValue(groupName, out var group) ||
-                !existing.Add((highway.Id, group.Id))) return;
+                !existing.Add((highway.Id, group.Id)))
+            {
+                return;
+            }
+
             _context.HighwayGroups.Add(new HighwayGroup
             {
                 HighwayId = highway.Id,
@@ -245,8 +260,11 @@ public class HighwaySeeder
             "x-z-diagonal-highway-3", "x-z-diagonal-highway-4",
         };
         foreach (var slug in cardinalSlugs.Concat(diagonalSlugs))
+        {
             Link(slug, "Highway Workers Union (HWU)", "Primary builder and current steward",
                 "https://www.reddit.com/r/2b2t/comments/1ldirek/; https://www.reddit.com/r/2b2t/comments/1ob2ow8/");
+        }
+
         foreach (var slug in cardinalSlugs)
         {
             Link(slug, "Independent Interstate Society (IIS)", "Predecessor builder", "https://2b2t.wikioasis.org/wiki/Independent_Interstate_Society");
@@ -256,11 +274,19 @@ public class HighwaySeeder
         Link("z-highway", "+Z Digging Group", "Historical builder", "https://2b2t.wikioasis.org/wiki/%2BZ_Digging_Group");
         Link("x-highway", "Nether Highway Group (NHG)", "Historical builder", "https://2b2t.wikioasis.org/wiki/Nether_Highway_Group");
         foreach (var slug in diagonalSlugs)
+        {
             Link(slug, "Motorway Extension Gurus (MEG)", "Predecessor builder", "https://2b2t.wikioasis.org/wiki/Motorway_Extension_Gurus");
+        }
+
         foreach (var highway in highways.Values.Where(highway => highway.Category == "Grid"))
+        {
             Link(highway.Slug, "Highway Workers Union (HWU)", "Builder", "https://www.reddit.com/r/2b2t/comments/13dqyj1/");
+        }
+
         foreach (var slug in new[] { "125k-diamond-ring-road", "250k-diamond-ring-road", "500k-diamond-ring-road" })
+        {
             Link(slug, "Highway Workers Union (HWU)", "Builder", "https://www.reddit.com/r/2b2t/comments/13hj8t6/");
+        }
 
         foreach (var slug in new[] { "southern-canal-spawnward-segment", "southern-canal-world-border-segment" })
         {
@@ -269,7 +295,11 @@ public class HighwaySeeder
             Link(slug, "Spawn Infrastructure Group (SIG)", "Historical contributor", "https://2b2t.wikioasis.org/wiki/Spawn_Infrastructure_Group");
         }
 
-        if (added > 0) await _context.SaveChangesAsync();
+        if (added > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
+
         return added;
     }
 
@@ -282,7 +312,10 @@ public class HighwaySeeder
             var slug = h.Slug;
             var n = 2;
             while (!seen.Add(slug))
+            {
                 slug = $"{h.Slug}-{n++}";
+            }
+
             h.Slug = slug;
         }
     }
@@ -350,11 +383,21 @@ public class HighwaySeeder
         var sb = new StringBuilder(name.Length);
         foreach (var ch in name.ToLowerInvariant())
         {
-            if (char.IsLetterOrDigit(ch)) sb.Append(ch);
-            else if (ch is ' ' or '-' or ',' or '.' or '=') sb.Append('-');
+            if (char.IsLetterOrDigit(ch))
+            {
+                sb.Append(ch);
+            }
+            else if (ch is ' ' or '-' or ',' or '.' or '=')
+            {
+                sb.Append('-');
+            }
         }
         var slug = sb.ToString();
-        while (slug.Contains("--")) slug = slug.Replace("--", "-");
+        while (slug.Contains("--"))
+        {
+            slug = slug.Replace("--", "-");
+        }
+
         return slug.Trim('-');
     }
 }

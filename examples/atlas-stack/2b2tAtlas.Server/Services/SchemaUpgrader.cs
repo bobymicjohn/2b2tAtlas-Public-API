@@ -163,7 +163,10 @@ public class SchemaUpgrader
         }
         finally
         {
-            if (opened) await conn.CloseAsync();
+            if (opened)
+            {
+                await conn.CloseAsync();
+            }
         }
     }
 
@@ -280,7 +283,10 @@ ORDER BY Id;";
             while (await reader.ReadAsync())
             {
                 var displayName = Atlas.ArchiveWarpResolver.DisplayIdentity(reader.GetString(1));
-                if (displayName.Length > 0) renderNames[reader.GetInt32(0)] = displayName;
+                if (displayName.Length > 0)
+                {
+                    renderNames[reader.GetInt32(0)] = displayName;
+                }
             }
         }
 
@@ -302,7 +308,10 @@ ORDER BY j.Id;";
             while (await reader.ReadAsync())
             {
                 var displayName = Atlas.ArchiveWarpResolver.DisplayIdentity(reader.GetString(1));
-                if (displayName.Length > 0) locationNames[reader.GetInt32(0)] = displayName;
+                if (displayName.Length > 0)
+                {
+                    locationNames[reader.GetInt32(0)] = displayName;
+                }
             }
         }
 
@@ -324,7 +333,10 @@ ORDER BY j.Id;";
             {
                 var locationId = reader.GetInt32(1);
                 var displayName = locationNames.GetValueOrDefault(locationId, reader.GetString(2));
-                if (!string.IsNullOrWhiteSpace(displayName)) renderNames[reader.GetInt32(0)] = displayName;
+                if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    renderNames[reader.GetInt32(0)] = displayName;
+                }
             }
         }
 
@@ -376,9 +388,14 @@ WHERE Description LIKE 'Rendered from The Archive automated sync%';";
         }
 
         foreach (var pair in renderNames)
+        {
             await UpdateNameAsync(conn, transaction, "Renders", "Id", pair.Key, pair.Value);
+        }
+
         foreach (var pair in locationNames)
+        {
             await UpdateNameAsync(conn, transaction, "Locations", "Rowid", pair.Key, pair.Value);
+        }
 
         using (var record = conn.CreateCommand())
         {
@@ -579,7 +596,10 @@ WHERE ""LocationUuid"" IS NULL OR ""LocationUuid"" = '';";
         {
             select.CommandText = "SELECT \"Rowid\" FROM \"Locations\" WHERE \"LocationUuid\" IS NULL OR \"LocationUuid\" = '';";
             using var reader = await select.ExecuteReaderAsync();
-            while (await reader.ReadAsync()) missing.Add(reader.GetInt32(0));
+            while (await reader.ReadAsync())
+            {
+                missing.Add(reader.GetInt32(0));
+            }
         }
 
         foreach (var rowid in missing)
@@ -800,7 +820,10 @@ CREATE INDEX IF NOT EXISTS ""IX_HighwayGroups_GroupId"" ON ""HighwayGroups"" (""
 
     private async Task AddColumnIfMissingAsync(DbConnection conn, HashSet<string> existing, string table, string column, string definition)
     {
-        if (existing.Contains(column)) return;
+        if (existing.Contains(column))
+        {
+            return;
+        }
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {definition};";
@@ -811,7 +834,10 @@ CREATE INDEX IF NOT EXISTS ""IX_HighwayGroups_GroupId"" ON ""HighwayGroups"" (""
 
     private async Task RenameColumnIfNeededAsync(DbConnection conn, HashSet<string> existing, string table, string oldColumn, string newColumn)
     {
-        if (existing.Contains(newColumn) || !existing.Contains(oldColumn)) return;
+        if (existing.Contains(newColumn) || !existing.Contains(oldColumn))
+        {
+            return;
+        }
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"ALTER TABLE \"{table}\" RENAME COLUMN \"{oldColumn}\" TO \"{newColumn}\";";
@@ -830,13 +856,20 @@ CREATE INDEX IF NOT EXISTS ""IX_HighwayGroups_GroupId"" ON ""HighwayGroups"" (""
             using var reader = await inspect.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                if (!string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 isNotNull = reader.GetInt32(3) != 0;
                 break;
             }
         }
 
-        if (!isNotNull) return;
+        if (!isNotNull)
+        {
+            return;
+        }
 
         await using var transaction = await conn.BeginTransactionAsync();
         foreach (var sql in new[]

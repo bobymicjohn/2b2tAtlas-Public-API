@@ -58,11 +58,16 @@ public sealed record RendererOptions(
         }, cancellationToken);
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
+        {
             throw new InputValidationException("Renderer profile must be a JSON object.");
+        }
+
         foreach (var property in root.EnumerateObject())
         {
             if (!AllowedKeys.Contains(property.Name))
+            {
                 throw new InputValidationException($"Unknown renderer profile key: {property.Name}");
+            }
         }
 
         var profileDirectory = Path.GetDirectoryName(Path.GetFullPath(profilePath))!;
@@ -70,18 +75,29 @@ public sealed record RendererOptions(
         var executablePath = Path.GetFullPath(executableValue, profileDirectory);
         var hash = ReadRequiredString(root, "expectedSha256").ToLowerInvariant();
         if (hash.Length != 64 || hash.Any(character => !Uri.IsHexDigit(character)))
+        {
             throw new InputValidationException("Renderer expectedSha256 must be a 64-character hex digest.");
+        }
+
         var version = ReadRequiredString(root, "version");
         if (version.Length > 100 || version.Any(char.IsControl))
+        {
             throw new InputValidationException("Renderer version is invalid.");
+        }
 
         if (!root.TryGetProperty("dimensionArguments", out var commands) || commands.ValueKind != JsonValueKind.Object)
+        {
             throw new InputValidationException("Renderer profile dimensionArguments must be an object.");
+        }
+
         var parsedCommands = new Dictionary<string, string[]>(StringComparer.Ordinal);
         foreach (var command in commands.EnumerateObject())
         {
             if (command.Name is not ("overworld" or "nether" or "end") || command.Value.ValueKind != JsonValueKind.Array)
+            {
                 throw new InputValidationException($"Invalid renderer dimension profile: {command.Name}");
+            }
+
             var arguments = command.Value.EnumerateArray()
                 .Select(value => value.ValueKind == JsonValueKind.String
                     ? value.GetString()!
@@ -91,7 +107,9 @@ public sealed record RendererOptions(
             parsedCommands.Add(command.Name, arguments);
         }
         if (parsedCommands.Count == 0)
+        {
             throw new InputValidationException("Renderer profile must configure at least one dimension.");
+        }
 
         var nightColorGrade = ReadNightColorGrade(root);
         return new RendererOptions(executablePath, hash, version, parsedCommands, timeout, maxLogBytes, nightColorGrade);
@@ -99,13 +117,25 @@ public sealed record RendererOptions(
 
     private static NightColorGradeOptions ReadNightColorGrade(JsonElement root)
     {
-        if (!root.TryGetProperty("nightColorGrade", out var value)) return new NightColorGradeOptions();
+        if (!root.TryGetProperty("nightColorGrade", out var value))
+        {
+            return new NightColorGradeOptions();
+        }
+
         if (value.ValueKind != JsonValueKind.Object)
+        {
             throw new InputValidationException("Renderer nightColorGrade must be an object.");
+        }
+
         var allowed = new HashSet<string>(StringComparer.Ordinal) { "enabled", "saturation", "lightness" };
         foreach (var property in value.EnumerateObject())
+        {
             if (!allowed.Contains(property.Name))
+            {
                 throw new InputValidationException($"Unknown nightColorGrade key: {property.Name}");
+            }
+        }
+
         var result = new NightColorGradeOptions
         {
             Enabled = value.TryGetProperty("enabled", out var enabled) ? enabled.GetBoolean() : true,
@@ -113,9 +143,15 @@ public sealed record RendererOptions(
             Lightness = value.TryGetProperty("lightness", out var lightness) ? lightness.GetDouble() : 1.15,
         };
         if (!double.IsFinite(result.Saturation) || result.Saturation is < 0 or > 2)
+        {
             throw new InputValidationException("Renderer night saturation must be between 0 and 2.");
+        }
+
         if (!double.IsFinite(result.Lightness) || result.Lightness is < 0.5 or > 2)
+        {
             throw new InputValidationException("Renderer night lightness must be between 0.5 and 2.");
+        }
+
         return result;
     }
 
@@ -127,12 +163,18 @@ public sealed record RendererOptions(
     private static void ValidateArguments(string[] arguments)
     {
         if (arguments.Length is < 2 or > 100 || arguments.Any(value => value.Length is 0 or > 1000 || value.Any(char.IsControl)))
+        {
             throw new InputValidationException("Renderer argument list is empty or exceeds safety limits.");
+        }
+
         if (arguments.Any(value => value
                 .Replace("{world}", string.Empty, StringComparison.Ordinal)
                 .Replace("{output}", string.Empty, StringComparison.Ordinal)
                 .IndexOfAny(['{', '}']) >= 0))
+        {
             throw new InputValidationException("Renderer arguments contain an unknown placeholder.");
+        }
+
         if (arguments.Count(value => value.Contains("{world}", StringComparison.Ordinal)) != 1 ||
             arguments.Count(value => value.Contains("{output}", StringComparison.Ordinal)) != 1)
         {
@@ -190,21 +232,30 @@ public static class RendererRunner
     {
         var executable = Path.GetFullPath(options.ExecutablePath);
         if (!File.Exists(executable))
+        {
             throw new InputValidationException($"Renderer executable was not found: {executable}");
+        }
+
         if (!Path.GetFileName(executable).StartsWith("unmined-cli", StringComparison.OrdinalIgnoreCase))
+        {
             throw new InputValidationException("Renderer executable must be an approved uNmINeD CLI binary.");
+        }
 
         await using (var renderer = File.OpenRead(executable))
         {
             var actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(renderer, cancellationToken));
             if (!actual.Equals(options.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+            {
                 throw new InputSecurityException("Renderer executable SHA-256 does not match the configured pin.");
+            }
         }
 
         foreach (var dimension in plan.Dimensions)
         {
             if (!options.DimensionArguments.ContainsKey(dimension.Key))
+            {
                 throw new InputValidationException($"Renderer profile {options.Version} does not support dimension: {dimension.Key}");
+            }
         }
 
         Directory.CreateDirectory(outputRoot);
@@ -240,7 +291,11 @@ public static class RendererRunner
 
             await JobStore.WriteJsonAsync(
                 provenancePath,
-                expectedProvenance with { Status = "completed", UpdatedAtUtc = DateTimeOffset.UtcNow },
+                expectedProvenance with
+                {
+                    Status = "completed",
+                    UpdatedAtUtc = DateTimeOffset.UtcNow
+                },
                 cancellationToken);
         }
     }
@@ -267,7 +322,10 @@ public static class RendererRunner
             EnableRaisingEvents = true,
         };
         foreach (var argument in arguments)
+        {
             process.StartInfo.ArgumentList.Add(argument);
+        }
+
         process.StartInfo.Environment.Clear();
         process.StartInfo.Environment["PATH"] = Path.GetDirectoryName(executable)!;
         process.StartInfo.Environment["TEMP"] = Path.GetTempPath();
@@ -278,14 +336,20 @@ public static class RendererRunner
         await using var stdoutLog = new FileStream(stdoutPath, FileMode.Append, FileAccess.Write, FileShare.Read);
         await using var stderrLog = new FileStream(stderrPath, FileMode.Append, FileAccess.Write, FileShare.Read);
         if (stdoutLog.Length > maxLogBytes || stderrLog.Length > maxLogBytes)
+        {
             throw new IngestException($"Existing renderer log exceeds {maxLogBytes:N0} bytes.");
+        }
+
         using var timeoutSource = new CancellationTokenSource(timeout);
         using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
         var processStarted = false;
         try
         {
             if (!process.Start())
+            {
                 throw new IngestException("Renderer failed to start.");
+            }
+
             processStarted = true;
             var stdout = CopyLogAsync(process.StandardOutput, stdoutLog, maxLogBytes, linkedSource.Token);
             var stderr = CopyLogAsync(process.StandardError, stderrLog, maxLogBytes, linkedSource.Token);
@@ -294,11 +358,20 @@ public static class RendererRunner
         catch (OperationCanceledException)
         {
             if (processStarted && !process.HasExited)
+            {
                 process.Kill(entireProcessTree: true);
+            }
+
             if (processStarted)
+            {
                 await process.WaitForExitAsync(CancellationToken.None);
+            }
+
             if (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
                 throw new IngestException($"Renderer exceeded its {timeout} timeout.");
+            }
+
             throw;
         }
         catch
@@ -312,7 +385,9 @@ public static class RendererRunner
         }
 
         if (process.ExitCode != 0)
+        {
             throw new IngestException($"Renderer exited with code {process.ExitCode}. See {stdoutPath} and {stderrPath}");
+        }
     }
 
     private static async Task CopyLogAsync(
@@ -326,11 +401,16 @@ public static class RendererRunner
         {
             var read = await source.ReadAsync(buffer, cancellationToken);
             if (read == 0)
+            {
                 return;
+            }
+
             var bytes = System.Text.Encoding.UTF8.GetBytes(buffer, 0, read);
             await destination.WriteAsync(bytes, cancellationToken);
             if (destination.Length > maxBytes)
+            {
                 throw new IngestException($"Renderer log exceeded {maxBytes:N0} bytes.");
+            }
         }
     }
 }
@@ -361,16 +441,25 @@ public static class RenderProvenanceStore
         if (!resume)
         {
             if (outputExists || provenanceExists)
+            {
                 throw new InputValidationException($"Renderer output or provenance already exists: {dimensionOutput}");
+            }
+
             await JobStore.WriteJsonAsync(provenancePath, expected, cancellationToken);
             return;
         }
 
         if (!outputExists || !provenanceExists)
+        {
             throw new InputValidationException($"Resume requires both existing output and provenance: {dimensionOutput}");
+        }
+
         var actual = await JobStore.ReadJsonAsync<RenderProvenance>(provenancePath, cancellationToken);
         if (!Matches(actual, expected))
+        {
             throw new InputSecurityException($"Renderer provenance does not match the current plan/profile: {dimensionOutput}");
+        }
+
         await JobStore.WriteJsonAsync(provenancePath, expected, cancellationToken);
     }
 

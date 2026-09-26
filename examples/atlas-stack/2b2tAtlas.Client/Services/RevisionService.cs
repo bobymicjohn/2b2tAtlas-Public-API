@@ -27,12 +27,19 @@ public class RevisionService
     public async Task<(bool Ok, RevisionDto? Saved, string? Error)> SubmitAsync(RevisionDto revision)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return (false, null, "Not authenticated");
+        if (string.IsNullOrEmpty(token))
+        {
+            return (false, null, "Not authenticated");
+        }
+
         var req = new HttpRequestMessage(HttpMethod.Post, "api/revisions") { Content = JsonContent.Create(revision) };
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _http.SendAsync(req);
         if (!resp.IsSuccessStatusCode)
+        {
             return (false, null, await resp.Content.ReadAsStringAsync());
+        }
+
         var saved = await resp.Content.ReadFromJsonAsync<RevisionDto>();
         return (true, saved, null);
     }
@@ -41,11 +48,19 @@ public class RevisionService
     public async Task<List<RevisionDto>> GetPendingAsync()
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return new();
+        if (string.IsNullOrEmpty(token))
+        {
+            return new();
+        }
+
         var req = new HttpRequestMessage(HttpMethod.Get, "api/revisions/pending");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _http.SendAsync(req);
-        if (!resp.IsSuccessStatusCode) return new();
+        if (!resp.IsSuccessStatusCode)
+        {
+            return new();
+        }
+
         return await resp.Content.ReadFromJsonAsync<List<RevisionDto>>() ?? new();
     }
 
@@ -58,7 +73,11 @@ public class RevisionService
     private async Task<bool> PostActionAsync(string url)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return false;
+        if (string.IsNullOrEmpty(token))
+        {
+            return false;
+        }
+
         var req = new HttpRequestMessage(HttpMethod.Post, url);
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _http.SendAsync(req);

@@ -8,6 +8,12 @@ param(
     [string]$SeoFingerprint
 )
 $ErrorActionPreference='Stop'
+if ($GroupEvidenceIndexPath -and -not (Test-Path -LiteralPath $GroupEvidenceIndexPath -PathType Leaf)) {
+    throw "Group evidence index was not found: $GroupEvidenceIndexPath"
+}
+if ($SeoDataApiBaseUrl -or $GroupEvidenceIndexPath -or $SeoFingerprint) {
+    throw 'This example packages the static client only. SEO export arguments require a configured catalog export; they cannot be silently ignored.'
+}
 if (-not $ApiBaseUrl.IsAbsoluteUri -or ($ApiBaseUrl.Scheme -ne 'https' -and -not $ApiBaseUrl.IsLoopback)) {
     throw 'API URL must be HTTPS, or loopback for local development.'
 }

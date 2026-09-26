@@ -18,7 +18,9 @@ public static class AtlasAuthentication
         {
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = true, ValidateAudience = true, ValidateLifetime = true,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = settings["Issuer"] ?? "2b2tAtlas",
                 ValidAudience = settings["Audience"] ?? "2b2tAtlas",
@@ -31,8 +33,14 @@ public static class AtlasAuthentication
                 {
                     var validator = context.HttpContext.RequestServices.GetRequiredService<AtlasSessionValidator>();
                     var current = await validator.ValidateAsync(context.Principal!, context.HttpContext.RequestAborted);
-                    if (current == null) context.Fail("Account or session is no longer valid. Please sign in again.");
-                    else context.Principal = current;
+                    if (current == null)
+                    {
+                        context.Fail("Account or session is no longer valid. Please sign in again.");
+                    }
+                    else
+                    {
+                        context.Principal = current;
+                    }
                 }
             };
         });

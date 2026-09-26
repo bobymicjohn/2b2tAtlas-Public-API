@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
         }
 
         var result = await _authService.RegisterAsync(request);
-        
+
         if (result == null)
         {
             return StatusCode(500, new AuthResponse
@@ -161,10 +161,16 @@ public class AuthController : ControllerBase
         var success = await _authService.UpdateLastLoginAsync(userId);
         if (!success)
         {
-            return BadRequest(new { message = "Failed to update last login" });
+            return BadRequest(new
+            {
+                message = "Failed to update last login"
+            });
         }
 
-        return Ok(new { message = "Last login updated successfully" });
+        return Ok(new
+        {
+            message = "Last login updated successfully"
+        });
     }
 
     /// <summary>
@@ -187,11 +193,18 @@ public class AuthController : ControllerBase
                 return Unauthorized();
             }
 
-            return Ok(new { valid = true, userId });
+            return Ok(new
+            {
+                valid = true,
+                userId
+            });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, new
+            {
+                error = ex.Message
+            });
         }
     }
 }

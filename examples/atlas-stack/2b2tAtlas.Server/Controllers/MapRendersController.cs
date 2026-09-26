@@ -131,7 +131,14 @@ public class MapRendersController : ControllerBase
     public async Task<ActionResult<MapRenderDto>> Upsert([FromBody] MapRenderDto dto)
     {
         var errors = MapRenderRegistrationValidator.Validate(dto, _allowedUrlPrefixes);
-        if (errors.Count > 0) return BadRequest(new { errors });
+        if (errors.Count > 0)
+        {
+            return BadRequest(new
+            {
+                errors
+            });
+        }
+
         var slug = dto.Slug.Trim();
 
         var row = await _context.MapRenders.FirstOrDefaultAsync(r => r.Slug == slug);
@@ -140,7 +147,11 @@ public class MapRendersController : ControllerBase
 
         Apply(dto, row);
 
-        if (created) _context.MapRenders.Add(row);
+        if (created)
+        {
+            _context.MapRenders.Add(row);
+        }
+
         try
         {
             await _context.SaveChangesAsync();
@@ -150,7 +161,10 @@ public class MapRendersController : ControllerBase
             _context.Entry(row).State = EntityState.Detached;
             var concurrentRow = await _context.MapRenders.SingleOrDefaultAsync(r => r.Slug == slug);
             if (concurrentRow is null)
+            {
                 throw;
+            }
+
             row = concurrentRow;
             created = false;
             Apply(dto, row);
@@ -169,7 +183,11 @@ public class MapRendersController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var row = await _context.MapRenders.FindAsync(id);
-        if (row == null) return NotFound();
+        if (row == null)
+        {
+            return NotFound();
+        }
+
         _context.MapRenders.Remove(row);
         await _context.SaveChangesAsync();
         await _audit.LogAsync("maprender.delete", "MapRender", id, CurrentUserId(), CurrentUsername(),

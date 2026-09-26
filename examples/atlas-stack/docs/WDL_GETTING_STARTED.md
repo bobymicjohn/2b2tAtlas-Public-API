@@ -67,8 +67,8 @@ publish over an executable that is processing a world.
 Create `C:\AtlasExample\Api\data`, `C:\AtlasExample\Api\config`, `C:\AtlasExample\Ingest\config`,
 `D:\AtlasExample\Ingest\intake`, `D:\AtlasExample\Ingest\work`,
 `E:\AtlasExample\WorldDownloads` and `F:\AtlasExample\AtlasTiles`.
-Run the API with `C:\AtlasExample\Api\data` as its working directory. Startup creates and
-upgrades `atlas.db`; an existing production corpus must be restored separately.
+Set `Database__Path` to `C:\AtlasExample\Api\data\atlas.db`. Startup creates and
+upgrades that database; an existing historical corpus must be restored separately.
 
 The current owner policy is deliberately tied to account 1, `atlas-owner`.
 Fresh-database seeding creates that account first. If you are adapting Atlas for a
@@ -84,6 +84,7 @@ Set these additional API values in its private launcher environment:
 
 ```text
 ASPNETCORE_URLS=http://127.0.0.1:5297
+Database__Path=C:\AtlasExample\Api\data\atlas.db
 IngestionWorker__IntakeRoot=D:\AtlasExample\Ingest\intake
 WdlArchive__Root=E:\AtlasExample\WorldDownloads
 Recovery__Root=B:\AtlasExample\Backups\human-edits

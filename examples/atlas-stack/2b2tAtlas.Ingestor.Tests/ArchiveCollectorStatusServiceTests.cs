@@ -55,9 +55,16 @@ public sealed class ArchiveCollectorStatusServiceTests
                 }
             }
         });
-        await WriteJson(Path.Combine(runRoot, "final-standard-handoff-status.json"), new { stage = "waiting-for-collector" });
+        await WriteJson(Path.Combine(runRoot, "final-standard-handoff-status.json"), new
+        {
+            stage = "waiting-for-collector"
+        });
         Directory.CreateDirectory(Path.Combine(runRoot, "rolling-handoff"));
-        await WriteJson(Path.Combine(runRoot, "rolling-handoff", "status.json"), new { stage = "submitting", submitted = 7 });
+        await WriteJson(Path.Combine(runRoot, "rolling-handoff", "status.json"), new
+        {
+            stage = "submitting",
+            submitted = 7
+        });
 
         var service = new ArchiveCollectorStatusService(
             Options.Create(new ArchiveCollectorStatusOptions
@@ -111,8 +118,15 @@ public sealed class ArchiveCollectorStatusServiceTests
             Path.Combine(primaryRoot, "game", "logs", "latest.log"),
             "Connecting to thearchive.world...\n",
             TestContext.Current.CancellationToken);
-        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new { entries = new[] { new { normalizedWarp = "pending" } } });
-        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new { updatedUtc = DateTimeOffset.UtcNow, entries = Array.Empty<object>() });
+        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new
+        {
+            entries = new[] { new { normalizedWarp = "pending" } }
+        });
+        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new
+        {
+            updatedUtc = DateTimeOffset.UtcNow,
+            entries = Array.Empty<object>()
+        });
         await WriteJson(Path.Combine(runRoot, "parallel-collector-status.json"), new
         {
             updatedUtc = DateTimeOffset.UtcNow,
@@ -181,8 +195,15 @@ public sealed class ArchiveCollectorStatusServiceTests
             "[System] [CHAT] \u001b[m\u001b[90m[\u001b[33mWarps\u001b[90m] \u001b[37mYou were teleported to '\u001b[96mCurrent_Large_Base_2021-06-05\u001b[37m'.\u001b[0m\n" +
             "ATLAS_COVER settled waypoint=12/74 received=48401 missing=2669 quiet=true\n",
             TestContext.Current.CancellationToken);
-        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new { entries = new[] { new { normalizedWarp = "pending" } } });
-        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new { updatedUtc = DateTimeOffset.UtcNow, entries = Array.Empty<object>() });
+        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new
+        {
+            entries = new[] { new { normalizedWarp = "pending" } }
+        });
+        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new
+        {
+            updatedUtc = DateTimeOffset.UtcNow,
+            entries = Array.Empty<object>()
+        });
         await WriteJson(Path.Combine(runRoot, "parallel-collector-status.json"), new
         {
             updatedUtc = DateTimeOffset.UtcNow,
@@ -242,8 +263,15 @@ public sealed class ArchiveCollectorStatusServiceTests
             Path.Combine(collectorLogs, "collector-20260904-092600.log"),
             collectorLog,
             TestContext.Current.CancellationToken);
-        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new { entries = new[] { new { normalizedWarp = "pending" } } });
-        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new { updatedUtc = DateTimeOffset.UtcNow, entries = Array.Empty<object>() });
+        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new
+        {
+            entries = new[] { new { normalizedWarp = "pending" } }
+        });
+        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new
+        {
+            updatedUtc = DateTimeOffset.UtcNow,
+            entries = Array.Empty<object>()
+        });
         await WriteJson(Path.Combine(runRoot, "parallel-collector-status.json"), new
         {
             updatedUtc = DateTimeOffset.UtcNow,
@@ -294,9 +322,17 @@ public sealed class ArchiveCollectorStatusServiceTests
             TestContext.Current.CancellationToken);
         await WriteMinimalStatus(runRoot, new
         {
-            id = 1, profile = "atlas-owner", processId = Environment.ProcessId, running = true,
-            restarting = false, restartCount = 12, assigned = 10, completed = 3,
-            currentOrLastWarp = "Current_Warp", minecraftVersion = "fabric-loader-1.21.11", stdout
+            id = 1,
+            profile = "atlas-owner",
+            processId = Environment.ProcessId,
+            running = true,
+            restarting = false,
+            restartCount = 12,
+            assigned = 10,
+            completed = 3,
+            currentOrLastWarp = "Current_Warp",
+            minecraftVersion = "fabric-loader-1.21.11",
+            stdout
         });
 
         var service = NewService(runRoot, primaryRoot, temp.Resolve("profiles"));
@@ -331,9 +367,17 @@ public sealed class ArchiveCollectorStatusServiceTests
             TestContext.Current.CancellationToken);
         await WriteMinimalStatus(runRoot, new
         {
-            id = 5, profile = "collector-five", processId = Environment.ProcessId, running = true,
-            restarting = false, restartCount = 4, assigned = 10, completed = 2,
-            currentOrLastWarp = "Compat_Warp", minecraftVersion = "fabric-loader-1.21.10", stdout
+            id = 5,
+            profile = "collector-five",
+            processId = Environment.ProcessId,
+            running = true,
+            restarting = false,
+            restartCount = 4,
+            assigned = 10,
+            completed = 2,
+            currentOrLastWarp = "Compat_Warp",
+            minecraftVersion = "fabric-loader-1.21.10",
+            stdout
         });
 
         var service = NewService(runRoot, temp.Resolve("primary"), profilesRoot, compatibilityRoot);
@@ -359,9 +403,17 @@ public sealed class ArchiveCollectorStatusServiceTests
         await File.WriteAllTextAsync(stdout, "Starting fresh attempt\n", TestContext.Current.CancellationToken);
         await WriteMinimalStatus(runRoot, new
         {
-            id = 1, profile = "atlas-owner", processId = Environment.ProcessId, running = true,
-            restarting = false, restartCount = 13, assigned = 10, completed = 3,
-            currentOrLastWarp = "Fresh_Warp", minecraftVersion = "fabric-loader-1.21.11", stdout
+            id = 1,
+            profile = "atlas-owner",
+            processId = Environment.ProcessId,
+            running = true,
+            restarting = false,
+            restartCount = 13,
+            assigned = 10,
+            completed = 3,
+            currentOrLastWarp = "Fresh_Warp",
+            minecraftVersion = "fabric-loader-1.21.11",
+            stdout
         });
 
         var service = NewService(runRoot, primaryRoot, temp.Resolve("profiles"));
@@ -388,9 +440,17 @@ public sealed class ArchiveCollectorStatusServiceTests
             TestContext.Current.CancellationToken);
         await WriteMinimalStatus(runRoot, new
         {
-            id = 1, profile = "atlas-owner", processId = 0, running = false,
-            restarting = true, restartCount = 14, assigned = 10, completed = 3,
-            currentOrLastWarp = "Previous_Warp", minecraftVersion = "fabric-loader-1.21.11", stdout
+            id = 1,
+            profile = "atlas-owner",
+            processId = 0,
+            running = false,
+            restarting = true,
+            restartCount = 14,
+            assigned = 10,
+            completed = 3,
+            currentOrLastWarp = "Previous_Warp",
+            minecraftVersion = "fabric-loader-1.21.11",
+            stdout
         });
 
         var service = NewService(runRoot, primaryRoot, temp.Resolve("profiles"));
@@ -409,8 +469,15 @@ public sealed class ArchiveCollectorStatusServiceTests
         using var temp = new TempDirectory();
         var runRoot = temp.Resolve("run");
         Directory.CreateDirectory(runRoot);
-        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new { entries = Array.Empty<object>() });
-        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new { updatedUtc = DateTimeOffset.UtcNow, entries = Array.Empty<object>() });
+        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new
+        {
+            entries = Array.Empty<object>()
+        });
+        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new
+        {
+            updatedUtc = DateTimeOffset.UtcNow,
+            entries = Array.Empty<object>()
+        });
         var workers = Enumerable.Range(1, 6).Select(id => new
         {
             id,
@@ -455,8 +522,15 @@ public sealed class ArchiveCollectorStatusServiceTests
         Directory.CreateDirectory(runRoot);
         await WriteMinimalStatus(runRoot, new
         {
-            id = 5, profile = "collector-five", processId = 0, running = false, restarting = false,
-            assigned = 71, completed = 71, lane, refillPending = pending,
+            id = 5,
+            profile = "collector-five",
+            processId = 0,
+            running = false,
+            restarting = false,
+            assigned = 71,
+            completed = 71,
+            lane,
+            refillPending = pending,
             adaptiveMaximumRuntimeSeconds = budget
         });
         var result = await NewService(runRoot, temp.Resolve("primary"), temp.Resolve("profiles"))
@@ -474,10 +548,16 @@ public sealed class ArchiveCollectorStatusServiceTests
         using var temp = new TempDirectory();
         var runRoot = temp.Resolve("run");
         Directory.CreateDirectory(runRoot);
-        await WriteMinimalStatus(runRoot, new { id = 1, profile = "fixture", running = false });
+        await WriteMinimalStatus(runRoot, new
+        {
+            id = 1,
+            profile = "fixture",
+            running = false
+        });
         await WriteJson(Path.Combine(runRoot, "parallel-collector-status.json"), new
         {
-            stage = "operator-paused", updatedUtc = DateTimeOffset.UtcNow.AddDays(-1),
+            stage = "operator-paused",
+            updatedUtc = DateTimeOffset.UtcNow.AddDays(-1),
             workers = new[] { new { id = 1, profile = "fixture", running = false, restarting = false, phase = "paused", assigned = 10 } }
         });
         var result = await NewService(runRoot, temp.Resolve("primary"), temp.Resolve("profiles"))
@@ -494,7 +574,14 @@ public sealed class ArchiveCollectorStatusServiceTests
         using var temp = new TempDirectory();
         var runRoot = temp.Resolve("run");
         Directory.CreateDirectory(runRoot);
-        await WriteMinimalStatus(runRoot, new { id = 1, profile = "fixture", running = false, restarting = true, assigned = 10 });
+        await WriteMinimalStatus(runRoot, new
+        {
+            id = 1,
+            profile = "fixture",
+            running = false,
+            restarting = true,
+            assigned = 10
+        });
         await File.WriteAllTextAsync(Path.Combine(runRoot, "pause-collector"), "low disk", TestContext.Current.CancellationToken);
         var result = await NewService(runRoot, temp.Resolve("primary"), temp.Resolve("profiles"))
             .GetAsync(TestContext.Current.CancellationToken);
@@ -523,9 +610,20 @@ public sealed class ArchiveCollectorStatusServiceTests
 
     private static async Task WriteMinimalStatus(string runRoot, object worker)
     {
-        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new { entries = new[] { new { normalizedWarp = "pending" } } });
-        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new { updatedUtc = DateTimeOffset.UtcNow, entries = Array.Empty<object>() });
-        await WriteJson(Path.Combine(runRoot, "parallel-collector-status.json"), new { updatedUtc = DateTimeOffset.UtcNow, workers = new[] { worker } });
+        await WriteJson(Path.Combine(runRoot, "capture-queue.json"), new
+        {
+            entries = new[] { new { normalizedWarp = "pending" } }
+        });
+        await WriteJson(Path.Combine(runRoot, "collector-state.json"), new
+        {
+            updatedUtc = DateTimeOffset.UtcNow,
+            entries = Array.Empty<object>()
+        });
+        await WriteJson(Path.Combine(runRoot, "parallel-collector-status.json"), new
+        {
+            updatedUtc = DateTimeOffset.UtcNow,
+            workers = new[] { worker }
+        });
     }
 
     private static Task WriteJson(string path, object value)

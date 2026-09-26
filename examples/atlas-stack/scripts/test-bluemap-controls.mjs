@@ -7,9 +7,10 @@ import { randomUUID } from 'node:crypto';
 
 const root = new URL('../', import.meta.url);
 const bridge = fs.readFileSync(new URL('2b2tAtlas.Server/ClientAssets/atlas-controls-bridge-v1.js', root), 'utf8');
-const parentCode = fs.readFileSync(new URL('2b2tAtlas.Client/wwwroot/js/atlas-map.js', root), 'utf8');
+const parentCode = fs.readFileSync(new URL('2b2tAtlas.Client/wwwroot/js/atlas-map.js', root), 'utf8').replace(/\r\n/g, '\n');
 const start = parentCode.indexOf('export function setBlueMapNavigation(');
 const end = parentCode.indexOf('\n}\n', start) + 2;
+assert.ok(start >= 0 && end > start, 'Map module must contain the navigation function');
 const parentFunction = parentCode.slice(start, end).replace('export ', '');
 const origin = 'http://127.0.0.1:5297';
 const hostOrigin = 'https://atlas.example';

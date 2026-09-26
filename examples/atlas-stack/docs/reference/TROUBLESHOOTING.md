@@ -1,20 +1,16 @@
-# Troubleshooting And Runbooks
+# Troubleshooting
 
-> **AI-Generated documentation.**
-
-## Scope
-
-Use this file to route symptoms to the owning boundary. Preserve evidence before repair. Detailed WDL incident handling is in `docs/INGESTION_CHECKLIST.md`; deployment recovery is in `docs/DEPLOYMENT_TOPOLOGY.md`.
+Start with the symptom below. Keep the logs and saved state before attempting a repair. See [deployment setup](../DEPLOY_FROM_SCRATCH.md) and [archive safety](../INGESTION_SECURITY.md) for more detail.
 
 ## Client Loads But Data Is Empty
 
-Check the packaged `ApiBaseUrl`, then request `GET http://127.0.0.1:5297/api/locations` directly. If direct API works but browser calls fail, inspect the exact `Access-Control-Allow-Origin`; API CORS comes from `Cors__AllowedOrigins__*` in the API process environment.
+Check the packaged `ApiBaseUrl`, then request `GET http://127.0.0.1:5297/api/locations` directly. If the API works directly but browser calls fail, inspect `Access-Control-Allow-Origin` and the proxy response. This public snapshot allows all origins without cookies; a proxy can still change those headers.
 
 If the API runs from `C:\AtlasExample\Api\data`, do not assume an `appsettings.json` beside the binary is the active content-root configuration. Confirm process environment and working directory.
 
 ## API Opens The Wrong Or Empty Database
 
-`2b2tAtlas.Server/Program.cs` resolves `atlas.db` from `Directory.GetCurrentDirectory()`. Stop the process, inspect its launcher/task CWD, preserve any unexpected DB, and restart from the intended data directory. Do not copy over a live WAL database.
+`2b2tAtlas.Server/Program.cs` uses `Database__Path` when set; otherwise it opens `.local/data/atlas.db` under the working directory. Stop the process, inspect its launcher/task CWD, preserve any unexpected DB, and restart from the intended data directory. Do not copy over a live WAL database.
 
 ## API Upgrade Fails
 
@@ -22,7 +18,7 @@ Stop writes and preserve DB/WAL/SHM plus startup logs. Restore a verified backup
 
 ## WDL Upload Fails Or Does Not Queue
 
-The bundled client creates a session below `http://127.0.0.1:5297/api/ingestion-jobs/upload-sessions`, sends ordered chunks, then completes the session with a bearer JWT. A `401` means the login expired, the caller does not own the session, or the account lacks `renders.manage`. A `409` during chunk transfer usually means the supplied offset does not match the server's current length; restart the upload. A `503` means the intake root is unavailable. Confirm API CORS allows the site origin for `POST` and `PUT` requests.
+The bundled client creates a session below `http://127.0.0.1:5297/api/ingestion-jobs/upload-sessions`, sends ordered chunks, then completes the session with a bearer JWT. A `401` means authentication failed. A `403` means the signed-in account does not have the required access; check both ownership and `renders.manage`. A `409` during chunk transfer usually means the supplied offset does not match the server's current length; restart the upload. A `503` means the intake root is unavailable. Confirm API CORS allows the site origin for `POST` and `PUT` requests.
 
 ## Upload Is Rejected Before Queueing
 

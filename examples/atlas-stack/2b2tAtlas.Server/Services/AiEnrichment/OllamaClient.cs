@@ -36,7 +36,10 @@ public sealed class OllamaClient
         {
             using var response = await _http.PostAsJsonAsync("/api/generate", request, cancellationToken);
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
+
             var body = await response.Content.ReadFromJsonAsync<GenerateResponse>(cancellationToken);
             var text = body?.Response?.Trim();
             return string.IsNullOrEmpty(text) ? null : text;

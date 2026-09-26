@@ -1,8 +1,12 @@
 # Atlas stack
 
-The application behind 2b2tAtlas, with a fresh database and example host configuration.
-Blazor UI, ASP.NET Core API, SQLite, WDL intake and rendering, Archive collectors,
-BlueMap orchestration, historical research tools, and the tests live here together.
+This is the application behind 2b2tAtlas. It keeps the map, catalog, world
+downloads and dated renders together. The UI is Blazor, the API is ASP.NET Core,
+and the database is SQLite. Collection and rendering run as separate jobs.
+
+Start with the local app below. Add collectors, rendering and research tools
+as you need them. [How Atlas fits together](docs/reference/SYSTEM_OVERVIEW.md)
+is the short tour of the code.
 
 This is a source snapshot, not a connection to the live Atlas. Bring your own worlds,
 Minecraft accounts, rendering tools, storage and HTTPS origins. The original project's

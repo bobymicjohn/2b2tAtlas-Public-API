@@ -33,12 +33,20 @@ public sealed class AtlasKnowledgeQueryService
                 location.Warps.Any(warp => EF.Functions.Like(warp.Name, pattern, "\\")));
         }
 
-        if (dimension.HasValue) rows = rows.Where(location => location.Dimension == NormalizeDimension(dimension.Value));
+        if (dimension.HasValue)
+        {
+            rows = rows.Where(location => location.Dimension == NormalizeDimension(dimension.Value));
+        }
+
         var groupTerm = Clean(group);
         if (groupTerm is not null)
         {
             var groupIds = await ResolveGroupIdsAsync(groupTerm, cancellationToken);
-            if (groupIds.Count == 0) return [];
+            if (groupIds.Count == 0)
+            {
+                return [];
+            }
+
             rows = rows.Where(location => location.LocationGroups.Any(link => groupIds.Contains(link.GroupId)));
         }
 
@@ -50,14 +58,19 @@ public sealed class AtlasKnowledgeQueryService
         }
 
         if (hasRender.HasValue)
+        {
             rows = rows.Where(location => location.Renders.Any(render => render.IsPublic == 1) == hasRender.Value);
+        }
+
         if (hasWorldDownload.HasValue)
+        {
             rows = rows.Where(location =>
                 (location.Warps.Any(warp => warp.ArchiveSha256 != null && warp.ArchiveSha256.Length == 64 &&
                     warp.Source != null && warp.Source.StartsWith("The Archive automated sync")) ||
                 _context.IngestionJobs.Any(job => job.RenderId.HasValue &&
                     location.Renders.Any(render => render.Id == job.RenderId.Value) && job.Status == "completed" &&
                     job.WarpId == null && job.ArchiveSha256 != null && job.ArchiveSha256.Length == 64)) == hasWorldDownload.Value);
+        }
 
         var result = await rows
             .OrderBy(location => term != null && location.Name == term ? 0 : 1)
@@ -92,7 +105,10 @@ public sealed class AtlasKnowledgeQueryService
             .Include(row => row.Attachments)
             .Include(row => row.LocationGroups).ThenInclude(link => link.Group)
             .SingleOrDefaultAsync(row => row.Rowid == id, cancellationToken);
-        if (location is null) return null;
+        if (location is null)
+        {
+            return null;
+        }
 
         var renderIds = location.Renders.Where(render => render.IsPublic == 1).Select(render => render.Id).ToList();
         var legacyJobs = await _context.IngestionJobs.AsNoTracking()
@@ -151,10 +167,10 @@ public sealed class AtlasKnowledgeQueryService
             .ToListAsync(cancellationToken);
         var radiusSquared = (double)radius * radius;
         return candidates.Select(location => new
-            {
-                location,
-                DistanceSquared = Math.Pow((double)location.X - x, 2) + Math.Pow((double)location.Z - z, 2),
-            })
+        {
+            location,
+            DistanceSquared = Math.Pow((double)location.X - x, 2) + Math.Pow((double)location.Z - z, 2),
+        })
             .Where(item => item.DistanceSquared <= radiusSquared)
             .OrderBy(item => item.DistanceSquared)
             .Take(limit)
@@ -167,7 +183,11 @@ public sealed class AtlasKnowledgeQueryService
     public async Task<IReadOnlyList<LocationSummary>> FindByCaptureDateAsync(
         DateOnly from, DateOnly to, int? dimension, int limit, CancellationToken cancellationToken)
     {
-        if (to < from) (from, to) = (to, from);
+        if (to < from)
+        {
+            (from, to) = (to, from);
+        }
+
         var candidateIds = await _context.Warps.AsNoTracking()
             .Where(warp => warp.WorldDownloadDate != null)
             .Select(warp => new { warp.LocationRowid, warp.WorldDownloadDate })
@@ -176,7 +196,11 @@ public sealed class AtlasKnowledgeQueryService
             .ToListAsync(cancellationToken);
         var ids = candidateIds.Where(item => item.LocationRowid.HasValue && TryParseDateOnly(item.WorldDownloadDate, out var date) && date >= from && date <= to)
             .Select(item => item.LocationRowid!.Value).Distinct().ToHashSet();
-        if (ids.Count == 0) return [];
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
         return await SearchLocationsByIdsAsync(ids, dimension, limit, cancellationToken);
     }
 
@@ -185,7 +209,11 @@ public sealed class AtlasKnowledgeQueryService
         int limit, CancellationToken cancellationToken)
     {
         var rows = await SearchLocationsAsync(query, dimension, group, null, true, true, 100, cancellationToken);
-        if (string.IsNullOrWhiteSpace(fromDate) && string.IsNullOrWhiteSpace(toDate)) return rows.Take(ClampLimit(limit)).ToArray();
+        if (string.IsNullOrWhiteSpace(fromDate) && string.IsNullOrWhiteSpace(toDate))
+        {
+            return rows.Take(ClampLimit(limit)).ToArray();
+        }
+
         var from = DateOnly.TryParse(fromDate, out var parsedFrom) ? parsedFrom : DateOnly.MinValue;
         var to = DateOnly.TryParse(toDate, out var parsedTo) ? parsedTo : DateOnly.MaxValue;
         var dated = await FindByCaptureDateAsync(from, to, dimension, 100, cancellationToken);
@@ -197,9 +225,17 @@ public sealed class AtlasKnowledgeQueryService
     {
         var candidates = await SearchLocationsAsync(name, null, null, null, null, null, 8, cancellationToken);
         var best = candidates.FirstOrDefault();
-        if (best is null) return null;
+        if (best is null)
+        {
+            return null;
+        }
+
         var detail = await GetLocationAsync(best.Id, cancellationToken);
-        if (detail is null) return null;
+        if (detail is null)
+        {
+            return null;
+        }
+
         var nearby = await FindLocationsNearAsync(detail.X, detail.Z, 10_000, NormalizeDimension(detail.Dimension), 12, cancellationToken);
         return new LocationResearch(detail, candidates, nearby.Where(item => item.Id != detail.Id).ToArray(),
             "Search results are deterministic Atlas records. Descriptions and attributions should be cited to their canonical URLs and checked against linked sources.");
@@ -210,7 +246,11 @@ public sealed class AtlasKnowledgeQueryService
         limit = ClampLimit(limit);
         var rows = _context.Groups.AsNoTracking().AsQueryable();
         var typeTerm = Clean(type);
-        if (typeTerm is not null) rows = rows.Where(group => EF.Functions.Like(group.Type, typeTerm));
+        if (typeTerm is not null)
+        {
+            rows = rows.Where(group => EF.Functions.Like(group.Type, typeTerm));
+        }
+
         var candidates = await rows.Select(group => new GroupSummary(group.Id, group.Name,
                 Atlas.GroupAliases.For(group.Name).ToArray(), group.Type, group.Status, group.Founded,
                 group.Description == null ? null : Truncate(NormalizePublicText(group.Description)!, 360), group.LocationGroups.Count,
@@ -218,7 +258,11 @@ public sealed class AtlasKnowledgeQueryService
                 PublicAtlasUrls.Group(group.Id), PublicAtlasUrls.GroupInteractive(group.Id), PublicAtlasUrls.GroupApi(group.Id)))
             .ToListAsync(cancellationToken);
         var term = Clean(query);
-        if (term is null) return candidates.OrderBy(group => group.Name).Take(limit).ToArray();
+        if (term is null)
+        {
+            return candidates.OrderBy(group => group.Name).Take(limit).ToArray();
+        }
+
         var normalized = NormalizeSearch(term);
         return candidates.Where(group => NormalizeSearch(group.Name).Contains(normalized, StringComparison.Ordinal) ||
                 group.Aliases.Any(alias => NormalizeSearch(alias).Contains(normalized, StringComparison.Ordinal)) ||
@@ -233,7 +277,11 @@ public sealed class AtlasKnowledgeQueryService
             .Include(row => row.LocationGroups).ThenInclude(link => link.Location)
             .Include(row => row.HighwayGroups).ThenInclude(link => link.Highway)
             .SingleOrDefaultAsync(row => row.Id == id, cancellationToken);
-        if (group is null) return null;
+        if (group is null)
+        {
+            return null;
+        }
+
         var locationIds = group.LocationGroups.Select(link => link.LocationRowid).ToList();
         var renderCounts = await _context.Renders.AsNoTracking().Where(render => locationIds.Contains(render.LocationRowid) && render.IsPublic == 1)
             .GroupBy(render => render.LocationRowid).Select(items => new { Id = items.Key, Count = items.Count() })
@@ -272,12 +320,20 @@ public sealed class AtlasKnowledgeQueryService
             rows = rows.Where(highway => EF.Functions.Like(highway.Name, pattern, "\\") ||
                 (highway.Description != null && EF.Functions.Like(highway.Description, pattern, "\\")));
         }
-        if (dimension.HasValue) rows = rows.Where(highway => highway.Dimension == NormalizeDimension(dimension.Value));
+        if (dimension.HasValue)
+        {
+            rows = rows.Where(highway => highway.Dimension == NormalizeDimension(dimension.Value));
+        }
+
         var groupTerm = Clean(group);
         if (groupTerm is not null)
         {
             var groupIds = await ResolveGroupIdsAsync(groupTerm, cancellationToken);
-            if (groupIds.Count == 0) return [];
+            if (groupIds.Count == 0)
+            {
+                return [];
+            }
+
             rows = rows.Where(highway => highway.HighwayGroups.Any(link => groupIds.Contains(link.GroupId)));
         }
         return await rows.OrderBy(highway => highway.Name).Take(limit).Select(highway => new HighwaySummary(
@@ -291,7 +347,11 @@ public sealed class AtlasKnowledgeQueryService
     {
         var highway = await _context.Highways.AsNoTracking().Include(row => row.HighwayGroups).ThenInclude(link => link.Group)
             .SingleOrDefaultAsync(row => row.Id == id && row.Visibility == "Public" && row.ReviewStatus == "Approved", cancellationToken);
-        if (highway is null) return null;
+        if (highway is null)
+        {
+            return null;
+        }
+
         return new HighwayDetail(highway.Id, highway.Name, highway.Slug, DimensionName(highway.Dimension), highway.Category,
             ParsePoints(highway.PointsJson), highway.RingRadius, highway.Width, highway.Height, highway.YLevel,
             highway.Paved == 1, highway.PavingMaterial, highway.Walls == 1, highway.Enclosed == 1,
@@ -307,7 +367,11 @@ public sealed class AtlasKnowledgeQueryService
     {
         var locationName = await _context.Locations.AsNoTracking().Where(location => location.Rowid == locationId)
             .Select(location => location.Name).SingleOrDefaultAsync(cancellationToken);
-        if (locationName is null) return [];
+        if (locationName is null)
+        {
+            return [];
+        }
+
         var rows = await _context.Warps.AsNoTracking().Where(warp => warp.LocationRowid == locationId)
             .OrderBy(warp => warp.Id).ToListAsync(cancellationToken);
         return rows.Select(warp => MapWarp(warp, locationName)).ToArray();
@@ -316,7 +380,11 @@ public sealed class AtlasKnowledgeQueryService
     public async Task<IReadOnlyList<WorldDownloadRecord>> GetWorldDownloadsAsync(int locationId, CancellationToken cancellationToken)
     {
         var detail = await GetLocationAsync(locationId, cancellationToken);
-        if (detail is null) return [];
+        if (detail is null)
+        {
+            return [];
+        }
+
         return detail.Warps.Where(warp => warp.WorldDownloadUrl is not null).Select(warp => new WorldDownloadRecord(
                 "archive-warp", warp.Id, warp.Name, warp.WorldDownloadDate, warp.Source, "bounded-footprint",
                 warp.ArchiveSha256, warp.WorldDownloadUrl!, warp.WorldDownloadMetadataUrl!, detail.CanonicalUrl))
@@ -354,7 +422,11 @@ public sealed class AtlasKnowledgeQueryService
         HashSet<int> ids, int? dimension, int limit, CancellationToken cancellationToken)
     {
         var rows = _context.Locations.AsNoTracking().Where(location => ids.Contains(location.Rowid));
-        if (dimension.HasValue) rows = rows.Where(location => location.Dimension == NormalizeDimension(dimension.Value));
+        if (dimension.HasValue)
+        {
+            rows = rows.Where(location => location.Dimension == NormalizeDimension(dimension.Value));
+        }
+
         return await rows.OrderBy(location => location.Name).Take(ClampLimit(limit)).Select(location => new LocationSummary(
             location.Rowid, location.Name, DimensionName(location.Dimension), location.X, location.Y, location.Z,
             location.Description == null ? null : Truncate(NormalizePublicText(location.Description)!, 360),
@@ -423,7 +495,11 @@ public sealed class AtlasKnowledgeQueryService
     private static string Truncate(string value, int length) => value.Length <= length ? value : value[..length] + "…";
     private static string? NormalizePublicText(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
         return value.Replace("\\r\\n", "\n", StringComparison.Ordinal)
             .Replace("rnrn", "\n\n", StringComparison.OrdinalIgnoreCase).Trim();
     }

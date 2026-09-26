@@ -120,7 +120,11 @@ public sealed class BlueMapCatalogServiceTests
             : string.Empty;
         File.WriteAllText(Path.Combine(generation, "manifest.json"),
             $"{{\"Status\":\"complete\",\"RenderId\":{renderId},\"RendererProfileVersion\":{profile},{validation}\"GeneratedUtc\":\"2026-09-06T00:00:00Z\"}}");
-        if (!complete) return;
+        if (!complete)
+        {
+            return;
+        }
+
         var web = Path.Combine(generation, "web");
         Directory.CreateDirectory(web);
         File.WriteAllText(Path.Combine(web, "index.html"), "<!doctype html>");

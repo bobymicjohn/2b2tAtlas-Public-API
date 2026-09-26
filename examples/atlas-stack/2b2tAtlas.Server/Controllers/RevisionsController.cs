@@ -47,23 +47,40 @@ public class RevisionsController : ControllerBase
     [Authorize]
     public async Task<ActionResult<RevisionDto>> Submit([FromBody] RevisionDto dto)
     {
-        if (dto == null) return BadRequest("Request body is required");
+        if (dto == null)
+        {
+            return BadRequest("Request body is required");
+        }
 
         var entityType = NormalizeEntityType(dto.EntityType);
-        if (entityType == null) return BadRequest("EntityType must be 'Location' or 'Highway'.");
-        if (string.IsNullOrWhiteSpace(dto.ProposedJson)) return BadRequest("ProposedJson is required.");
+        if (entityType == null)
+        {
+            return BadRequest("EntityType must be 'Location' or 'Highway'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ProposedJson))
+        {
+            return BadRequest("ProposedJson is required.");
+        }
 
         // Must at least be able to contribute to this entity type.
         var createPerm = entityType == TypeLocation ? Permissions.LocationsCreate : Permissions.HighwaysCreate;
         var editPerm = entityType == TypeLocation ? Permissions.LocationsEdit : Permissions.HighwaysEdit;
         if (!HasPermission(createPerm) && !HasPermission(editPerm))
+        {
             return Forbid();
+        }
 
         // Target must exist, and the proposed payload must be valid for the entity type.
         if (!await TargetExistsAsync(entityType, dto.EntityId))
+        {
             return NotFound($"{entityType} {dto.EntityId} not found.");
+        }
+
         if (!TryValidateProposed(entityType, dto.ProposedJson, out var validationError))
+        {
             return BadRequest(validationError);
+        }
 
         var revision = new Revision
         {
@@ -82,7 +99,10 @@ public class RevisionsController : ControllerBase
         await _audit.LogAsync("revision.submit", entityType, dto.EntityId, CurrentUserId(), CurrentUsername(),
             $"Proposed edit to {entityType} {dto.EntityId} (revision {revision.Id})");
 
-        return CreatedAtAction(nameof(GetPending), new { id = revision.Id }, MapToDto(revision));
+        return CreatedAtAction(nameof(GetPending), new
+        {
+            id = revision.Id
+        }, MapToDto(revision));
     }
 
     /// <summary>GET /api/revisions/pending — proposed edits awaiting review.</summary>
@@ -105,7 +125,10 @@ public class RevisionsController : ControllerBase
     {
         var query = _context.Revisions.AsQueryable();
         if (!string.IsNullOrWhiteSpace(status))
+        {
             query = query.Where(r => r.Status == status);
+        }
+
         var rows = await query.OrderByDescending(r => r.Id).Take(500).ToListAsync();
         return Ok(rows.Select(MapToDto).ToList());
     }
@@ -117,17 +140,33 @@ public class RevisionsController : ControllerBase
     {
         await using var transaction = await _context.Database.BeginTransactionAsync();
         var revision = await _context.Revisions.FindAsync(id);
-        if (revision == null) return NotFound();
-        if (revision.Status != "Pending") return BadRequest("Revision is not pending.");
+        if (revision == null)
+        {
+            return NotFound();
+        }
+
+        if (revision.Status != "Pending")
+        {
+            return BadRequest("Revision is not pending.");
+        }
 
         if (revision.EntityType == TypeHighway)
         {
             Atlas.Highway? proposed;
-            try { proposed = JsonSerializer.Deserialize<Atlas.Highway>(revision.ProposedJson, JsonOptions); }
+            try
+            {
+                proposed = JsonSerializer.Deserialize<Atlas.Highway>(revision.ProposedJson, JsonOptions);
+            }
             catch (JsonException) { return BadRequest("Invalid highway proposal."); }
-            if (proposed is null) return BadRequest("Invalid highway proposal.");
+            if (proposed is null)
+            {
+                return BadRequest("Invalid highway proposal.");
+            }
+
             var editor = new HighwaysController(_context, _audit, Microsoft.Extensions.Logging.Abstractions.NullLogger<HighwaysController>.Instance)
-            { ControllerContext = ControllerContext };
+            {
+                ControllerContext = ControllerContext
+            };
             var result = await editor.UpdateHighway(revision.EntityId, proposed);
             if (result.Result is not OkObjectResult)
             {
@@ -143,7 +182,10 @@ public class RevisionsController : ControllerBase
             _ => false,
         };
 
-        if (!applied) return NotFound($"{revision.EntityType} {revision.EntityId} no longer exists.");
+        if (!applied)
+        {
+            return NotFound($"{revision.EntityType} {revision.EntityId} no longer exists.");
+        }
 
         revision.Status = "Approved";
         revision.ReviewedByUserId = CurrentUserId();
@@ -162,8 +204,15 @@ public class RevisionsController : ControllerBase
     public async Task<IActionResult> Reject(int id, [FromBody] RejectRequest? body)
     {
         var revision = await _context.Revisions.FindAsync(id);
-        if (revision == null) return NotFound();
-        if (revision.Status != "Pending") return BadRequest("Revision is not pending.");
+        if (revision == null)
+        {
+            return NotFound();
+        }
+
+        if (revision.Status != "Pending")
+        {
+            return BadRequest("Revision is not pending.");
+        }
 
         revision.Status = "Rejected";
         revision.ReviewedByUserId = CurrentUserId();
@@ -179,7 +228,7 @@ public class RevisionsController : ControllerBase
     /// <summary>Supplies an optional moderator-facing explanation when a proposal is rejected.</summary>
     public class RejectRequest
     {
-        /// <summary>Gets or sets the review note persisted with the rejected revision.</summary>
+        /// <summary>Review note persisted with the rejected revision.</summary>
         public string? Reason { get; set; }
     }
 
@@ -188,10 +237,16 @@ public class RevisionsController : ControllerBase
     private async Task<bool> ApplyLocationRevisionAsync(Revision revision)
     {
         var row = await _context.Locations.FindAsync(revision.EntityId);
-        if (row == null) return false;
+        if (row == null)
+        {
+            return false;
+        }
 
         var dto = JsonSerializer.Deserialize<Atlas.Location>(revision.ProposedJson, JsonOptions);
-        if (dto == null) return false;
+        if (dto == null)
+        {
+            return false;
+        }
 
         var before = SnapshotLocation(row);
         row.Name = dto.Name;
@@ -238,12 +293,20 @@ public class RevisionsController : ControllerBase
             if (entityType == TypeLocation)
             {
                 var loc = JsonSerializer.Deserialize<Atlas.Location>(proposedJson, JsonOptions);
-                if (loc == null) { error = "Proposed location payload is invalid."; return false; }
+                if (loc == null)
+                {
+                    error = "Proposed location payload is invalid.";
+                    return false;
+                }
             }
             else
             {
                 var hw = JsonSerializer.Deserialize<Atlas.Highway>(proposedJson, JsonOptions);
-                if (hw == null || string.IsNullOrWhiteSpace(hw.Name)) { error = "Proposed highway payload is invalid."; return false; }
+                if (hw == null || string.IsNullOrWhiteSpace(hw.Name))
+                {
+                    error = "Proposed highway payload is invalid.";
+                    return false;
+                }
             }
             return true;
         }
@@ -256,7 +319,11 @@ public class RevisionsController : ControllerBase
 
     private static string? NormalizeEntityType(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
         return value.Trim().ToLowerInvariant() switch
         {
             "location" => TypeLocation,

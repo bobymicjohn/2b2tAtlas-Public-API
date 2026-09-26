@@ -54,7 +54,10 @@ public sealed class HistoricalMediaSeeder
             .Select(item => AttachmentKey(item.LocationRowid, item.FilePath))
             .ToHashSet(StringComparer.Ordinal);
         foreach (var location in locations.Where(item => !string.IsNullOrWhiteSpace(item.VideoUrl)))
+        {
             existingPaths.Add(AttachmentKey(location.Rowid, location.VideoUrl));
+        }
+
         var now = DateTime.UtcNow.ToString("o");
         var added = 0;
         foreach (var item in items)
@@ -70,7 +73,11 @@ public sealed class HistoricalMediaSeeder
                     item.Path, item.LocationName, location.Rowid, location.Name);
                 continue;
             }
-            if (location is null || !existingPaths.Add(AttachmentKey(location.Rowid, item.Path))) continue;
+            if (location is null || !existingPaths.Add(AttachmentKey(location.Rowid, item.Path)))
+            {
+                continue;
+            }
+
             _context.Attachments.Add(new Attachment
             {
                 LocationRowid = location.Rowid,
@@ -86,7 +93,11 @@ public sealed class HistoricalMediaSeeder
             location.ModifiedUtc = now;
             added++;
         }
-        if (added > 0) await _context.SaveChangesAsync();
+        if (added > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
+
         _logger.LogInformation(
             "Historical media seed added {Count} reviewed attachment(s) from {ManifestCount} manifest(s).",
             added, existingManifests.Length);
@@ -100,17 +111,26 @@ public sealed class HistoricalMediaSeeder
         {
             string? videoId = null;
             if (uri.Host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase))
+            {
                 videoId = uri.AbsolutePath.Trim('/');
+            }
             else if (new[] { "youtube.com", "www.youtube.com", "m.youtube.com", "www.youtube-nocookie.com" }
                      .Contains(uri.Host, StringComparer.OrdinalIgnoreCase))
             {
                 var parts = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length == 2 && parts[0] is "embed" or "shorts" or "live") videoId = parts[1];
+                if (parts.Length == 2 && parts[0] is "embed" or "shorts" or "live")
+                {
+                    videoId = parts[1];
+                }
                 else if (uri.AbsolutePath == "/watch")
+                {
                     videoId = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)["v"].FirstOrDefault();
+                }
             }
             if (videoId is not null && System.Text.RegularExpressions.Regex.IsMatch(videoId, @"\A[A-Za-z0-9_-]{11}\z"))
+            {
                 return $"{locationId}\nyoutube:{videoId}";
+            }
         }
         return $"{locationId}\n{path.ToUpperInvariant()}";
     }

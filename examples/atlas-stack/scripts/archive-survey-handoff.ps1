@@ -8,7 +8,15 @@ function Get-SurveyHandoffDirectory([string]$ArchiveServer, [string]$WarpName) {
 
 function Test-SurveyHandoffIdentity($Receipt, [string]$ArchiveServer, [string]$WarpName, [string]$Dimension, [double]$X, [double]$Z, [datetimeoffset]$Now) {
     try {
-        $age = $Now - [datetimeoffset]::Parse([string]$Receipt.createdUtc)
+        # PowerShell 7 can deserialize JSON timestamps into DateTime values.
+        # Casting those back to text loses the UTC offset on non-UTC hosts.
+        $created = $Receipt.createdUtc
+        if ($created -is [datetime]) {
+            $created = [datetimeoffset]$created
+        } elseif ($created -isnot [datetimeoffset]) {
+            $created = [datetimeoffset]::Parse([string]$created, [Globalization.CultureInfo]::InvariantCulture)
+        }
+        $age = $Now - $created
         return $Receipt.schemaVersion -in @(1, 2, 3) -and
             $Receipt.server -ceq $ArchiveServer -and $Receipt.warp -ceq $WarpName -and
             $WarpName -match '\d{4}-\d{2}' -and $Receipt.dimension -ceq $Dimension -and

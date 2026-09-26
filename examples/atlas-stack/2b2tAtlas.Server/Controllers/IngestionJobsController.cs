@@ -118,7 +118,11 @@ public sealed class IngestionJobsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<IngestionJobDto>> CreateLocal([FromBody] IngestionJobRequest request)
     {
-        if (!HasValidWorkerKey()) return Unauthorized();
+        if (!HasValidWorkerKey())
+        {
+            return Unauthorized();
+        }
+
         return await CreateCore(request, null, "local-intake");
     }
 
@@ -138,21 +142,40 @@ public sealed class IngestionJobsController : ControllerBase
         [FromBody] LocalIntakeQueueRequest request,
         CancellationToken cancellationToken)
     {
-        if (!HasValidWorkerKey()) return Unauthorized();
+        if (!HasValidWorkerKey())
+        {
+            return Unauthorized();
+        }
+
         if (string.IsNullOrWhiteSpace(_intakeRoot) || !Directory.Exists(_intakeRoot) ||
             string.IsNullOrWhiteSpace(_archiveRoot) || !Directory.Exists(_archiveRoot))
+        {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { message = "Ingestion intake or WDL archive storage is unavailable." });
+                new
+                {
+                    message = "Ingestion intake or WDL archive storage is unavailable."
+                });
+        }
 
         var metadata = request.Metadata ?? new IngestionJobRequest();
         var fileName = metadata.IntakeFileName?.Trim() ?? string.Empty;
         if (fileName.Length == 0 || fileName != Path.GetFileName(fileName) ||
             !fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new { message = "IntakeFileName must be a plain .zip basename." });
+        {
+            return BadRequest(new
+            {
+                message = "IntakeFileName must be a plain .zip basename."
+            });
+        }
 
         var intakePath = Path.Combine(_intakeRoot, fileName);
         if (!System.IO.File.Exists(intakePath))
-            return NotFound(new { message = "The completed ZIP is not present in the local intake directory." });
+        {
+            return NotFound(new
+            {
+                message = "The completed ZIP is not present in the local intake directory."
+            });
+        }
 
         return await QueueStoredArchiveAsync(
             metadata, intakePath, fileName, SafeOriginalFileName(request.OriginalFileName), cancellationToken);
@@ -167,14 +190,20 @@ public sealed class IngestionJobsController : ControllerBase
     {
         var candidatesIn = request?.Candidates;
         if (candidatesIn is null || candidatesIn.Count == 0)
+        {
             return Ok(Array.Empty<MatchPreviewResult>());
+        }
 
         var name = request!.Name ?? string.Empty;
         var results = new List<MatchPreviewResult>();
         foreach (var candidate in candidatesIn)
         {
             var dimensionIndex = DimensionIndex(candidate.Dimension?.Trim().ToLowerInvariant() ?? string.Empty);
-            if (dimensionIndex is null) continue;
+            if (dimensionIndex is null)
+            {
+                continue;
+            }
+
             var locations = await LoadMatchCandidatesAsync(dimensionIndex.Value);
             var match = LocationMatcher.Match(dimensionIndex.Value, candidate.CenterX, candidate.CenterZ, name, locations);
             var attachName = match.AutoAttachLocationId is int id
@@ -207,13 +236,36 @@ public sealed class IngestionJobsController : ControllerBase
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(_intakeRoot) || !Directory.Exists(_intakeRoot))
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Ingestion intake storage is unavailable." });
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "Ingestion intake storage is unavailable."
+            });
+        }
+
         if (string.IsNullOrWhiteSpace(_archiveRoot) || !Directory.Exists(_archiveRoot))
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "The WDL archive is unavailable; upload was not accepted." });
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "The WDL archive is unavailable; upload was not accepted."
+            });
+        }
+
         if (archive is null || archive.Length == 0)
-            return BadRequest(new { message = "A world download ZIP is required." });
+        {
+            return BadRequest(new
+            {
+                message = "A world download ZIP is required."
+            });
+        }
+
         if (!archive.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new { message = "The upload must be a .zip archive." });
+        {
+            return BadRequest(new
+            {
+                message = "The upload must be a .zip archive."
+            });
+        }
 
         IngestionJobRequest? request;
         try
@@ -222,13 +274,28 @@ public sealed class IngestionJobsController : ControllerBase
         }
         catch (JsonException)
         {
-            return BadRequest(new { message = "Invalid ingestion metadata." });
+            return BadRequest(new
+            {
+                message = "Invalid ingestion metadata."
+            });
         }
-        if (request is null) return BadRequest(new { message = "Invalid ingestion metadata." });
+        if (request is null)
+        {
+            return BadRequest(new
+            {
+                message = "Invalid ingestion metadata."
+            });
+        }
 
         request.IntakeFileName = "pending.zip";
         var errors = IngestionJobValidator.ValidateRequest(request);
-        if (errors.Count > 0) return BadRequest(new { errors });
+        if (errors.Count > 0)
+        {
+            return BadRequest(new
+            {
+                errors
+            });
+        }
 
         var intakeName = $"{request.Slug.Trim().ToLowerInvariant()}-{Guid.NewGuid():N}.zip";
         var partialPath = Path.Combine(_intakeRoot, $".{Guid.NewGuid():N}.partial.zip");
@@ -244,14 +311,19 @@ public sealed class IngestionJobsController : ControllerBase
                 var signature = new byte[4];
                 var read = await check.ReadAsync(signature.AsMemory(0, 4), cancellationToken);
                 if (read < 4 || signature[0] != 0x50 || signature[1] != 0x4B || signature[2] != 0x03 || signature[3] != 0x04)
+                {
                     throw new InvalidDataException("The upload is not a ZIP archive.");
+                }
             }
             System.IO.File.Move(partialPath, finalPath);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             TryDeleteIntake(partialPath);
-            return BadRequest(new { message = "The uploaded file could not be stored as a valid ZIP archive." });
+            return BadRequest(new
+            {
+                message = "The uploaded file could not be stored as a valid ZIP archive."
+            });
         }
 
         try
@@ -262,7 +334,10 @@ public sealed class IngestionJobsController : ControllerBase
         {
             TryDeleteIntake(finalPath);
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { message = "The upload could not be verified in the WDL archive; no job was queued." });
+                new
+                {
+                    message = "The upload could not be verified in the WDL archive; no job was queued."
+                });
         }
     }
 
@@ -273,20 +348,52 @@ public sealed class IngestionJobsController : ControllerBase
         [FromBody] ChunkedUploadStartRequest start,
         CancellationToken cancellationToken)
     {
-        if (!StorageAvailable(out var unavailable)) return unavailable!;
+        if (!StorageAvailable(out var unavailable))
+        {
+            return unavailable!;
+        }
+
         if (start.TotalBytes is <= 0 or > MaxBrowserUploadBytes)
-            return BadRequest(new { message = "Upload size must be between 1 byte and 32 GiB." });
+        {
+            return BadRequest(new
+            {
+                message = "Upload size must be between 1 byte and 32 GiB."
+            });
+        }
+
         if (string.IsNullOrWhiteSpace(start.FileName) ||
             !start.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new { message = "The upload must be a .zip archive." });
+        {
+            return BadRequest(new
+            {
+                message = "The upload must be a .zip archive."
+            });
+        }
 
         var request = DeserializeRequest(start.Metadata);
-        if (request is null) return BadRequest(new { message = "Invalid ingestion metadata." });
+        if (request is null)
+        {
+            return BadRequest(new
+            {
+                message = "Invalid ingestion metadata."
+            });
+        }
+
         var userId = CurrentUserId();
-        if (userId is null) return Forbid();
+        if (userId is null)
+        {
+            return Forbid();
+        }
+
         request.IntakeFileName = "pending.zip";
         var errors = IngestionJobValidator.ValidateRequest(request);
-        if (errors.Count > 0) return BadRequest(new { errors });
+        if (errors.Count > 0)
+        {
+            return BadRequest(new
+            {
+                errors
+            });
+        }
 
         var id = Guid.NewGuid().ToString("N");
         var root = UploadSessionRoot();
@@ -296,7 +403,9 @@ public sealed class IngestionJobsController : ControllerBase
             id, userId, start.TotalBytes, start.FileName, request, DateTime.UtcNow);
         await System.IO.File.WriteAllTextAsync(
             UploadSessionMetadata(root, id), JsonSerializer.Serialize(state, IntakeMetadataJson), cancellationToken);
-        await using (System.IO.File.Create(UploadSessionData(root, id))) { }
+        await using (System.IO.File.Create(UploadSessionData(root, id)))
+        {
+        }
         return Ok(new ChunkedUploadSession { Id = id, ChunkSizeBytes = UploadChunkBytes });
     }
 
@@ -310,20 +419,50 @@ public sealed class IngestionJobsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var state = await ReadUploadSessionAsync(id, cancellationToken);
-        if (state is null) return NotFound();
-        if (state.UserId != CurrentUserId()) return Forbid();
+        if (state is null)
+        {
+            return NotFound();
+        }
+
+        if (state.UserId != CurrentUserId())
+        {
+            return Forbid();
+        }
+
         var data = UploadSessionData(UploadSessionRoot(), id);
         FileStream output;
-        try { output = new FileStream(data, FileMode.Open, FileAccess.Write, FileShare.None, 1_048_576, true); }
+        try
+        {
+            output = new FileStream(data, FileMode.Open, FileAccess.Write, FileShare.None, 1_048_576, true);
+        }
         catch (IOException) { return Conflict(new { message = "Another chunk is being written; retry this offset." }); }
         await using (output)
         {
-        if (offset != output.Length) return Conflict(new { message = $"Expected upload offset {output.Length}." });
-        if (Request.ContentLength is null or <= 0 or > UploadChunkBytes || output.Length + Request.ContentLength > state.TotalBytes)
-            return BadRequest(new { message = "Chunk length is invalid." });
-        output.Position = output.Length;
-        await Request.Body.CopyToAsync(output, cancellationToken);
-        if (output.Length > state.TotalBytes) return BadRequest(new { message = "Upload exceeds its declared size." });
+            if (offset != output.Length)
+            {
+                return Conflict(new
+                {
+                    message = $"Expected upload offset {output.Length}."
+                });
+            }
+
+            if (Request.ContentLength is null or <= 0 or > UploadChunkBytes || output.Length + Request.ContentLength > state.TotalBytes)
+            {
+                return BadRequest(new
+                {
+                    message = "Chunk length is invalid."
+                });
+            }
+
+            output.Position = output.Length;
+            await Request.Body.CopyToAsync(output, cancellationToken);
+            if (output.Length > state.TotalBytes)
+            {
+                return BadRequest(new
+                {
+                    message = "Upload exceeds its declared size."
+                });
+            }
         }
         return NoContent();
     }
@@ -336,19 +475,37 @@ public sealed class IngestionJobsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var state = await ReadUploadSessionAsync(id, cancellationToken);
-        if (state is null) return NotFound();
-        if (state.UserId != CurrentUserId()) return Forbid();
+        if (state is null)
+        {
+            return NotFound();
+        }
+
+        if (state.UserId != CurrentUserId())
+        {
+            return Forbid();
+        }
+
         var root = UploadSessionRoot();
         var data = UploadSessionData(root, id);
         if (!System.IO.File.Exists(data) || new FileInfo(data).Length != state.TotalBytes)
-            return Conflict(new { message = "Upload is incomplete." });
+        {
+            return Conflict(new
+            {
+                message = "Upload is incomplete."
+            });
+        }
 
         await using (var check = new FileStream(data, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
             var signature = new byte[4];
             if (await check.ReadAsync(signature, cancellationToken) != 4 ||
                 signature[0] != 0x50 || signature[1] != 0x4B || signature[2] != 0x03 || signature[3] != 0x04)
-                return BadRequest(new { message = "The upload is not a ZIP archive." });
+            {
+                return BadRequest(new
+                {
+                    message = "The upload is not a ZIP archive."
+                });
+            }
         }
 
         var intakeName = $"{state.Request.Slug.Trim().ToLowerInvariant()}-{Guid.NewGuid():N}.zip";
@@ -363,7 +520,10 @@ public sealed class IngestionJobsController : ControllerBase
         {
             TryDeleteIntake(finalPath);
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { message = "The upload could not be verified in the WDL archive; no job was queued." });
+                new
+                {
+                    message = "The upload could not be verified in the WDL archive; no job was queued."
+                });
         }
     }
 
@@ -395,7 +555,10 @@ public sealed class IngestionJobsController : ControllerBase
         catch (InvalidDataException)
         {
             TryDeleteIntake(finalPath);
-            return BadRequest(new { message = "The archive contents could not be read to detect dimensions." });
+            return BadRequest(new
+            {
+                message = "The archive contents could not be read to detect dimensions."
+            });
         }
         var archiveWarp = ArchiveWarpResolver.Resolve(
             archiveEvidence, originalFileName, request.Source, request.ArchiveWarpName);
@@ -407,7 +570,9 @@ public sealed class IngestionJobsController : ControllerBase
             var knownWarp = await _context.Warps.AsNoTracking().SingleOrDefaultAsync(
                 warp => warp.ArchiveSha256 == archived.Sha256, cancellationToken);
             if (knownWarp is not null)
+            {
                 archiveWarp = new ArchiveWarpCandidate(knownWarp.Name, "existing-archive-sha", 1, true);
+            }
         }
 
         IReadOnlyList<string> dimensions;
@@ -426,7 +591,10 @@ public sealed class IngestionJobsController : ControllerBase
             if (dimensions.Count == 0)
             {
                 TryDeleteIntake(finalPath);
-                return BadRequest(new { message = "No recognized Minecraft dimensions (region data) were found in the archive." });
+                return BadRequest(new
+                {
+                    message = "No recognized Minecraft dimensions (region data) were found in the archive."
+                });
             }
         }
         else
@@ -448,14 +616,21 @@ public sealed class IngestionJobsController : ControllerBase
             var result = await CreateCore(perDimension, CurrentUserId(), User.FindFirstValue(ClaimTypes.Name),
                 uploadCenter, archiveEvidence, archived.Sha256, perDimensionWarp, originalFileName);
             if (result.Result is CreatedAtActionResult { Value: IngestionJobDto dto })
+            {
                 created.Add(dto);
+            }
             else
+            {
                 lastFailure = result;
+            }
         }
         if (created.Count == 0)
         {
             TryDeleteIntake(finalPath);
-            return lastFailure ?? BadRequest(new { message = "No ingestion jobs could be queued from the archive." });
+            return lastFailure ?? BadRequest(new
+            {
+                message = "No ingestion jobs could be queued from the archive."
+            });
         }
         return CreatedAtAction(nameof(GetAll), created[0]);
     }
@@ -467,7 +642,10 @@ public sealed class IngestionJobsController : ControllerBase
             string.IsNullOrWhiteSpace(_archiveRoot) || !Directory.Exists(_archiveRoot))
         {
             unavailable = StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { message = "Ingestion intake or WDL archive storage is unavailable." });
+                new
+                {
+                    message = "Ingestion intake or WDL archive storage is unavailable."
+                });
             return false;
         }
         return true;
@@ -475,7 +653,10 @@ public sealed class IngestionJobsController : ControllerBase
 
     private IngestionJobRequest? DeserializeRequest(string metadata)
     {
-        try { return JsonSerializer.Deserialize<IngestionJobRequest>(metadata, IntakeMetadataJson); }
+        try
+        {
+            return JsonSerializer.Deserialize<IngestionJobRequest>(metadata, IntakeMetadataJson);
+        }
         catch (JsonException) { return null; }
     }
 
@@ -485,9 +666,17 @@ public sealed class IngestionJobsController : ControllerBase
 
     private async Task<UploadSessionState?> ReadUploadSessionAsync(string id, CancellationToken cancellationToken)
     {
-        if (id.Length != 32 || id.Any(character => !Uri.IsHexDigit(character))) return null;
+        if (id.Length != 32 || id.Any(character => !Uri.IsHexDigit(character)))
+        {
+            return null;
+        }
+
         var path = UploadSessionMetadata(UploadSessionRoot(), id);
-        if (!System.IO.File.Exists(path)) return null;
+        if (!System.IO.File.Exists(path))
+        {
+            return null;
+        }
+
         try
         {
             return JsonSerializer.Deserialize<UploadSessionState>(
@@ -500,7 +689,11 @@ public sealed class IngestionJobsController : ControllerBase
     {
         foreach (var metadata in Directory.EnumerateFiles(root, "*.json"))
         {
-            if (System.IO.File.GetLastWriteTimeUtc(metadata) >= DateTime.UtcNow.AddHours(-24)) continue;
+            if (System.IO.File.GetLastWriteTimeUtc(metadata) >= DateTime.UtcNow.AddHours(-24))
+            {
+                continue;
+            }
+
             var id = Path.GetFileNameWithoutExtension(metadata);
             TryDeleteIntake(metadata);
             TryDeleteIntake(UploadSessionData(root, id));
@@ -521,24 +714,24 @@ public sealed class IngestionJobsController : ControllerBase
         string dimension,
         bool single,
         bool ownsArchiveWarp) => new()
-    {
-        IntakeFileName = source.IntakeFileName,
-        Slug = source.Slug,
-        Name = source.Name,
-        WorldDownloadDate = source.WorldDownloadDate,
-        UseArchiveLastPlayed = source.UseArchiveLastPlayed,
-        Source = source.Source,
-        Scale = source.Scale,
-        DayNight = true,
-        Dimension = dimension,
-        WorldRoot = source.WorldRoot,
-        // Overworld and nether both attach to the overworld location the operator confirmed; End has its own.
-        ExistingLocationId = single || dimension != "end" ? source.ExistingLocationId : null,
-        ArchiveWarpName = ownsArchiveWarp ? source.ArchiveWarpName : null,
-        ArchiveWarpX = ownsArchiveWarp ? source.ArchiveWarpX : null,
-        ArchiveWarpY = ownsArchiveWarp ? source.ArchiveWarpY : null,
-        ArchiveWarpZ = ownsArchiveWarp ? source.ArchiveWarpZ : null,
-    };
+        {
+            IntakeFileName = source.IntakeFileName,
+            Slug = source.Slug,
+            Name = source.Name,
+            WorldDownloadDate = source.WorldDownloadDate,
+            UseArchiveLastPlayed = source.UseArchiveLastPlayed,
+            Source = source.Source,
+            Scale = source.Scale,
+            DayNight = true,
+            Dimension = dimension,
+            WorldRoot = source.WorldRoot,
+            // Overworld and nether both attach to the overworld location the operator confirmed; End has its own.
+            ExistingLocationId = single || dimension != "end" ? source.ExistingLocationId : null,
+            ArchiveWarpName = ownsArchiveWarp ? source.ArchiveWarpName : null,
+            ArchiveWarpX = ownsArchiveWarp ? source.ArchiveWarpX : null,
+            ArchiveWarpY = ownsArchiveWarp ? source.ArchiveWarpY : null,
+            ArchiveWarpZ = ownsArchiveWarp ? source.ArchiveWarpZ : null,
+        };
 
     /// <summary>
     /// Selects the one logical capture dimension that owns the Archive WDL/warp. Overworld and Nether
@@ -550,11 +743,18 @@ public sealed class IngestionJobsController : ControllerBase
         IReadOnlyList<string> dimensions,
         IReadOnlyDictionary<string, int> regionCounts)
     {
-        if (dimensions.Count == 1) return dimensions[0];
+        if (dimensions.Count == 1)
+        {
+            return dimensions[0];
+        }
+
         foreach (var raw in new[] { evidence.ReportedDimension, evidence.PlayerDimension })
         {
             var normalized = NormalizeEvidenceDimension(raw);
-            if (normalized is not null && dimensions.Contains(normalized)) return normalized;
+            if (normalized is not null && dimensions.Contains(normalized))
+            {
+                return normalized;
+            }
         }
         return dimensions
             .OrderByDescending(dimension => regionCounts.GetValueOrDefault(dimension))
@@ -564,11 +764,27 @@ public sealed class IngestionJobsController : ControllerBase
 
     private static string? NormalizeEvidenceDimension(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
         var normalized = value.Trim().ToLowerInvariant();
-        if (normalized is "-1" or "minecraft:the_nether" or "minecraft:nether") return "nether";
-        if (normalized is "1" or "minecraft:the_end" or "minecraft:end") return "end";
-        if (normalized is "0" or "minecraft:overworld") return "overworld";
+        if (normalized is "-1" or "minecraft:the_nether" or "minecraft:nether")
+        {
+            return "nether";
+        }
+
+        if (normalized is "1" or "minecraft:the_end" or "minecraft:end")
+        {
+            return "end";
+        }
+
+        if (normalized is "0" or "minecraft:overworld")
+        {
+            return "overworld";
+        }
+
         return InferDimensionFromCustomId(normalized);
     }
 
@@ -589,7 +805,13 @@ public sealed class IngestionJobsController : ControllerBase
         var set = present as ICollection<string> ?? present.ToList();
         var ordered = new List<string>();
         foreach (var key in new[] { "overworld", "nether", "end" })
-            if (set.Contains(key)) ordered.Add(key);
+        {
+            if (set.Contains(key))
+            {
+                ordered.Add(key);
+            }
+        }
+
         return ordered;
     }
 
@@ -636,13 +858,23 @@ public sealed class IngestionJobsController : ControllerBase
                 if (customId is not null)
                 {
                     if (!customRegions.TryGetValue(customId, out var customList) && customRegions.Count < 128)
+                    {
                         customRegions[customId] = customList = [];
+                    }
+
                     customList?.Add((rx, rz));
                     continue;
                 }
-                if (dimension is null) continue;
+                if (dimension is null)
+                {
+                    continue;
+                }
+
                 if (!regions.TryGetValue(dimension, out var list))
+                {
                     regions[dimension] = list = [];
+                }
+
                 list.Add((rx, rz));
             }
         }
@@ -656,7 +888,9 @@ public sealed class IngestionJobsController : ControllerBase
             var (customId, list) = customRegions.Single();
             var inferredDimension = InferDimensionFromCustomId(customId);
             if (inferredDimension is null)
+            {
                 unresolvedCustom.Add(customId);
+            }
             else if (regions.TryGetValue(inferredDimension, out var canonicalRegions) && canonicalRegions.Count > 0)
             {
                 // Two occupied roots claiming the same logical dimension may be unrelated museum worlds.
@@ -666,7 +900,10 @@ public sealed class IngestionJobsController : ControllerBase
             else
             {
                 if (!regions.TryGetValue(inferredDimension, out var inferredRegions))
+                {
                     regions[inferredDimension] = inferredRegions = [];
+                }
+
                 inferredRegions.AddRange(list);
             }
         }
@@ -677,7 +914,10 @@ public sealed class IngestionJobsController : ControllerBase
 
         var result = new Dictionary<string, (int, int)>(StringComparer.Ordinal);
         foreach (var (dimension, list) in regions)
+        {
             result[dimension] = DensityCentroid(list);
+        }
+
         customDimensionIds = unresolvedCustom.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray();
         dimensionRegionCounts = regions.ToDictionary(pair => pair.Key, pair => pair.Value.Count, StringComparer.Ordinal);
         return result;
@@ -690,9 +930,21 @@ public sealed class IngestionJobsController : ControllerBase
     private static string? InferDimensionFromCustomId(string customId)
     {
         var tokens = customId.ToLowerInvariant().Split([':', '/', '.', '_', '-'], StringSplitOptions.RemoveEmptyEntries);
-        if (tokens.Contains("nether") || tokens.Contains("hell")) return "nether";
-        if (tokens.Contains("end")) return "end";
-        if (tokens.Contains("overworld") || tokens.Contains("surface")) return "overworld";
+        if (tokens.Contains("nether") || tokens.Contains("hell"))
+        {
+            return "nether";
+        }
+
+        if (tokens.Contains("end"))
+        {
+            return "end";
+        }
+
+        if (tokens.Contains("overworld") || tokens.Contains("surface"))
+        {
+            return "overworld";
+        }
+
         return null;
     }
 
@@ -700,22 +952,42 @@ public sealed class IngestionJobsController : ControllerBase
     {
         var dimensionsIndex = Array.IndexOf(segments, "dimensions");
         var regionIndex = Array.LastIndexOf(segments, "region");
-        if (dimensionsIndex < 0 || regionIndex <= dimensionsIndex + 2) return null;
+        if (dimensionsIndex < 0 || regionIndex <= dimensionsIndex + 2)
+        {
+            return null;
+        }
+
         var dimensionPath = string.Join('/', segments[(dimensionsIndex + 2)..regionIndex]);
         if (segments[dimensionsIndex + 1] == "minecraft" &&
-            dimensionPath is "overworld" or "the_nether" or "the_end") return null;
+            dimensionPath is "overworld" or "the_nether" or "the_end")
+        {
+            return null;
+        }
+
         return segments[dimensionsIndex + 1] + ":" + dimensionPath;
     }
 
     /// <summary>Classifies only canonical vanilla dimension layouts; unknown custom namespaces are not guessed.</summary>
     private static string? ClassifyArchiveDimension(string[] segments)
     {
-        if (segments.Contains("dim-1")) return "nether";
-        if (segments.Contains("dim1")) return "end";
+        if (segments.Contains("dim-1"))
+        {
+            return "nether";
+        }
+
+        if (segments.Contains("dim1"))
+        {
+            return "end";
+        }
+
         var dimensionsIndex = Array.IndexOf(segments, "dimensions");
         if (dimensionsIndex >= 0 && dimensionsIndex + 2 < segments.Length)
         {
-            if (segments[dimensionsIndex + 1] != "minecraft") return null;
+            if (segments[dimensionsIndex + 1] != "minecraft")
+            {
+                return null;
+            }
+
             return segments[dimensionsIndex + 2] switch
             {
                 "overworld" => "overworld",
@@ -737,10 +1009,18 @@ public sealed class IngestionJobsController : ControllerBase
     private static bool TryParseBase36(string value, out int result)
     {
         result = 0;
-        if (string.IsNullOrWhiteSpace(value)) return false;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
         var negative = value[0] == '-';
         var start = negative ? 1 : 0;
-        if (start == value.Length) return false;
+        if (start == value.Length)
+        {
+            return false;
+        }
+
         long parsed = 0;
         for (var index = start; index < value.Length; index++)
         {
@@ -750,9 +1030,16 @@ public sealed class IngestionJobsController : ControllerBase
                 >= 'a' and <= 'z' => value[index] - 'a' + 10,
                 _ => -1,
             };
-            if (digit < 0 || digit >= 36) return false;
+            if (digit < 0 || digit >= 36)
+            {
+                return false;
+            }
+
             parsed = parsed * 36 + digit;
-            if (parsed > (negative ? -(long)int.MinValue : int.MaxValue)) return false;
+            if (parsed > (negative ? -(long)int.MinValue : int.MaxValue))
+            {
+                return false;
+            }
         }
         result = checked((int)(negative ? -parsed : parsed));
         return true;
@@ -771,16 +1058,32 @@ public sealed class IngestionJobsController : ControllerBase
         {
             var count = 0;
             for (var dx = -DensityRadius; dx <= DensityRadius; dx++)
+            {
                 for (var dz = -DensityRadius; dz <= DensityRadius; dz++)
-                    if (present.Contains((rx + dx, rz + dz))) count++;
-            if (count > best) { best = count; anchor = (rx, rz); }
+                {
+                    if (present.Contains((rx + dx, rz + dz)))
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            if (count > best)
+            {
+                best = count;
+                anchor = (rx, rz);
+            }
         }
 
         long sumX = 0, sumZ = 0;
         var n = 0;
         foreach (var (rx, rz) in regions)
         {
-            if (Math.Abs(rx - anchor.RX) > ClusterRadius || Math.Abs(rz - anchor.RZ) > ClusterRadius) continue;
+            if (Math.Abs(rx - anchor.RX) > ClusterRadius || Math.Abs(rz - anchor.RZ) > ClusterRadius)
+            {
+                continue;
+            }
+
             sumX += (long)rx * RegionBlocks + 256;
             sumZ += (long)rz * RegionBlocks + 256;
             n++;
@@ -790,7 +1093,15 @@ public sealed class IngestionJobsController : ControllerBase
 
     private static void TryDeleteIntake(string path)
     {
-        try { if (System.IO.File.Exists(path)) System.IO.File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        try
+        {
+            if (System.IO.File.Exists(path))
+            {
+                System.IO.File.Delete(path);
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private async Task<ActionResult<IngestionJobDto>> CreateCore(
@@ -804,10 +1115,22 @@ public sealed class IngestionJobsController : ControllerBase
         string? originalFileName = null)
     {
         var errors = IngestionJobValidator.ValidateRequest(request);
-        if (errors.Count > 0) return BadRequest(new { errors });
+        if (errors.Count > 0)
+        {
+            return BadRequest(new
+            {
+                errors
+            });
+        }
+
         var dimension = string.IsNullOrWhiteSpace(request.Dimension) ? "overworld" : request.Dimension.Trim().ToLowerInvariant();
         if (dimension == "auto")
-            return BadRequest(new { message = "The render dimension must be resolved before a job is queued." });
+        {
+            return BadRequest(new
+            {
+                message = "The render dimension must be resolved before a job is queued."
+            });
+        }
         // Cancelled/failed jobs release the slug reservation so it can be re-uploaded.
         var reservedJob = await _context.IngestionJobs.FirstOrDefaultAsync(job =>
             job.Slug == request.Slug && job.Dimension == dimension &&
@@ -820,12 +1143,23 @@ public sealed class IngestionJobsController : ControllerBase
             if (!string.IsNullOrWhiteSpace(archiveSha256) &&
                 string.Equals(reservedJob.ArchiveSha256, archiveSha256, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(reservedJob.IntakeFileName, request.IntakeFileName, StringComparison.OrdinalIgnoreCase))
+            {
                 return CreatedAtAction(nameof(GetAll), MapToDto(reservedJob));
-            return Conflict(new { message = "That ingestion slug is already reserved for this dimension." });
+            }
+
+            return Conflict(new
+            {
+                message = "That ingestion slug is already reserved for this dimension."
+            });
         }
         if (request.ExistingLocationId is int locationId &&
             !await _context.Locations.AnyAsync(location => location.Rowid == locationId))
-            return BadRequest(new { message = "The selected location does not exist." });
+        {
+            return BadRequest(new
+            {
+                message = "The selected location does not exist."
+            });
+        }
 
         var row = new IngestionJob
         {
@@ -869,7 +1203,10 @@ public sealed class IngestionJobsController : ControllerBase
         }
         catch (DbUpdateException exception) when (exception.InnerException is SqliteException { SqliteErrorCode: 19 })
         {
-            return Conflict(new { message = "That ingestion slug is already reserved." });
+            return Conflict(new
+            {
+                message = "That ingestion slug is already reserved."
+            });
         }
 
         // Upload-time match on the density-weighted region-name centroid, so the operator sees the
@@ -879,7 +1216,11 @@ public sealed class IngestionJobsController : ControllerBase
             await ApplyMatchAsync(row, center.CenterX, center.CenterZ, archiveEvidence, archiveWarp,
                 incomingFootprint: null, parkIfUnresolved: false);
         }
-        if (row.Status == "matching") row.Status = "queued";
+        if (row.Status == "matching")
+        {
+            row.Status = "queued";
+        }
+
         await _context.SaveChangesAsync();
 
         await _audit.LogAsync("ingestion.queue", "IngestionJob", row.Id, row.RequestedByUserId,
@@ -895,7 +1236,11 @@ public sealed class IngestionJobsController : ControllerBase
     public async Task<IActionResult> Cancel(string publicId)
     {
         var row = await _context.IngestionJobs.AsNoTracking().SingleOrDefaultAsync(job => job.PublicId == publicId);
-        if (row is null) return NotFound();
+        if (row is null)
+        {
+            return NotFound();
+        }
+
         var now = DateTime.UtcNow.ToString("o");
         var changed = await _context.IngestionJobs
             .Where(job => job.PublicId == publicId && (job.Status == "queued" || job.Status == "needs-match"))
@@ -904,7 +1249,14 @@ public sealed class IngestionJobsController : ControllerBase
                 .SetProperty(job => job.Message, "Cancelled by an administrator.")
                 .SetProperty(job => job.UpdatedUtc, now)
                 .SetProperty(job => job.CompletedUtc, now));
-        if (changed != 1) return Conflict(new { message = "Only queued or awaiting-match jobs can be cancelled." });
+        if (changed != 1)
+        {
+            return Conflict(new
+            {
+                message = "Only queued or awaiting-match jobs can be cancelled."
+            });
+        }
+
         await _audit.LogAsync("ingestion.cancel", "IngestionJob", row.Id, CurrentUserId(),
             User.FindFirstValue(ClaimTypes.Name), $"Cancelled WDL ingestion '{row.Name}' ({row.PublicId})");
         return NoContent();
@@ -921,7 +1273,10 @@ public sealed class IngestionJobsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<IngestionJobDto>> Claim()
     {
-        if (!HasValidWorkerKey()) return Unauthorized();
+        if (!HasValidWorkerKey())
+        {
+            return Unauthorized();
+        }
 
         var nowUtc = DateTimeOffset.UtcNow;
         var now = nowUtc.ToString("o");
@@ -954,7 +1309,10 @@ public sealed class IngestionJobsController : ControllerBase
                 .OrderBy(job => job.Id)
                 .Select(job => job.PublicId)
                 .FirstOrDefaultAsync();
-            if (publicId is null) return NoContent();
+            if (publicId is null)
+            {
+                return NoContent();
+            }
 
             var claimToken = CreateClaimToken();
             var tokenHash = HashClaimToken(claimToken);
@@ -980,7 +1338,10 @@ public sealed class IngestionJobsController : ControllerBase
             }
         }
 
-        return Conflict(new { message = "The queue changed while claiming a job; retry." });
+        return Conflict(new
+        {
+            message = "The queue changed while claiming a job; retry."
+        });
     }
 
     /// <summary>Accepts a leased worker's progress or terminal update and renews its claim lease.</summary>
@@ -996,28 +1357,69 @@ public sealed class IngestionJobsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<IngestionJobDto>> UpdateStatus(string publicId, [FromBody] IngestionJobUpdate update)
     {
-        if (!HasValidWorkerKey()) return Unauthorized();
+        if (!HasValidWorkerKey())
+        {
+            return Unauthorized();
+        }
+
         var errors = IngestionJobValidator.ValidateUpdate(update);
-        if (errors.Count > 0) return BadRequest(new { errors });
+        if (errors.Count > 0)
+        {
+            return BadRequest(new
+            {
+                errors
+            });
+        }
 
         var row = await _context.IngestionJobs.SingleOrDefaultAsync(job => job.PublicId == publicId);
-        if (row is null) return NotFound();
-        if (!HasValidClaimToken(row, update.ClaimToken)) return Unauthorized();
+        if (row is null)
+        {
+            return NotFound();
+        }
+
+        if (!HasValidClaimToken(row, update.ClaimToken))
+        {
+            return Unauthorized();
+        }
+
         if (row.Status == update.Status && row.Status is "completed" or "failed")
+        {
             return Ok(MapToDto(row));
+        }
+
         if (row.Status is "completed" or "failed" or "cancelled")
-            return Conflict(new { message = "Terminal jobs cannot be updated." });
+        {
+            return Conflict(new
+            {
+                message = "Terminal jobs cannot be updated."
+            });
+        }
+
         if (row.Status is not ("claimed" or "running"))
-            return Conflict(new { message = "The job has not been claimed." });
+        {
+            return Conflict(new
+            {
+                message = "The job has not been claimed."
+            });
+        }
+
         if (update.Status == "completed" && update.LocationRender is not null &&
             row.RerenderRequested != 1 && (row.MatchResolved != 1 || row.MatchDecision == "review"))
+        {
             return Conflict(new
             {
                 message = "The location match is unresolved; completion cannot register a render, warp, or location."
             });
+        }
+
         var nowUtc = DateTimeOffset.UtcNow;
         if (!DateTimeOffset.TryParse(row.LeaseExpiresUtc, out var leaseExpiresUtc) || leaseExpiresUtc <= nowUtc)
-            return Conflict(new { message = "The worker claim lease has expired." });
+        {
+            return Conflict(new
+            {
+                message = "The worker claim lease has expired."
+            });
+        }
 
         await using var completionTransaction = update.Status == "completed"
             ? await _context.Database.BeginTransactionAsync()
@@ -1027,32 +1429,70 @@ public sealed class IngestionJobsController : ControllerBase
         if (update.Status == "completed" && update.LocationRender is not null)
         {
             errors = IngestionCompletionValidator.Validate(MapToDto(row), update.LocationRender, _allowedUrlPrefixes).ToList();
-            if (errors.Count > 0) return BadRequest(new { errors });
+            if (errors.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    errors
+                });
+            }
+
             var reserved = await _context.IngestionJobs
                 .Where(job => job.Id == row.Id && (job.Status == "claimed" || job.Status == "running"))
                 .ExecuteUpdateAsync(setters => setters.SetProperty(job => job.Status, "completing"));
             if (reserved != 1)
-                return Conflict(new { message = "Another request is completing this job." });
+            {
+                return Conflict(new
+                {
+                    message = "Another request is completing this job."
+                });
+            }
+
             if (row.RerenderRequested == 1 && row.RenderId is int existingRenderId)
             {
                 existingRender = await _context.Renders.SingleOrDefaultAsync(render => render.Id == existingRenderId);
                 if (existingRender is null)
-                    return Conflict(new { message = "The existing render selected for replacement no longer exists." });
+                {
+                    return Conflict(new
+                    {
+                        message = "The existing render selected for replacement no longer exists."
+                    });
+                }
+
                 if (row.ExistingLocationId is null)
+                {
                     targetLocation = await _context.Locations.SingleOrDefaultAsync(
                         location => location.Rowid == existingRender.LocationRowid);
+                }
             }
             if (await _context.Renders.AnyAsync(render =>
                     render.TilesPath == update.LocationRender.TilesPath &&
                     (existingRender == null || render.Id != existingRender.Id)))
-                return Conflict(new { message = "That location render is already registered." });
+            {
+                return Conflict(new
+                {
+                    message = "That location render is already registered."
+                });
+            }
+
             if (row.ExistingLocationId is int locationId)
             {
                 targetLocation = await _context.Locations.SingleOrDefaultAsync(location => location.Rowid == locationId);
                 if (targetLocation is null)
-                    return Conflict(new { message = "The selected location no longer exists." });
+                {
+                    return Conflict(new
+                    {
+                        message = "The selected location no longer exists."
+                    });
+                }
+
                 if (targetLocation.Dimension != LocationDimensionFor(update.LocationRender.Dimension))
-                    return BadRequest(new { message = "The selected location is in a different dimension." });
+                {
+                    return BadRequest(new
+                    {
+                        message = "The selected location is in a different dimension."
+                    });
+                }
             }
         }
 
@@ -1079,13 +1519,18 @@ public sealed class IngestionJobsController : ControllerBase
                 var utc = lastPlayed.Kind == DateTimeKind.Utc ? lastPlayed : lastPlayed.ToUniversalTime();
                 if (utc >= new DateTime(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc) &&
                     utc <= DateTime.UtcNow.AddDays(1))
+                {
                     row.WorldDownloadDate = utc.ToString("yyyy-MM-dd");
+                }
             }
         }
         row.ArchiveSha256 = update.ArchiveSha256 ?? row.ArchiveSha256;
         row.UpdatedUtc = nowUtc.ToString("o");
         row.LeaseExpiresUtc = nowUtc.Add(ClaimLease).ToString("o");
-        if (update.Status is "completed" or "failed") row.CompletedUtc = row.UpdatedUtc;
+        if (update.Status is "completed" or "failed")
+        {
+            row.CompletedUtc = row.UpdatedUtc;
+        }
 
         // Prepare-time auto-match: link a confidently matched location, or park for manual matching.
         if (update.Status == "running" && update.Stage == "prepare" &&
@@ -1102,7 +1547,13 @@ public sealed class IngestionJobsController : ControllerBase
             {
                 var lateIdentityMatch = await FindLateIdentityMatchAsync(row, update.LocationRender!.Dimension);
                 if (lateIdentityMatch.Error is not null)
-                    return Conflict(new { message = lateIdentityMatch.Error });
+                {
+                    return Conflict(new
+                    {
+                        message = lateIdentityMatch.Error
+                    });
+                }
+
                 targetLocation = lateIdentityMatch.Location;
                 existingRender = lateIdentityMatch.ExistingRender;
             }
@@ -1112,17 +1563,29 @@ public sealed class IngestionJobsController : ControllerBase
                     candidate.LocationRowid == targetLocation.Rowid);
             render = existingRender ?? CreateRender(row, update.LocationRender!, targetLocation);
             if (existingRender is not null)
+            {
                 ApplyRender(existingRender, row, update.LocationRender!, targetLocation);
+            }
+
             var warpResult = await EnsureArchiveWarpAsync(row, targetLocation);
             if (warpResult.Error is not null)
-                return Conflict(new { message = warpResult.Error });
+            {
+                return Conflict(new
+                {
+                    message = warpResult.Error
+                });
+            }
+
             archiveWarp = warpResult.Warp;
             render.ArchiveWarp = archiveWarp;
             render.ArchiveWarpId = archiveWarp is { Id: > 0 } ? archiveWarp.Id : null;
             ApplyArchiveWarpCoordinates(
                 row, update.LocationRender!, targetLocation, archiveWarp, hasEstablishedRender);
             if (existingRender is null)
-            targetLocation.ModifiedUtc = nowUtc.ToString("o");
+            {
+                targetLocation.ModifiedUtc = nowUtc.ToString("o");
+            }
+
             row.RerenderRequested = 0;
         }
         if (update.Status is "completed" or "failed")
@@ -1149,15 +1612,23 @@ public sealed class IngestionJobsController : ControllerBase
             // Resolve explicit group provenance in the publication transaction, before optional AI.
             // Include rerenders/new warps attached to an existing location, not only new locations.
             if (targetLocation is not null)
+            {
                 await new ArchiveGroupAttributionService(_context).StageAsync(targetLocation.Rowid);
+            }
+
             await _context.SaveChangesAsync();
             await completionTransaction!.CommitAsync();
             // A base now has a render attached: enrich it in the background (wiki match + description).
             if (targetLocation is not null && existingRender is null)
+            {
                 _enrichmentQueue.Enqueue(targetLocation.Rowid);
+            }
         }
         else
+        {
             await _context.SaveChangesAsync();
+        }
+
         return Ok(MapToDto(row));
     }
 
@@ -1171,9 +1642,18 @@ public sealed class IngestionJobsController : ControllerBase
     {
         request ??= new ResolveMatchRequest();
         var row = await _context.IngestionJobs.SingleOrDefaultAsync(job => job.PublicId == publicId);
-        if (row is null) return NotFound();
+        if (row is null)
+        {
+            return NotFound();
+        }
+
         if (row.Status != "needs-match")
-            return Conflict(new { message = "Only jobs awaiting a manual match can be resolved." });
+        {
+            return Conflict(new
+            {
+                message = "Only jobs awaiting a manual match can be resolved."
+            });
+        }
 
         var reviewedWarp = ArchiveWarpResolver.Resolve(
             ParseArchiveEvidence(row.ArchiveEvidenceJson), row.OriginalFileName ?? row.IntakeFileName, row.Source,
@@ -1187,11 +1667,23 @@ public sealed class IngestionJobsController : ControllerBase
                 .Select(warp => warp.LocationRowid).Where(id => id.HasValue).Select(id => id!.Value)
                 .Distinct().ToList();
             if (existingWarpLocations.Count > 1)
-                return Conflict(new { message = "That Archive warp currently points to multiple Atlas locations and must be repaired first." });
+            {
+                return Conflict(new
+                {
+                    message = "That Archive warp currently points to multiple Atlas locations and must be repaired first."
+                });
+            }
+
             if (existingWarpLocations.Count == 1)
             {
                 if (resolvedLocationId is int requestedId && requestedId != existingWarpLocations[0])
-                    return Conflict(new { message = "That Archive warp already belongs to a different Atlas location." });
+                {
+                    return Conflict(new
+                    {
+                        message = "That Archive warp already belongs to a different Atlas location."
+                    });
+                }
+
                 resolvedLocationId = existingWarpLocations[0];
             }
         }
@@ -1200,9 +1692,21 @@ public sealed class IngestionJobsController : ControllerBase
         {
             var location = await _context.Locations.SingleOrDefaultAsync(candidate => candidate.Rowid == locationId);
             if (location is null)
-                return BadRequest(new { message = "The selected location does not exist." });
+            {
+                return BadRequest(new
+                {
+                    message = "The selected location does not exist."
+                });
+            }
+
             if (DimensionIndex(row.Dimension) is int renderDimension && location.Dimension != LocationDimensionFor(renderDimension))
-                return BadRequest(new { message = "The selected location is in a different dimension." });
+            {
+                return BadRequest(new
+                {
+                    message = "The selected location is in a different dimension."
+                });
+            }
+
             row.ExistingLocationId = locationId;
         }
         else
@@ -1279,19 +1783,28 @@ public sealed class IngestionJobsController : ControllerBase
     {
         if (warp is null || job.ArchiveWarpX is not double archiveX ||
             job.ArchiveWarpY is not double archiveY || job.ArchiveWarpZ is not double archiveZ)
+        {
             return;
+        }
 
         warp.ArchiveX = archiveX;
         warp.ArchiveY = archiveY;
         warp.ArchiveZ = archiveZ;
         var position = TrustedArchiveLocationPosition(job, render.Dimension);
-        if (position is null) return;
+        if (position is null)
+        {
+            return;
+        }
+
         if (hasEstablishedRender)
         {
             var dx = (long)position.Value.X - location.X;
             var dz = (long)position.Value.Z - location.Z;
             var distance = Math.Sqrt(dx * (double)dx + dz * (double)dz);
-            if (distance > LocationMatcher.CandidateRadius(render.Dimension)) return;
+            if (distance > LocationMatcher.CandidateRadius(render.Dimension))
+            {
+                return;
+            }
         }
         location.X = position.Value.X;
         location.Y = position.Value.Y;
@@ -1305,13 +1818,18 @@ public sealed class IngestionJobsController : ControllerBase
             job.ArchiveWarpX is not double rawX || job.ArchiveWarpY is not double rawY ||
             job.ArchiveWarpZ is not double rawZ ||
             !double.IsFinite(rawX) || !double.IsFinite(rawY) || !double.IsFinite(rawZ))
+        {
             return null;
+        }
 
         var scale = renderDimension == 1 ? 8d : 1d;
         var x = rawX * scale;
         var z = rawZ * scale;
         if (Math.Abs(x) > 30_000_256 || Math.Abs(z) > 30_000_256 || Math.Abs(rawY) > int.MaxValue)
+        {
             return null;
+        }
+
         return (
             (int)Math.Round(x, MidpointRounding.AwayFromZero),
             (int)Math.Round(rawY, MidpointRounding.AwayFromZero),
@@ -1335,9 +1853,16 @@ public sealed class IngestionJobsController : ControllerBase
         IngestionJob job,
         ServerLocation targetLocation)
     {
-        if (string.IsNullOrWhiteSpace(job.ArchiveWarpName)) return (null, null);
+        if (string.IsNullOrWhiteSpace(job.ArchiveWarpName))
+        {
+            return (null, null);
+        }
+
         var normalized = ArchiveWarpResolver.Normalize(job.ArchiveWarpName);
-        if (normalized.Length == 0) return (null, "The reviewed Archive warp name is invalid.");
+        if (normalized.Length == 0)
+        {
+            return (null, "The reviewed Archive warp name is invalid.");
+        }
 
         if (!string.IsNullOrWhiteSpace(job.ArchiveSha256))
         {
@@ -1347,7 +1872,10 @@ public sealed class IngestionJobsController : ControllerBase
             {
                 if ((targetLocation.Rowid == 0 || sameArchive.LocationRowid != targetLocation.Rowid) &&
                     !await TryRehomeConflictingWarpAsync(job, sameArchive, targetLocation))
+                {
                     return (null, "This immutable WDL is already tied to an Archive warp on another Atlas location.");
+                }
+
                 return (sameArchive, null);
             }
         }
@@ -1363,7 +1891,9 @@ public sealed class IngestionJobsController : ControllerBase
             if (targetLocation.Rowid == 0 || locationIds.Any(id => id != targetLocation.Rowid))
             {
                 if (sameName.Count != 1 || !await TryRehomeConflictingWarpAsync(job, existing, targetLocation))
+                {
                     return (null, "That Archive /warp already belongs to another Atlas location; manual review is required.");
+                }
             }
             if (string.IsNullOrWhiteSpace(existing.ArchiveSha256) || IsArchiveCollector(job))
             {
@@ -1400,10 +1930,16 @@ public sealed class IngestionJobsController : ControllerBase
     {
         if (job.MatchDecision != "new-rehome" || warp.LocationRowid is not int ownerId ||
             string.IsNullOrWhiteSpace(job.ArchiveWarpName))
+        {
             return false;
+        }
+
         var owner = await _context.Locations.SingleOrDefaultAsync(location => location.Rowid == ownerId);
         if (owner is null || !ArchiveWarpResolver.HasIterationConflict(job.ArchiveWarpName, owner.Name))
+        {
             return false;
+        }
+
         warp.LocationRow = targetLocation;
         warp.LocationRowid = targetLocation.Rowid == 0 ? null : targetLocation.Rowid;
         warp.LocationUuidFk = targetLocation.LocationUuid;
@@ -1474,7 +2010,10 @@ public sealed class IngestionJobsController : ControllerBase
     {
         if (job.ArchiveWarpSource is not ("existing-archive-sha" or "operator" or
             "archive-download-report" or "archive-filename"))
+        {
             return string.Empty;
+        }
+
         return ArchiveWarpResolver.DisplayIdentity(job.ArchiveWarpName);
     }
 
@@ -1645,7 +2184,9 @@ public sealed class IngestionJobsController : ControllerBase
                 result.Suggestions, HttpContext.RequestAborted);
             if (aiMatch is not null && (aiMatch.Confidence < 0.95 ||
                 result.Suggestions.First(value => value.LocationId == aiMatch.LocationId).Confidence < 0.55))
+            {
                 aiMatch = null;
+            }
         }
         var chosenLocationId = result.AutoAttachLocationId ?? aiMatch?.LocationId;
         if (chosenLocationId is int matchedLocationId)
@@ -1702,11 +2243,18 @@ public sealed class IngestionJobsController : ControllerBase
         ServerLocation location)
     {
         var position = TrustedArchiveLocationPosition(row, dimensionIndex);
-        if (position is null) return false;
+        if (position is null)
+        {
+            return false;
+        }
+
         var incomingIdentity = ArchiveWarpResolver.CanonicalLocationIdentity(archiveWarp.Name);
         var ownerIdentity = ArchiveWarpResolver.CanonicalLocationIdentity(location.Name);
         if (incomingIdentity.Length == 0 || ownerIdentity.Length == 0 || incomingIdentity == ownerIdentity)
+        {
             return false;
+        }
+
         var dx = (long)position.Value.X - location.X;
         var dz = (long)position.Value.Z - location.Z;
         var distance = Math.Sqrt(dx * (double)dx + dz * (double)dz);
@@ -1731,11 +2279,22 @@ public sealed class IngestionJobsController : ControllerBase
     private async Task<(ServerLocation? Location, ServerLocationRender? ExistingRender, string? Error)> FindLateIdentityMatchAsync(
         IngestionJob row, int renderDimension)
     {
-        if (row.MatchDecision is not ("new" or "manual-new" or "new-rehome")) return (null, null, null);
+        if (row.MatchDecision is not ("new" or "manual-new" or "new-rehome"))
+        {
+            return (null, null, null);
+        }
+
         var archiveWarp = WarpCandidate(row);
-        if (archiveWarp?.IsTrusted != true) return (null, null, null);
+        if (archiveWarp?.IsTrusted != true)
+        {
+            return (null, null, null);
+        }
+
         var identity = ArchiveWarpResolver.CanonicalLocationIdentity(archiveWarp.Name);
-        if (identity.Length == 0) return (null, null, null);
+        if (identity.Length == 0)
+        {
+            return (null, null, null);
+        }
 
         var candidates = await LoadMatchCandidatesAsync(renderDimension);
         if (row.MatchDecision == "new-rehome")
@@ -1755,8 +2314,14 @@ public sealed class IngestionJobsController : ControllerBase
                 .Distinct()
                 .ToList();
             if (exactOwnerIds.Count > 1)
+            {
                 return (null, null, $"Archive warp '{archiveWarp.Name}' currently belongs to multiple Atlas locations; repair/review is required.");
-            if (exactOwnerIds.Count == 0) return (null, null, null);
+            }
+
+            if (exactOwnerIds.Count == 0)
+            {
+                return (null, null, null);
+            }
 
             var exactOwner = candidates.Single(candidate => candidate.LocationId == exactOwnerIds[0]);
             var exactWarpIds = exactWarps.Select(warp => warp.Id).ToList();
@@ -1770,7 +2335,10 @@ public sealed class IngestionJobsController : ControllerBase
                 // A render explicitly linked to this exact warp proves that a previous parallel
                 // completion already established the intended owner. Without that durable link,
                 // this may still be the legacy misownership that new-rehome is meant to repair.
-                if (establishedRender is null) return (null, null, null);
+                if (establishedRender is null)
+                {
+                    return (null, null, null);
+                }
             }
 
             var convergedLocation = await _context.Locations.SingleAsync(
@@ -1787,8 +2355,14 @@ public sealed class IngestionJobsController : ControllerBase
             .Distinct()
             .ToList();
         if (matchingIds.Count > 1)
+        {
             return (null, null, $"Archive identity '{ArchiveWarpResolver.DisplayIdentity(archiveWarp.Name)}' already resolves to multiple Atlas locations; repair/review is required.");
-        if (matchingIds.Count == 0) return (null, null, null);
+        }
+
+        if (matchingIds.Count == 0)
+        {
+            return (null, null, null);
+        }
 
         var location = await _context.Locations.SingleAsync(candidate => candidate.Rowid == matchingIds[0]);
         var normalized = ArchiveWarpResolver.Normalize(archiveWarp.Name);
@@ -1844,8 +2418,11 @@ public sealed class IngestionJobsController : ControllerBase
                     render.MinX.HasValue && render.MinZ.HasValue && render.MaxXExclusive.HasValue && render.MaxZExclusive.HasValue)
                 .Select(render => new
                 {
-                    render.LocationRowid, MinX = render.MinX!.Value, MinZ = render.MinZ!.Value,
-                    MaxX = render.MaxXExclusive!.Value, MaxZ = render.MaxZExclusive!.Value,
+                    render.LocationRowid,
+                    MinX = render.MinX!.Value,
+                    MinZ = render.MinZ!.Value,
+                    MaxX = render.MaxXExclusive!.Value,
+                    MaxZ = render.MaxZExclusive!.Value,
                 }).ToListAsync())
             .GroupBy(render => render.LocationRowid)
             .ToDictionary(group => group.Key, group => (IReadOnlyList<LocationRenderFootprint>)group
@@ -1867,7 +2444,10 @@ public sealed class IngestionJobsController : ControllerBase
     private bool HasValidWorkerKey()
     {
         if (_workerKeyHash is null || !Request.Headers.TryGetValue(WorkerKeyHeader, out var supplied))
+        {
             return false;
+        }
+
         var suppliedHash = SHA256.HashData(Encoding.UTF8.GetBytes(supplied.ToString()));
         return CryptographicOperations.FixedTimeEquals(_workerKeyHash, suppliedHash);
     }
@@ -1880,7 +2460,11 @@ public sealed class IngestionJobsController : ControllerBase
 
     private static bool HasValidClaimToken(IngestionJob row, string claimToken)
     {
-        if (row.ClaimTokenSha256 is null) return false;
+        if (row.ClaimTokenSha256 is null)
+        {
+            return false;
+        }
+
         var supplied = SHA256.HashData(Encoding.UTF8.GetBytes(claimToken));
         return CryptographicOperations.FixedTimeEquals(Convert.FromHexString(row.ClaimTokenSha256), supplied);
     }
@@ -1892,66 +2476,87 @@ public sealed class IngestionJobsController : ControllerBase
         IngestionJob row,
         string? claimToken = null,
         int? linkedLocationId = null) => new()
-    {
-        Id = row.PublicId,
-        OriginalFileName = row.OriginalFileName,
-        IntakeFileName = row.IntakeFileName,
-        Slug = row.Slug,
-        Name = row.Name,
-        WorldDownloadDate = row.WorldDownloadDate,
-        Source = row.Source,
-        Scale = row.Scale,
-        Dimension = row.Dimension,
-        WorldRoot = row.WorldRoot,
-        ArchiveWarpName = row.ArchiveWarpName,
-        ArchiveWarpX = row.ArchiveWarpX,
-        ArchiveWarpY = row.ArchiveWarpY,
-        ArchiveWarpZ = row.ArchiveWarpZ,
-        DayNight = row.DayNight == 1,
-        ExistingLocationId = row.ExistingLocationId ?? linkedLocationId,
-        Status = row.Status,
-        Stage = row.Stage,
-        Message = row.Message,
-        ProgressPercent = row.Status == "completed" ? 100 : row.ProgressPercent,
-        EtaSeconds = row.EtaSeconds,
-        ArchiveSha256 = row.ArchiveSha256,
-        ClaimToken = claimToken,
-        AttemptCount = row.AttemptCount,
-        RerenderRequested = row.RerenderRequested == 1,
-        RenderTopY = row.RenderTopY,
-        RequestedUtc = ParseDate(row.RequestedUtc) ?? DateTime.MinValue,
-        ClaimedUtc = ParseDate(row.ClaimedUtc),
-        LeaseExpiresUtc = ParseDate(row.LeaseExpiresUtc),
-        UpdatedUtc = ParseDate(row.UpdatedUtc),
-        CompletedUtc = ParseDate(row.CompletedUtc),
-        Inspection = ParseInspection(row.InspectionJson),
-        ArchiveEvidence = ParseArchiveEvidence(row.ArchiveEvidenceJson),
-        MatchSuggestions = ParseSuggestions(row.MatchSuggestionsJson),
-        ArchiveWarpSource = row.ArchiveWarpSource,
-        WarpId = row.WarpId,
-        MatchDecision = row.MatchDecision,
-        MatchConfidence = row.MatchConfidence,
-        MatchReason = row.MatchReason,
-    };
+        {
+            Id = row.PublicId,
+            OriginalFileName = row.OriginalFileName,
+            IntakeFileName = row.IntakeFileName,
+            Slug = row.Slug,
+            Name = row.Name,
+            WorldDownloadDate = row.WorldDownloadDate,
+            Source = row.Source,
+            Scale = row.Scale,
+            Dimension = row.Dimension,
+            WorldRoot = row.WorldRoot,
+            ArchiveWarpName = row.ArchiveWarpName,
+            ArchiveWarpX = row.ArchiveWarpX,
+            ArchiveWarpY = row.ArchiveWarpY,
+            ArchiveWarpZ = row.ArchiveWarpZ,
+            DayNight = row.DayNight == 1,
+            ExistingLocationId = row.ExistingLocationId ?? linkedLocationId,
+            Status = row.Status,
+            Stage = row.Stage,
+            Message = row.Message,
+            ProgressPercent = row.Status == "completed" ? 100 : row.ProgressPercent,
+            EtaSeconds = row.EtaSeconds,
+            ArchiveSha256 = row.ArchiveSha256,
+            ClaimToken = claimToken,
+            AttemptCount = row.AttemptCount,
+            RerenderRequested = row.RerenderRequested == 1,
+            RenderTopY = row.RenderTopY,
+            RequestedUtc = ParseDate(row.RequestedUtc) ?? DateTime.MinValue,
+            ClaimedUtc = ParseDate(row.ClaimedUtc),
+            LeaseExpiresUtc = ParseDate(row.LeaseExpiresUtc),
+            UpdatedUtc = ParseDate(row.UpdatedUtc),
+            CompletedUtc = ParseDate(row.CompletedUtc),
+            Inspection = ParseInspection(row.InspectionJson),
+            ArchiveEvidence = ParseArchiveEvidence(row.ArchiveEvidenceJson),
+            MatchSuggestions = ParseSuggestions(row.MatchSuggestionsJson),
+            ArchiveWarpSource = row.ArchiveWarpSource,
+            WarpId = row.WarpId,
+            MatchDecision = row.MatchDecision,
+            MatchConfidence = row.MatchConfidence,
+            MatchReason = row.MatchReason,
+        };
 
     private static IngestionWorldInspection? ParseInspection(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return null;
-        try { return JsonSerializer.Deserialize<IngestionWorldInspection>(value); }
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<IngestionWorldInspection>(value);
+        }
         catch (JsonException) { return null; }
     }
 
     private static ArchiveWdlEvidence? ParseArchiveEvidence(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return null;
-        try { return JsonSerializer.Deserialize<ArchiveWdlEvidence>(value); }
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<ArchiveWdlEvidence>(value);
+        }
         catch (JsonException) { return null; }
     }
 
     private static IReadOnlyList<LocationMatchSuggestion>? ParseSuggestions(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return null;
-        try { return JsonSerializer.Deserialize<List<LocationMatchSuggestion>>(value); }
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<LocationMatchSuggestion>>(value);
+        }
         catch (JsonException) { return null; }
     }
 

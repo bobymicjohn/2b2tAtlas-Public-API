@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -54,7 +55,7 @@ def apply_manifest(database, manifest, apply=False, backup_dir=None):
         backup_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f')
         backup = backup_dir / f'atlas-before-description-review-{stamp}.db'
-        with sqlite3.connect(backup) as target:
+        with closing(sqlite3.connect(backup)) as target, target:
             connection.backup(target)
             if target.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
                 raise RuntimeError('Backup failed SQLite integrity check')

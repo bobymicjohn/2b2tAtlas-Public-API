@@ -17,7 +17,10 @@ public sealed class NocomController(NocomDataService data) : ControllerBase
     [HttpGet("periods")]
     public ActionResult<IReadOnlyList<NocomPeriod>> Periods(string? dimension = null, DateOnly? from = null, DateOnly? to = null)
     {
-        try { return Ok(data.Periods(dimension, from, to)); }
+        try
+        {
+            return Ok(data.Periods(dimension, from, to));
+        }
         catch (ArgumentException exception) { return BadRequest(new { message = exception.Message }); }
     }
 
@@ -25,7 +28,10 @@ public sealed class NocomController(NocomDataService data) : ControllerBase
     [HttpGet("highways")]
     public ActionResult<IReadOnlyList<NocomHighwayPeriod>> Highways(string dimension = "nether", string? direction = null)
     {
-        try { return Ok(data.Highways(dimension, direction)); }
+        try
+        {
+            return Ok(data.Highways(dimension, direction));
+        }
         catch (ArgumentException exception) { return BadRequest(new { message = exception.Message }); }
     }
 }

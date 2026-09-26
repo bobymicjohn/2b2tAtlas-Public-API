@@ -45,7 +45,10 @@ public static class RoleNames
     public static bool TryNormalize(string? role, out string canonicalRole)
     {
         canonicalRole = string.Empty;
-        if (string.IsNullOrWhiteSpace(role)) return false;
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return false;
+        }
 
         var value = role.Trim();
         canonicalRole = All.FirstOrDefault(r => string.Equals(r, value, StringComparison.OrdinalIgnoreCase))
@@ -78,9 +81,21 @@ public static class RoleNames
     /// <summary>Whether a caller may assign the target role without escalation.</summary>
     public static bool CanAssign(string? callerRole, string? targetRole, bool callerIsSuperAdmin)
     {
-        if (!TryNormalize(targetRole, out var target)) return false;
-        if (callerIsSuperAdmin || string.Equals(callerRole, SuperAdmin, StringComparison.Ordinal)) return true;
-        if (!TryNormalize(callerRole, out var caller)) return false;
+        if (!TryNormalize(targetRole, out var target))
+        {
+            return false;
+        }
+
+        if (callerIsSuperAdmin || string.Equals(callerRole, SuperAdmin, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (!TryNormalize(callerRole, out var caller))
+        {
+            return false;
+        }
+
         return target != SuperAdmin && Rank(target) < Rank(caller);
     }
 }
@@ -191,7 +206,9 @@ public static class RolePermissions
     public static IReadOnlyCollection<string> ForRole(string? role, bool isSuperAdmin = false)
     {
         if (isSuperAdmin || role == RoleNames.SuperAdmin)
+        {
             return Permissions.All;
+        }
 
         return role switch
         {

@@ -11,51 +11,51 @@ namespace _2b2tAtlas.Server.Models;
 /// <summary>Persists a public historical warp name associated with an Atlas location.</summary>
 public partial class Warp
 {
-    /// <summary>Gets or sets the database-generated warp identifier.</summary>
+    /// <summary>Database-generated warp identifier.</summary>
     [Key]
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the historical stable UUID assigned to the warp record.</summary>
+    /// <summary>Historical stable UUID assigned to the warp record.</summary>
     public string WarpUuid { get; set; }
 
-    /// <summary>Gets or sets the historical location UUID association retained for compatibility.</summary>
+    /// <summary>Historical location UUID association retained for compatibility.</summary>
     public string LocationUuidFk { get; set; }
 
-    /// <summary>Gets or sets the current relational location row identifier.</summary>
+    /// <summary>Current relational location row identifier.</summary>
     public int? LocationRowid { get; set; }
 
-    /// <summary>Gets or sets the public in-game warp command name.</summary>
+    /// <summary>Public in-game warp command name.</summary>
     [Required]
     public string Name { get; set; }
 
-    /// <summary>Gets or sets the persisted timestamp text recording when the warp was added.</summary>
+    /// <summary>Persisted timestamp text recording when the warp was added.</summary>
     [Required]
     public string TimeAdded { get; set; }
 
-    /// <summary>Gets or sets the immutable ZIP digest for the one WDL represented by this Archive warp.</summary>
+    /// <summary>Immutable ZIP digest for the one WDL represented by this Archive warp.</summary>
     public string ArchiveSha256 { get; set; }
 
-    /// <summary>Gets or sets the declared capture date retained with this WDL-derived warp.</summary>
+    /// <summary>Declared capture date retained with this WDL-derived warp.</summary>
     public string WorldDownloadDate { get; set; }
 
-    /// <summary>Gets or sets the source attribution retained with this WDL-derived warp.</summary>
+    /// <summary>Source attribution retained with this WDL-derived warp.</summary>
     public string Source { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing X coordinate retained with this one-WDL warp.</summary>
+    /// <summary>Live Archive landing X coordinate retained with this one-WDL warp.</summary>
     public double? ArchiveX { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing Y coordinate retained with this one-WDL warp.</summary>
+    /// <summary>Live Archive landing Y coordinate retained with this one-WDL warp.</summary>
     public double? ArchiveY { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing Z coordinate retained with this one-WDL warp.</summary>
+    /// <summary>Live Archive landing Z coordinate retained with this one-WDL warp.</summary>
     public double? ArchiveZ { get; set; }
 
-    /// <summary>Gets or sets the location owning this historical WDL warp.</summary>
+    /// <summary>Location owning this historical WDL warp.</summary>
     [ForeignKey("LocationRowid")]
     [InverseProperty("Warps")]
     public virtual Location LocationRow { get; set; }
 
-    /// <summary>Gets or sets the single base render produced from this warp's WDL, when registered.</summary>
+    /// <summary>Single base render produced from this warp's WDL, when registered.</summary>
     [InverseProperty("ArchiveWarp")]
     public virtual Render Render { get; set; }
 }

@@ -15,7 +15,11 @@ public static class HighwayMapping
     public static void Apply(Atlas.Highway dto, ServerHighway row)
     {
         row.Name = dto.Name;
-        if (!string.IsNullOrWhiteSpace(dto.Slug)) row.Slug = dto.Slug;
+        if (!string.IsNullOrWhiteSpace(dto.Slug))
+        {
+            row.Slug = dto.Slug;
+        }
+
         row.Dimension = (int)dto.Dimension;
         row.Category = dto.Category.ToString();
         row.PointsJson = SerializePoints(dto.Points);
@@ -91,7 +95,11 @@ public static class HighwayMapping
             .Select(ch => char.IsLetterOrDigit(ch) ? ch : '-')
             .ToArray();
         var slug = new string(chars);
-        while (slug.Contains("--")) slug = slug.Replace("--", "-");
+        while (slug.Contains("--"))
+        {
+            slug = slug.Replace("--", "-");
+        }
+
         return slug.Trim('-');
     }
     /// <summary>Maps persisted highway state and group credits to the client contract.</summary>
@@ -114,41 +122,41 @@ public static class HighwayMapping
         var primary = attributions.FirstOrDefault(link => link.GroupId == row.BuilderGroupId) ?? attributions.FirstOrDefault();
         return new Atlas.Highway
         {
-        Id = row.Id,
-        EditVersion = HighwayEditing.Version(row),
-        ApiUrl = PublicAtlasUrls.HighwayApi(row.Id),
-        MapUrl = PublicAtlasUrls.HighwayMap(row.Dimension),
-        Name = row.Name,
-        Slug = row.Slug,
-        Dimension = (Dimension)row.Dimension,
-        Category = ParseEnum(row.Category, HighwayCategory.Custom),
-        Points = ParsePoints(row.PointsJson),
-        RingRadius = row.RingRadius,
-        Width = row.Width,
-        Height = row.Height,
-        YLevel = row.YLevel,
-        Paved = row.Paved == 1,
-        PavingMaterial = ParseEnum(row.PavingMaterial, PavingMaterial.Unknown),
-        Walls = row.Walls == 1,
-        Enclosed = row.Enclosed == 1,
-        IsRoofHighway = row.IsRoofHighway == 1,
-        Lit = row.Lit == 1,
-        Status = ParseEnum(row.Status, HighwayStatus.Unknown),
-        BuilderGroupId = row.BuilderGroupId,
-        BuilderGroupName = primary?.GroupName,
-        BuilderGroups = attributions,
-        LengthBlocks = row.LengthBlocks,
-        Description = row.Description,
-        WikiUrl = row.WikiUrl,
-        VideoUrl = row.VideoUrl,
-        Color = row.Color,
-        DisplayWeight = row.DisplayWeight,
-        Visibility = ParseEnum(row.Visibility, HighwayVisibility.Public),
-        ReviewStatus = ParseEnum(row.ReviewStatus, ReviewStatus.Approved),
-        CreatedByUserId = row.CreatedByUserId,
-        LastEditedByUserId = row.LastEditedByUserId,
-        DateAddedUtc = DateTime.TryParse(row.DateAddedUtc, out var added) ? added : DateTime.MinValue,
-        LastVerifiedUtc = DateTime.TryParse(row.LastVerifiedUtc, out var verified) ? verified : null,
+            Id = row.Id,
+            EditVersion = HighwayEditing.Version(row),
+            ApiUrl = PublicAtlasUrls.HighwayApi(row.Id),
+            MapUrl = PublicAtlasUrls.HighwayMap(row.Dimension),
+            Name = row.Name,
+            Slug = row.Slug,
+            Dimension = (Dimension)row.Dimension,
+            Category = ParseEnum(row.Category, HighwayCategory.Custom),
+            Points = ParsePoints(row.PointsJson),
+            RingRadius = row.RingRadius,
+            Width = row.Width,
+            Height = row.Height,
+            YLevel = row.YLevel,
+            Paved = row.Paved == 1,
+            PavingMaterial = ParseEnum(row.PavingMaterial, PavingMaterial.Unknown),
+            Walls = row.Walls == 1,
+            Enclosed = row.Enclosed == 1,
+            IsRoofHighway = row.IsRoofHighway == 1,
+            Lit = row.Lit == 1,
+            Status = ParseEnum(row.Status, HighwayStatus.Unknown),
+            BuilderGroupId = row.BuilderGroupId,
+            BuilderGroupName = primary?.GroupName,
+            BuilderGroups = attributions,
+            LengthBlocks = row.LengthBlocks,
+            Description = row.Description,
+            WikiUrl = row.WikiUrl,
+            VideoUrl = row.VideoUrl,
+            Color = row.Color,
+            DisplayWeight = row.DisplayWeight,
+            Visibility = ParseEnum(row.Visibility, HighwayVisibility.Public),
+            ReviewStatus = ParseEnum(row.ReviewStatus, ReviewStatus.Approved),
+            CreatedByUserId = row.CreatedByUserId,
+            LastEditedByUserId = row.LastEditedByUserId,
+            DateAddedUtc = DateTime.TryParse(row.DateAddedUtc, out var added) ? added : DateTime.MinValue,
+            LastVerifiedUtc = DateTime.TryParse(row.LastVerifiedUtc, out var verified) ? verified : null,
         };
     }
 
@@ -161,7 +169,11 @@ public static class HighwayMapping
         try
         {
             var raw = JsonSerializer.Deserialize<int[][]>(json);
-            if (raw == null) return new();
+            if (raw == null)
+            {
+                return new();
+            }
+
             return raw.Where(p => p.Length >= 2).Select(p => new HighwayPoint(p[0], p[1])).ToList();
         }
         catch

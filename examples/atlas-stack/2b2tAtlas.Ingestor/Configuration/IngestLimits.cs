@@ -72,12 +72,19 @@ public sealed record IngestLimits
         foreach (var pair in numeric)
         {
             if (pair.Value <= 0)
+            {
                 throw new ArgumentOutOfRangeException(pair.Key, "Ingest limits must be greater than zero.");
+            }
         }
 
         if (MaxExpandedBytes < MaxArchiveBytes)
+        {
             throw new ArgumentException("Expanded size limit cannot be smaller than archive size limit.");
+        }
+
         if (RenderTimeout <= TimeSpan.Zero)
+        {
             throw new ArgumentOutOfRangeException(nameof(RenderTimeout));
+        }
     }
 }

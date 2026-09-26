@@ -27,37 +27,60 @@ public sealed class PublicResourceLinkTests
         var now = DateTime.UtcNow.ToString("o");
         var location = new ServerLocation
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Linked Build", X = 12, Y = 64, Z = -34,
-            Dimension = 0, DateAddedUtc = now, ModifiedUtc = now,
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Linked Build",
+            X = 12,
+            Y = 64,
+            Z = -34,
+            Dimension = 0,
+            DateAddedUtc = now,
+            ModifiedUtc = now,
         };
         var group = new ServerGroup
         {
-            Name = "The Society Project", Type = "Build", DateAddedUtc = now, ModifiedUtc = now,
+            Name = "The Society Project",
+            Type = "Build",
+            DateAddedUtc = now,
+            ModifiedUtc = now,
         };
         context.AddRange(location, group);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         context.LocationGroups.Add(new LocationGroup
         {
-            LocationRowid = location.Rowid, GroupId = group.Id, Role = "Primary builder", DateAddedUtc = now,
+            LocationRowid = location.Rowid,
+            GroupId = group.Id,
+            Role = "Primary builder",
+            DateAddedUtc = now,
         });
         var warp = new ServerWarp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-            LocationRowid = location.Rowid, Name = "Linked_Build_2020-01-01", TimeAdded = now,
-            ArchiveSha256 = new string('a', 64), Source = "The Archive automated sync",
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = location.LocationUuid,
+            LocationRowid = location.Rowid,
+            Name = "Linked_Build_2020-01-01",
+            TimeAdded = now,
+            ArchiveSha256 = new string('a', 64),
+            Source = "The Archive automated sync",
         };
         var attachment = new ServerAttachment
         {
-            LocationRowid = location.Rowid, FileName = "History", FilePath = "https://example.test/history",
+            LocationRowid = location.Rowid,
+            FileName = "History",
+            FilePath = "https://example.test/history",
             DateAddedUtc = now,
         };
         context.AddRange(warp, attachment);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var render = new ServerRender
         {
-            LocationRowid = location.Rowid, ArchiveWarpId = warp.Id, Name = "Linked render",
-            Dimension = 0, Scale = "base", TilesPath = "https://tiles.atlas.example/AtlasTiles/linked/{z}/{y}/{x}.png",
-            IsPublic = 1, DateAddedUtc = now,
+            LocationRowid = location.Rowid,
+            ArchiveWarpId = warp.Id,
+            Name = "Linked render",
+            Dimension = 0,
+            Scale = "base",
+            TilesPath = "https://tiles.atlas.example/AtlasTiles/linked/{z}/{y}/{x}.png",
+            IsPublic = 1,
+            DateAddedUtc = now,
         };
         context.Renders.Add(render);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);

@@ -120,7 +120,9 @@ public class HighwayPoint
     public int Z { get; set; }
 
     /// <summary>Initializes an empty highway point for serialization.</summary>
-    public HighwayPoint() { }
+    public HighwayPoint()
+    {
+    }
 
     /// <summary>Initializes a highway point with native-dimension coordinates.</summary>
     /// <param name="x">The native X coordinate.</param>
@@ -142,25 +144,25 @@ public class Highway
     /// <summary>Opaque current-state token required for edits; reload after a conflict.</summary>
     public string? EditVersion { get; set; }
 
-    /// <summary>Gets or sets the highway's persistent identifier.</summary>
+    /// <summary>Highway's persistent identifier.</summary>
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the public API URL for this highway record.</summary>
+    /// <summary>Public API URL for this highway record.</summary>
     public string? ApiUrl { get; set; }
 
     /// <summary>Gets or sets an interactive Atlas map URL for this highway.</summary>
     public string? MapUrl { get; set; }
 
-    /// <summary>Gets or sets the highway's public name.</summary>
+    /// <summary>Highway's public name.</summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the stable URL-safe identifier used by API records and seeds.</summary>
+    /// <summary>Stable URL-safe identifier used by API records and seeds.</summary>
     public string Slug { get; set; } = string.Empty;
 
     /// <summary>Dimension the geometry belongs to.</summary>
     public Dimension Dimension { get; set; } = Dimension.Nether;
 
-    /// <summary>Gets or sets the highway's geometric category.</summary>
+    /// <summary>Highway's geometric category.</summary>
     public HighwayCategory Category { get; set; } = HighwayCategory.Custom;
 
     /// <summary>Ordered path in native dimension coordinates.</summary>
@@ -178,25 +180,25 @@ public class Highway
     /// <summary>Build height (roof ≈128, lava ≈10 …).</summary>
     public int? YLevel { get; set; }
 
-    /// <summary>Gets or sets whether the route has a deliberately constructed surface.</summary>
+    /// <summary>Whether the route has a deliberately constructed surface.</summary>
     public bool Paved { get; set; }
 
-    /// <summary>Gets or sets the predominant material used for the paved surface.</summary>
+    /// <summary>Predominant material used for the paved surface.</summary>
     public PavingMaterial PavingMaterial { get; set; } = PavingMaterial.Unknown;
 
-    /// <summary>Gets or sets whether the route has side walls.</summary>
+    /// <summary>Whether the route has side walls.</summary>
     public bool Walls { get; set; }
 
-    /// <summary>Gets or sets whether the route is enclosed by walls and a ceiling.</summary>
+    /// <summary>Whether the route is enclosed by walls and a ceiling.</summary>
     public bool Enclosed { get; set; }
 
-    /// <summary>Gets or sets whether the route runs on the Nether roof.</summary>
+    /// <summary>Whether the route runs on the Nether roof.</summary>
     public bool IsRoofHighway { get; set; }
 
-    /// <summary>Gets or sets whether the route has installed lighting.</summary>
+    /// <summary>Whether the route has installed lighting.</summary>
     public bool Lit { get; set; }
 
-    /// <summary>Gets or sets the recorded construction or maintenance condition.</summary>
+    /// <summary>Recorded construction or maintenance condition.</summary>
     public HighwayStatus Status { get; set; } = HighwayStatus.Unknown;
 
     /// <summary>Attributed builder group (FK → Group), if known.</summary>
@@ -226,16 +228,16 @@ public class Highway
     /// <summary>Gets or sets an optional map line weight override.</summary>
     public int? DisplayWeight { get; set; }
 
-    /// <summary>Gets or sets whether the record is eligible for public listing.</summary>
+    /// <summary>Whether the record is eligible for public listing.</summary>
     public HighwayVisibility Visibility { get; set; } = HighwayVisibility.Public;
 
-    /// <summary>Gets or sets the record's moderation state.</summary>
+    /// <summary>Record's moderation state.</summary>
     public ReviewStatus ReviewStatus { get; set; } = ReviewStatus.Approved;
 
-    /// <summary>Gets or sets the identifier of the user who created the record.</summary>
+    /// <summary>Identifier of the user who created the record.</summary>
     public int? CreatedByUserId { get; set; }
 
-    /// <summary>Gets or sets the identifier of the user who most recently edited the record.</summary>
+    /// <summary>Identifier of the user who most recently edited the record.</summary>
     public int? LastEditedByUserId { get; set; }
 
     /// <summary>Gets or sets the UTC time at which the record was added.</summary>
@@ -248,21 +250,21 @@ public class Highway
 /// <summary>A reviewed group contribution to one highway.</summary>
 public class HighwayGroupAttribution
 {
-    /// <summary>Gets or sets the attributed group identifier.</summary>
+    /// <summary>Attributed group identifier.</summary>
     public int GroupId { get; set; }
 
-    /// <summary>Gets or sets the group's canonical crawlable entity URL.</summary>
+    /// <summary>Group's canonical crawlable entity URL.</summary>
     public string GroupUrl { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the group's public API URL.</summary>
+    /// <summary>Group's public API URL.</summary>
     public string GroupApiUrl { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the attributed group's public name.</summary>
+    /// <summary>Attributed group's public name.</summary>
     public string GroupName { get; set; } = string.Empty;
 
     /// <summary>Gets or sets its role, such as Primary builder, Predecessor, or Contributor.</summary>
     public string Role { get; set; } = "Contributor";
 
-    /// <summary>Gets or sets a concise public source note.</summary>
+    /// <summary>A concise public source note.</summary>
     public string? Evidence { get; set; }
 }

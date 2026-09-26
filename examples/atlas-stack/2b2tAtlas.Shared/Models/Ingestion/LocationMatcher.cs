@@ -106,12 +106,18 @@ public static class LocationMatcher
         var closestDistance = int.MaxValue;
         foreach (var candidate in candidates)
         {
-            if (candidate.Dimension != dimension) continue;
+            if (candidate.Dimension != dimension)
+            {
+                continue;
+            }
             // Numbered Archive iterations are separate bases even when an old Atlas row incorrectly owns
             // the exact warp or shares the same coordinates. Do not let proximity repair that bad ownership.
             if (archiveWarp?.IsTrusted == true &&
                 ArchiveWarpResolver.HasIterationConflict(archiveWarp.Name, candidate.Name))
+            {
                 continue;
+            }
+
             var incomingCollection = ArchiveWarpResolver.ExplicitExhibitCollection(archiveWarp?.Name);
             if (archiveWarp?.IsTrusted == true && incomingCollection.Length > 0 &&
                 candidate.WarpNames?.Any(warp =>
@@ -120,7 +126,10 @@ public static class LocationMatcher
                         ArchiveWarpResolver.ExplicitExhibitCollection(warp) == incomingCollection)
                     .All(warp => ArchiveWarpResolver.CanonicalLocationIdentity(warp) !=
                         ArchiveWarpResolver.CanonicalLocationIdentity(archiveWarp.Name)))
+            {
                 continue;
+            }
+
             long dx = candidate.X - centerX;
             long dz = candidate.Z - centerZ;
             var distance = (int)Math.Min(int.MaxValue, Math.Sqrt(dx * (double)dx + dz * (double)dz));
@@ -144,9 +153,16 @@ public static class LocationMatcher
             // proves that the chunks coexisted in one saved world, not that the smaller capture represents
             // the same Atlas location. At long range, overlap is supporting evidence only and must be
             // corroborated by the Archive warp identity or the proposed/location name.
-            if (distance > radius && !identityCompatible) continue;
+            if (distance > radius && !identityCompatible)
+            {
+                continue;
+            }
+
             if (identityCompatible)
+            {
                 trustedIdentityCompatibleLocations.Add(candidate.LocationId);
+            }
+
             var corroboratedOverlap = identityCompatible || distance <= radius ? overlap : 0;
             var confidence = matchedWarp is not null
                 ? archiveEvidence?.IsArchiveSource == true && distance <= radius ? 0.99 : distance <= radius ? 0.9 : 0.65
@@ -159,7 +175,10 @@ public static class LocationMatcher
                 : BuildReason(distance, nameScore, nameReason, identityScore, corroboratedOverlap);
             var suggestion = new LocationMatchSuggestion(candidate.LocationId, candidate.Name, distance, confidence, reason);
             scored.Add(suggestion);
-            if (matchedWarp is not null) exactWarpMatches.Add(suggestion);
+            if (matchedWarp is not null)
+            {
+                exactWarpMatches.Add(suggestion);
+            }
         }
 
         scored.Sort((a, b) => b.Confidence != a.Confidence
@@ -221,15 +240,31 @@ public static class LocationMatcher
     private static string BuildReason(int distance, double nameScore, string nameReason, double identityScore, double overlap)
     {
         var parts = new List<string> { $"{distance:N0} blocks from WDL center" };
-        if (identityScore >= 0.5) parts.Add($"{identityScore:P0} dated-warp identity");
-        if (overlap >= 0.01) parts.Add($"{overlap:P0} prior-render overlap");
-        if (nameScore > 0) parts.Add(nameReason);
+        if (identityScore >= 0.5)
+        {
+            parts.Add($"{identityScore:P0} dated-warp identity");
+        }
+
+        if (overlap >= 0.01)
+        {
+            parts.Add($"{overlap:P0} prior-render overlap");
+        }
+
+        if (nameScore > 0)
+        {
+            parts.Add(nameReason);
+        }
+
         return string.Join(", ", parts);
     }
 
     private static double BestOverlap(LocationRenderFootprint incoming, IReadOnlyList<LocationRenderFootprint>? existing)
     {
-        if (existing is null || existing.Count == 0) return 0;
+        if (existing is null || existing.Count == 0)
+        {
+            return 0;
+        }
+
         var incomingArea = Math.Max(1d, (long)incoming.MaxXExclusive - incoming.MinX) *
             Math.Max(1d, (long)incoming.MaxZExclusive - incoming.MinZ);
         var best = 0d;
@@ -246,18 +281,41 @@ public static class LocationMatcher
 
     private static double IdentitySimilarity(string a, string b)
     {
-        if (a.Length == 0 || b.Length == 0) return 0;
-        if (ArchiveWarpResolver.HasIterationConflict(a, b)) return 0;
-        if (!HasSpecificIdentity(a) || !HasSpecificIdentity(b)) return 0;
-        if (a == b) return 1;
+        if (a.Length == 0 || b.Length == 0)
+        {
+            return 0;
+        }
+
+        if (ArchiveWarpResolver.HasIterationConflict(a, b))
+        {
+            return 0;
+        }
+
+        if (!HasSpecificIdentity(a) || !HasSpecificIdentity(b))
+        {
+            return 0;
+        }
+
+        if (a == b)
+        {
+            return 1;
+        }
+
         var at = a.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
         var bt = b.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
-        if (at.Count == 0 || bt.Count == 0) return 0;
+        if (at.Count == 0 || bt.Count == 0)
+        {
+            return 0;
+        }
+
         var shared = at.Count(bt.Contains);
         var union = at.Count + bt.Count - shared;
         var jaccard = shared / (double)union;
         if (a.Contains(b, StringComparison.Ordinal) || b.Contains(a, StringComparison.Ordinal))
+        {
             return Math.Max(0.8, jaccard);
+        }
+
         return jaccard;
     }
 
@@ -279,12 +337,26 @@ public static class LocationMatcher
 
     private static (double Score, string Reason) NameSimilarity(string a, string b)
     {
-        if (a.Length == 0 || b.Length == 0) return (0, string.Empty);
-        if (a == b) return (1.0, "exact name match");
+        if (a.Length == 0 || b.Length == 0)
+        {
+            return (0, string.Empty);
+        }
+
+        if (a == b)
+        {
+            return (1.0, "exact name match");
+        }
+
         if (a.StartsWith(b, StringComparison.Ordinal) || b.StartsWith(a, StringComparison.Ordinal))
+        {
             return (0.7, "name prefix match");
+        }
+
         if (a.Contains(b, StringComparison.Ordinal) || b.Contains(a, StringComparison.Ordinal))
+        {
             return (0.5, "name contains match");
+        }
+
         var overlap = TokenOverlap(a, b);
         return overlap > 0 ? (Math.Min(0.4, overlap * 0.4), "shared name words") : (0, string.Empty);
     }
@@ -293,14 +365,22 @@ public static class LocationMatcher
     {
         var at = a.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
         var bt = b.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
-        if (at.Count == 0 || bt.Count == 0) return 0;
+        if (at.Count == 0 || bt.Count == 0)
+        {
+            return 0;
+        }
+
         var intersection = at.Count(bt.Contains);
         return (double)intersection / Math.Max(at.Count, bt.Count);
     }
 
     private static string Normalize(string value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
         var cleaned = Regex.Replace(value.ToLowerInvariant(), "[^a-z0-9 ]+", " ");
         return Regex.Replace(cleaned, "\\s+", " ").Trim();
     }

@@ -64,40 +64,62 @@ public sealed record IngestManifest(
 
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
+        {
             throw new InputValidationException("Manifest root must be a JSON object.");
+        }
 
         foreach (var property in root.EnumerateObject())
         {
             if (!AllowedKeys.Contains(property.Name))
+            {
                 throw new InputValidationException($"Unknown manifest key: {property.Name}");
+            }
         }
 
         if (ReadInt(root, "schemaVersion") != 1)
+        {
             throw new InputValidationException("Manifest schemaVersion must be 1.");
+        }
 
         var slug = ReadString(root, "slug").Trim().ToLowerInvariant();
         if (!SlugPattern.IsMatch(slug))
+        {
             throw new InputValidationException("Slug must be 1-54 lowercase letters, numbers, or hyphens.");
+        }
 
         var name = ReadString(root, "name").Trim();
         var source = ReadString(root, "source").Trim();
         if (name.Length is < 1 or > 90)
+        {
             throw new InputValidationException("Name must be 1-90 characters so dimension labels remain within API limits.");
+        }
+
         if (source.Length is < 1 or > 200)
+        {
             throw new InputValidationException("Source must be 1-200 characters.");
+        }
 
         if (!DateOnly.TryParseExact(ReadString(root, "worldDownloadDate"), "yyyy-MM-dd", out var date))
+        {
             throw new InputValidationException("worldDownloadDate must use YYYY-MM-DD.");
+        }
+
         if (date > DateOnly.FromDateTime(DateTime.UtcNow))
+        {
             throw new InputValidationException("worldDownloadDate cannot be in the future.");
+        }
 
         var scale = ReadString(root, "scale").Trim().ToLowerInvariant();
         if (!ScalePattern.IsMatch(scale))
+        {
             throw new InputValidationException("Scale must look like 5k, 256k, or 1m.");
+        }
 
         var worldRoot = ReadOptionalString(root, "worldRoot")?.Replace('\\', '/').Trim('/');
         if (worldRoot is not null && !IsSafeRelativePath(worldRoot))
+        {
             throw new InputValidationException("worldRoot must be a safe relative path.");
+        }
 
         IReadOnlyList<string>? dimensions = null;
         if (root.TryGetProperty("dimensions", out var dimensionElement))
@@ -114,7 +136,10 @@ public sealed record IngestManifest(
                     .Distinct(StringComparer.Ordinal)
                     .ToArray();
                 if (values.Length == 0 || values.Any(value => !AllowedDimensions.Contains(value)))
+                {
                     throw new InputValidationException("Dimensions must contain only overworld, nether, and end.");
+                }
+
                 dimensions = values;
             }
             else

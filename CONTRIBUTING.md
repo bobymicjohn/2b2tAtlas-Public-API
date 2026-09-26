@@ -19,6 +19,17 @@ third-party notices intact. Source links are useful even when Atlas credit is op
 
 ## Before opening a pull request
 
+With .NET 10, Node.js and Python installed, run the offline client checks:
+
+```sh
+python tests/test_examples.py
+```
+
+These build the C# example and run all three clients against a temporary local
+API. They cover normal reads, optional 3D fields, pagination, HTTP errors and
+unknown locations. The C# example separates its HTTP client and models from the
+walkthrough in `Program.cs` so you can reuse the pieces you need.
+
 Start the local fixture in a separate terminal:
 
 ```sh

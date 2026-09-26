@@ -52,7 +52,11 @@ public class GroupService
     public async Task<(bool Ok, Group? Saved, string? Error)> CreateAsync(Group group)
     {
         var req = await BuildRequestAsync(HttpMethod.Post, "api/groups", group);
-        if (req == null) return (false, null, "Not authenticated");
+        if (req == null)
+        {
+            return (false, null, "Not authenticated");
+        }
+
         return await SendAsync(req);
     }
 
@@ -60,7 +64,11 @@ public class GroupService
     public async Task<(bool Ok, Group? Saved, string? Error)> UpdateAsync(int id, Group group)
     {
         var req = await BuildRequestAsync(HttpMethod.Put, $"api/groups/{id}", group);
-        if (req == null) return (false, null, "Not authenticated");
+        if (req == null)
+        {
+            return (false, null, "Not authenticated");
+        }
+
         return await SendAsync(req);
     }
 
@@ -68,7 +76,11 @@ public class GroupService
     public async Task<bool> DeleteAsync(int id)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return false;
+        if (string.IsNullOrEmpty(token))
+        {
+            return false;
+        }
+
         var req = new HttpRequestMessage(HttpMethod.Delete, $"api/groups/{id}");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _http.SendAsync(req);
@@ -78,7 +90,11 @@ public class GroupService
     private async Task<HttpRequestMessage?> BuildRequestAsync(HttpMethod method, string url, Group body)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return null;
+        if (string.IsNullOrEmpty(token))
+        {
+            return null;
+        }
+
         var req = new HttpRequestMessage(method, url)
         {
             Content = JsonContent.Create(body),

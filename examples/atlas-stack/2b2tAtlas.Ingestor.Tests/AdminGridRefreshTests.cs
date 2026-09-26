@@ -30,7 +30,10 @@ public sealed class AdminGridRefreshTests
             var admin = new AdminPage();
             var jobs = Enumerable.Range(0, 50).Select(i => new IngestionJobDto
             {
-                Id = i.ToString(), Name = $"Build {i:00}", Status = "running", ProgressPercent = 1,
+                Id = i.ToString(),
+                Name = $"Build {i:00}",
+                Status = "running",
+                ProgressPercent = 1,
                 RequestedUtc = DateTime.UtcNow.AddMinutes(-i)
             }).ToList();
             typeof(AdminPage).GetField("ingestionJobs", PrivateInstance)!.SetValue(admin, jobs);
@@ -60,8 +63,11 @@ public sealed class AdminGridRefreshTests
             {
                 jobs = jobs.Select(j => new IngestionJobDto
                 {
-                    Id = j.Id, Name = j.Name, Status = j.Status,
-                    ProgressPercent = tick + 20, RequestedUtc = j.RequestedUtc
+                    Id = j.Id,
+                    Name = j.Name,
+                    Status = j.Status,
+                    ProgressPercent = tick + 20,
+                    RequestedUtc = j.RequestedUtc
                 }).ToList();
                 typeof(AdminPage).GetField("ingestionJobs", PrivateInstance)!.SetValue(admin, jobs);
                 await Refresh();
@@ -86,8 +92,12 @@ public sealed class AdminGridRefreshTests
     public sealed class GridHost : ComponentBase
     {
         [Parameter] public IEnumerable<IngestionJobDto> Rows { get; set; } = [];
-        [Parameter] public Action<GridHost>? Ready { get; set; }
-        public RadzenDataGrid<IngestionJobDto>? Grid { get; private set; }
+        [Parameter]
+        public Action<GridHost>? Ready { get; set; }
+        public RadzenDataGrid<IngestionJobDto>? Grid
+        {
+            get; private set;
+        }
         public void RenderAgain() => StateHasChanged();
         protected override void OnInitialized() => Ready?.Invoke(this);
         protected override void BuildRenderTree(RenderTreeBuilder builder)

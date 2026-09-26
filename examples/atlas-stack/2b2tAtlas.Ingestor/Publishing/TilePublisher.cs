@@ -60,7 +60,9 @@ public static partial class TilePublisher
             _ => throw new InputValidationException($"Unknown tile coordinate scheme: {coordinateScheme}"),
         };
         if (!Directory.Exists(renderedRoot))
+        {
             throw new InputValidationException($"Rendered tile root does not exist: {renderedRoot}");
+        }
 
         var root = Path.GetFullPath(renderedRoot);
         var count = 0;
@@ -83,7 +85,10 @@ public static partial class TilePublisher
                 !int.TryParse(zoomName, out var zoom) ||
                 zoom is < 0 or > 30 ||
                 !IsCanonicalInteger(zoomName, zoom))
+            {
                 throw new InputValidationException($"Tile root contains an unexpected entry: {Path.GetRelativePath(root, entry)}");
+            }
+
             zoomDirectories.Add((zoom, entry));
         }
 
@@ -99,11 +104,16 @@ public static partial class TilePublisher
                     !long.TryParse(yName, out var y) ||
                     (!allowSignedCoordinates && (y < 0 || y >= 1L << zoom)) ||
                     !IsCanonicalInteger(yName, y))
+                {
                     throw new InputValidationException($"Tile root contains an unexpected entry: {Path.GetRelativePath(root, entry)}");
+                }
+
                 yDirectories.Add((y, entry));
             }
             if (yDirectories.Count == 0)
+            {
                 throw new InputValidationException($"Tile root contains an empty zoom directory: {zoom}");
+            }
 
             foreach (var (y, yPath) in yDirectories.OrderBy(value => value.Y))
             {
@@ -113,29 +123,46 @@ public static partial class TilePublisher
                     CountOutputEntry(ref outputEntries, limits);
                     RejectReparsePoint(entry);
                     if (Directory.Exists(entry))
+                    {
                         throw new InputValidationException($"Tile root contains an unexpected directory: {Path.GetRelativePath(root, entry)}");
+                    }
+
                     var relative = Path.GetRelativePath(root, entry).Replace('\\', '/');
                     var match = TilePattern().Match(relative);
                     if (!match.Success)
+                    {
                         throw new InputValidationException($"Tile root contains an unexpected non-tile file: {relative}");
+                    }
+
                     var xName = match.Groups[3].Value;
                     var x = long.Parse(xName, System.Globalization.CultureInfo.InvariantCulture);
                     if ((!allowSignedCoordinates && (x < 0 || x >= 1L << zoom)) || !IsCanonicalInteger(xName, x))
+                    {
                         throw new InputValidationException($"Tile coordinate is outside XYZ bounds: {relative}");
+                    }
+
                     var extension = match.Groups[4].Value.ToLowerInvariant();
                     tileExtension ??= extension;
                     if (tileExtension != extension)
+                    {
                         throw new InputValidationException("Tile root must use one consistent image extension.");
+                    }
+
                     tiles.Add((x, entry, relative));
                 }
                 if (tiles.Count == 0)
+                {
                     throw new InputValidationException($"Tile root contains an empty tile row: {zoom}/{y}");
+                }
 
                 long? previousX = null;
                 foreach (var tile in tiles.OrderBy(value => value.X))
                 {
                     if (previousX == tile.X)
+                    {
                         throw new InputValidationException($"Tile root contains duplicate XYZ coordinates: {tile.Relative}");
+                    }
+
                     previousX = tile.X;
                     var tileBytes = AppendTileToInventory(inventoryHash, tile.Relative, tile.Path);
                     count++;
@@ -145,7 +172,10 @@ public static partial class TilePublisher
                     maxTileY = Math.Max(maxTileY, y);
                     bytes = checked(bytes + tileBytes);
                     if (bytes > limits.MaxOutputBytes)
+                    {
                         throw new InputSecurityException("Rendered output exceeds the configured size limit.");
+                    }
+
                     minZoom = Math.Min(minZoom, zoom);
                     maxZoom = Math.Max(maxZoom, zoom);
                     tilesPerZoom[zoom] = tilesPerZoom.GetValueOrDefault(zoom) + 1;
@@ -154,13 +184,21 @@ public static partial class TilePublisher
         }
 
         if (count == 0)
+        {
             throw new InputValidationException("Renderer output contains no recognized z/y/x image tiles.");
+        }
+
         if (minZoom != 0)
+        {
             throw new InputValidationException("Atlas map pyramids must include zoom 0.");
+        }
+
         for (var zoom = minZoom; zoom <= maxZoom; zoom++)
         {
             if (!tilesPerZoom.ContainsKey(zoom))
+            {
                 throw new InputValidationException($"Tile pyramid is missing zoom level {zoom}.");
+            }
         }
         return new TileSetReport(
             count,
@@ -176,10 +214,10 @@ public static partial class TilePublisher
             maxTileY);
     }
 
-            /// <summary>Compares all semantic and byte-inventory fields of two tile reports.</summary>
-            /// <param name="left">First report.</param>
-            /// <param name="right">Second report.</param>
-            /// <returns><see langword="true"/> when both reports bind the same tile tree.</returns>
+    /// <summary>Compares all semantic and byte-inventory fields of two tile reports.</summary>
+    /// <param name="left">First report.</param>
+    /// <param name="right">Second report.</param>
+    /// <returns><see langword="true"/> when both reports bind the same tile tree.</returns>
     public static bool ReportsMatch(TileSetReport left, TileSetReport right) =>
         left.TileCount == right.TileCount &&
         left.TotalBytes == right.TotalBytes &&
@@ -196,13 +234,17 @@ public static partial class TilePublisher
     {
         count = checked(count + 1);
         if (count > limits.MaxOutputEntries)
+        {
             throw new InputSecurityException("Rendered output exceeds the configured entry-count limit.");
+        }
     }
 
     private static void RejectReparsePoint(string path)
     {
         if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+        {
             throw new InputSecurityException($"Rendered output contains a symbolic link or reparse point: {path}");
+        }
     }
 
     private static bool IsCanonicalInteger(string value, long parsed) =>
@@ -223,7 +265,10 @@ public static partial class TilePublisher
         {
             var read = input.Read(buffer);
             if (read == 0)
+            {
                 break;
+            }
+
             inventoryHash.AppendData(buffer.AsSpan(0, read));
         }
         inventoryHash.AppendData([byte.MaxValue]);
@@ -240,9 +285,15 @@ public static partial class TilePublisher
         var source = Path.GetFullPath(renderedRoot);
         var destination = Path.GetFullPath(publishedRoot);
         if (Directory.Exists(destination) || File.Exists(destination))
+        {
             throw new InputValidationException($"Published path already exists: {destination}");
+        }
+
         if (!Path.GetPathRoot(source)!.Equals(Path.GetPathRoot(destination), StringComparison.OrdinalIgnoreCase))
+        {
             throw new InputValidationException("Atomic publication requires staging and destination on the same volume.");
+        }
+
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
         Directory.Move(source, destination);
     }

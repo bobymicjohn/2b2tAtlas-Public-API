@@ -55,11 +55,15 @@ class ResearchCatalogTests(unittest.TestCase):
              patch.object(sync, 'get_catalog', return_value=({'channel_id': 'UCone'}, [{'id': 'japanese', 'title': '２ｂ２ｔの歴史'}])), \
              patch.object(sync, 'download_caption', return_value=(None, self.root / 'metadata.json')) as download:
             sync.main()
+            first = json.loads((self.root / 'creator/last-run.json').read_text(encoding='utf-8'))
+            self.assertEqual(first['selectedVideos'], 1)
+            self.assertEqual(first['results'][0]['status'], 'no-requested-captions')
             sync.main()
+            self.assertEqual(download.call_count, 1, 'Captionless videos stay on cooldown')
             self.assertEqual(download.call_args.args[2], ['ja-orig', 'ja'])
         record = json.loads((self.root / 'creator/last-run.json').read_text(encoding='utf-8'))
-        self.assertEqual(record['selectedVideos'], 1)
-        self.assertEqual(record['results'][0]['status'], 'no-requested-captions')
+        self.assertEqual(record['selectedVideos'], 0)
+        self.assertEqual(record['results'], [])
         self.assertEqual(len(list((self.root / 'creator/runs').glob('*.json'))), 2)
 
 

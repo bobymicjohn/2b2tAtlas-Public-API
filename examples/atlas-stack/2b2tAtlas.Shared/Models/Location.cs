@@ -9,17 +9,17 @@ namespace Atlas;
 public class Location
 {
     /// <summary>
-    /// Gets or sets the unique identifier for the location.
+    /// Unique identifier for the location.
     /// </summary>
     public int Rowid { get; set; }
 
-    /// <summary>Gets or sets the canonical crawlable entity URL for this location.</summary>
+    /// <summary>Canonical crawlable entity URL for this location.</summary>
     public string? CanonicalUrl { get; set; }
 
-    /// <summary>Gets or sets the interactive Atlas detail-page URL for this location.</summary>
+    /// <summary>Interactive Atlas detail-page URL for this location.</summary>
     public string? InteractiveUrl { get; set; }
 
-    /// <summary>Gets or sets the public API URL for this location record.</summary>
+    /// <summary>Public API URL for this location record.</summary>
     public string? ApiUrl { get; set; }
 
     /// <summary>
@@ -29,26 +29,26 @@ public class Location
     public string? LocationUuid { get; set; }
 
     /// <summary>
-    /// Gets or sets the name of the location.
+    /// Name of the location.
     /// </summary>
     [Required(ErrorMessage = "Name is required")]
     [StringLength(255, ErrorMessage = "Name cannot exceed 255 characters")]
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the description of the location.
+    /// Description of the location.
     /// </summary>
     [StringLength(2000, ErrorMessage = "Description cannot exceed 2000 characters")]
     public string? Description { get; set; }
 
     /// <summary>
-    /// Gets or sets the tags for the location.
+    /// Tags for the location.
     /// </summary>
     [StringLength(1000, ErrorMessage = "Tags cannot exceed 1000 characters")]
     public string? Tags { get; set; }
 
     /// <summary>
-    /// Gets or sets the dimension of the location (0=Overworld, 1=Nether, 2=End).
+    /// Dimension of the location (0=Overworld, 1=Nether, 2=End).
     /// </summary>
     [Required(ErrorMessage = "Dimension is required")]
     public int Dimension { get; set; }
@@ -88,26 +88,26 @@ public class Location
     public int Z { get; set; }
 
     /// <summary>
-    /// Gets or sets the wiki URL for the location.
+    /// Wiki URL for the location.
     /// </summary>
     [StringLength(250)]
     [OptionalHttpUrl(ErrorMessage = "Wiki must be an HTTP or HTTPS URL")]
     public string? Wiki { get; set; }
 
     /// <summary>
-    /// Gets or sets the video URL for the location.
+    /// Video URL for the location.
     /// </summary>
     [StringLength(255)]
     [OptionalHttpUrl(ErrorMessage = "Video URL must be an HTTP or HTTPS URL")]
     public string? VideoUrl { get; set; }
 
     /// <summary>
-    /// Gets or sets whether this is an End dimension location.
+    /// Whether this is an End dimension location.
     /// </summary>
     public bool EndDimension { get; set; }
 
     /// <summary>
-    /// Gets or sets the date and time when the location was added (UTC).
+    /// Date and time when the location was added (UTC).
     /// </summary>
     public DateTime DateAddedUtc { get; set; }
 
@@ -117,17 +117,17 @@ public class Location
     public DateTime ModifiedUtc { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Gets or sets the list of warps associated with the location.
+    /// List of warps associated with the location.
     /// </summary>
     public List<Atlas.Locations.Warp> Warps { get; set; } = new List<Atlas.Locations.Warp>();
 
     /// <summary>
-    /// Gets or sets the list of attachments associated with the location.
+    /// List of attachments associated with the location.
     /// </summary>
     public List<Atlas.Locations.Attachment> Attachments { get; set; } = new List<Atlas.Locations.Attachment>();
 
     /// <summary>
-    /// Gets or sets the list of renders associated with the location.
+    /// List of renders associated with the location.
     /// </summary>
     public List<Atlas.Locations.Render> Renders { get; set; } = new List<Atlas.Locations.Render>();
 
@@ -194,9 +194,20 @@ public class Location
         get
         {
             var parts = new List<string>();
-            if (WarpCount > 0) parts.Add($"{WarpCount} warp{(WarpCount == 1 ? "" : "s")}");
-            if (AttachmentCount > 0) parts.Add($"{AttachmentCount} file{(AttachmentCount == 1 ? "" : "s")}");
-            if (RenderCount > 0) parts.Add($"{RenderCount} render{(RenderCount == 1 ? "" : "s")}");
+            if (WarpCount > 0)
+            {
+                parts.Add($"{WarpCount} warp{(WarpCount == 1 ? "" : "s")}");
+            }
+
+            if (AttachmentCount > 0)
+            {
+                parts.Add($"{AttachmentCount} file{(AttachmentCount == 1 ? "" : "s")}");
+            }
+
+            if (RenderCount > 0)
+            {
+                parts.Add($"{RenderCount} render{(RenderCount == 1 ? "" : "s")}");
+            }
 
             return parts.Any() ? string.Join(", ", parts) : "No content";
         }

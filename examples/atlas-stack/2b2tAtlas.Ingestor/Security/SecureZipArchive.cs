@@ -46,15 +46,25 @@ public static partial class SecureZipArchive
         limits.Validate();
         var file = new FileInfo(Path.GetFullPath(archivePath));
         if (!file.Exists)
+        {
             throw new InputValidationException($"Archive does not exist: {file.FullName}");
+        }
+
         if (!file.Extension.Equals(".zip", StringComparison.OrdinalIgnoreCase))
+        {
             throw new InputValidationException("Only ZIP archives are accepted. Convert other formats offline first.");
+        }
+
         if (file.Length > limits.MaxArchiveBytes)
+        {
             throw new InputSecurityException($"Archive is {file.Length:N0} bytes; limit is {limits.MaxArchiveBytes:N0}.");
+        }
 
         var sha256 = await ComputeSha256Async(file.FullName, limits.MaxArchiveBytes, cancellationToken);
         if (expectedSha256 is not null && !sha256.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+        {
             throw new InputSecurityException("Archive changed after the immutable snapshot was created.");
+        }
 
         ZipCentralDirectory.Validate(file.FullName, limits.MaxEntries);
 
@@ -69,14 +79,18 @@ public static partial class SecureZipArchive
         {
             using var archive = ZipFile.OpenRead(file.FullName);
             if (archive.Entries.Count > limits.MaxEntries)
+            {
                 throw new InputSecurityException($"Archive has {archive.Entries.Count:N0} entries; limit is {limits.MaxEntries:N0}.");
+            }
 
             foreach (var entry in archive.Entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var normalized = ValidateEntryPath(entry.FullName, limits);
                 if (!names.TryAdd(normalized, entry.FullName))
+                {
                     throw new InputSecurityException($"Archive has duplicate or case-colliding path: {entry.FullName}");
+                }
 
                 ValidateEntryType(entry);
                 if (IsDirectory(entry))
@@ -87,14 +101,21 @@ public static partial class SecureZipArchive
 
                 files++;
                 if (entry.Length > limits.MaxSingleEntryBytes)
+                {
                     throw new InputSecurityException($"Entry exceeds the single-file limit: {entry.FullName}");
+                }
+
                 expandedBytes = checked(expandedBytes + entry.Length);
                 if (expandedBytes > limits.MaxExpandedBytes)
+                {
                     throw new InputSecurityException($"Archive expands beyond {limits.MaxExpandedBytes:N0} bytes.");
+                }
 
                 var ratio = entry.Length / (double)Math.Max(1, entry.CompressedLength);
                 if (entry.Length >= IngestLimits.MiB && ratio > limits.MaxCompressionRatio)
+                {
                     throw new InputSecurityException($"Entry compression ratio {ratio:N1}:1 is unsafe: {entry.FullName}");
+                }
 
                 if (normalized.Equals("level.dat", StringComparison.OrdinalIgnoreCase) ||
                     normalized.EndsWith("/level.dat", StringComparison.OrdinalIgnoreCase))
@@ -102,12 +123,16 @@ public static partial class SecureZipArchive
                     levelDatCandidates.Add(normalized);
                 }
                 if (MinecraftStoragePath().IsMatch(normalized))
+                {
                     hasChunkStorage = true;
+                }
             }
 
             if (levelDatCandidates.Count == 0 && !hasChunkStorage)
+            {
                 throw new InputValidationException(
                     "Archive contains neither level.dat nor recognized Minecraft Java chunk storage.");
+            }
 
             return new ArchiveReport(
                 file.FullName,
@@ -152,11 +177,15 @@ public static partial class SecureZipArchive
     {
         var currentReport = await InspectAsync(snapshotPath, limits, report.Sha256, cancellationToken);
         if (currentReport.EntryCount != report.EntryCount || currentReport.ExpandedBytes != report.ExpandedBytes)
+        {
             throw new InputSecurityException("Archive metadata changed after preflight.");
+        }
 
         var destination = Path.GetFullPath(destinationPath);
         if (Directory.Exists(destination) || File.Exists(destination))
+        {
             throw new InputValidationException($"Extraction destination already exists: {destination}");
+        }
 
         var parent = Directory.GetParent(destination)
             ?? throw new InputValidationException("Extraction destination must have a parent directory.");
@@ -164,7 +193,9 @@ public static partial class SecureZipArchive
         var drive = new DriveInfo(Path.GetPathRoot(parent.FullName)!);
         var required = checked(report.ExpandedBytes + limits.MinimumFreeBytes);
         if (drive.AvailableFreeSpace < required)
+        {
             throw new InputValidationException($"Insufficient free space. Need {required:N0}, have {drive.AvailableFreeSpace:N0} bytes.");
+        }
 
         var temporary = Path.Combine(parent.FullName, $".{Path.GetFileName(destination)}.{Guid.NewGuid():N}.partial");
         long totalWritten = 0;
@@ -202,18 +233,25 @@ public static partial class SecureZipArchive
                     cancellationToken);
                 totalWritten = checked(totalWritten + entryWritten);
                 if (entryWritten != entry.Length)
+                {
                     throw new InputSecurityException($"Entry size changed during extraction: {entry.FullName}");
+                }
             }
 
             if (totalWritten != report.ExpandedBytes)
+            {
                 throw new InputSecurityException("Extracted byte total does not match the preflight report.");
+            }
 
             Directory.Move(temporary, destination);
         }
         catch
         {
             if (Directory.Exists(temporary))
+            {
                 Directory.Delete(temporary, recursive: true);
+            }
+
             throw;
         }
     }
@@ -226,27 +264,44 @@ public static partial class SecureZipArchive
     internal static string ValidateEntryPath(string rawName, IngestLimits limits)
     {
         if (string.IsNullOrWhiteSpace(rawName) || rawName.Contains('\0'))
+        {
             throw new InputSecurityException("Archive contains an empty or NUL-bearing path.");
+        }
 
         var name = rawName.Replace('\\', '/').Normalize(NormalizationForm.FormC);
         if (name.StartsWith('/') || name.StartsWith("//", StringComparison.Ordinal) || DrivePathPattern().IsMatch(name))
+        {
             throw new InputSecurityException($"Archive contains an absolute path: {rawName}");
+        }
 
         var parts = name.Split('/', StringSplitOptions.None);
         if (parts[^1].Length == 0)
+        {
             parts = parts[..^1];
+        }
+
         if (parts.Length == 0 || parts.Length > limits.MaxPathDepth)
+        {
             throw new InputSecurityException($"Archive path depth is unsafe: {rawName}");
+        }
+
         if (name.Length > limits.MaxPathLength)
+        {
             throw new InputSecurityException($"Archive path exceeds {limits.MaxPathLength} characters: {rawName}");
+        }
 
         foreach (var part in parts)
         {
             if (part.Length == 0 || part is "." or ".." || part.Contains(':') || part.EndsWith(' ') || part.EndsWith('.'))
+            {
                 throw new InputSecurityException($"Archive path is ambiguous or unsafe: {rawName}");
+            }
+
             var deviceName = part.Split('.', 2)[0];
             if (WindowsReservedNames.Contains(deviceName))
+            {
                 throw new InputSecurityException($"Archive path uses a reserved device name: {rawName}");
+            }
         }
 
         return string.Join('/', parts);
@@ -257,9 +312,14 @@ public static partial class SecureZipArchive
         var unixMode = (entry.ExternalAttributes >> 16) & 0xFFFF;
         var type = unixMode & UnixFileTypeMask;
         if (type == UnixSymbolicLink)
+        {
             throw new InputSecurityException($"Symbolic links are not accepted: {entry.FullName}");
+        }
+
         if (type is not (0 or UnixRegularFile or UnixDirectory))
+        {
             throw new InputSecurityException($"Special filesystem entries are not accepted: {entry.FullName}");
+        }
     }
 
     private static bool IsDirectory(ZipArchiveEntry entry) =>
@@ -270,7 +330,10 @@ public static partial class SecureZipArchive
         var rootWithSeparator = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
         var target = Path.GetFullPath(Path.Combine(rootWithSeparator, relativePath.Replace('/', Path.DirectorySeparatorChar)));
         if (!target.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
+        {
             throw new InputSecurityException($"Archive path escapes extraction root: {relativePath}");
+        }
+
         return target;
     }
 
@@ -284,7 +347,10 @@ public static partial class SecureZipArchive
             1024 * 1024,
             FileOptions.Asynchronous | FileOptions.SequentialScan);
         if (stream.Length > maxBytes)
+        {
             throw new InputSecurityException($"Archive exceeds {maxBytes:N0} bytes.");
+        }
+
         var hash = await SHA256.HashDataAsync(stream, cancellationToken);
         return Convert.ToHexStringLower(hash);
     }
@@ -302,10 +368,16 @@ public static partial class SecureZipArchive
         {
             var read = await source.ReadAsync(buffer, cancellationToken);
             if (read == 0)
+            {
                 return written;
+            }
+
             written = checked(written + read);
             if (written > expectedBytes || written > remainingBudget)
+            {
                 throw new InputSecurityException("ZIP entry expanded beyond its declared or job limit.");
+            }
+
             await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
         }
     }

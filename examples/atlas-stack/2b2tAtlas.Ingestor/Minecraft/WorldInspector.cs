@@ -29,10 +29,15 @@ public static class WorldInspector
             var relative = Path.GetRelativePath(extracted, levelDat);
             var parts = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             if (parts.Length > 7 || parts.Contains("__MACOSX", StringComparer.OrdinalIgnoreCase))
+            {
                 continue;
+            }
+
             roots.Add(Path.GetDirectoryName(levelDat)!);
             if (roots.Count > limits.MaxWorlds)
+            {
                 throw new InputValidationException($"Archive contains more than {limits.MaxWorlds} candidate worlds.");
+            }
         }
 
         // Old WorldTools exports sometimes omitted level.dat even though their region files are usable.
@@ -44,7 +49,10 @@ public static class WorldInspector
             if (parts.Length > 8 || parts.Contains("__MACOSX", StringComparer.OrdinalIgnoreCase) ||
                 !Directory.EnumerateFiles(regionDirectory, "r.*.*.mca", SearchOption.TopDirectoryOnly).Any() &&
                 !Directory.EnumerateFiles(regionDirectory, "r.*.*.mcr", SearchOption.TopDirectoryOnly).Any())
+            {
                 continue;
+            }
+
             var regionParent = Path.GetDirectoryName(regionDirectory)!;
             string candidate;
             var dimensionsIndex = Array.FindIndex(parts, part => part.Equals("dimensions", StringComparison.OrdinalIgnoreCase));
@@ -64,7 +72,9 @@ public static class WorldInspector
             }
             roots.Add(Path.GetFullPath(candidate));
             if (roots.Count > limits.MaxWorlds)
+            {
                 throw new InputValidationException($"Archive contains more than {limits.MaxWorlds} candidate worlds.");
+            }
         }
 
         return roots
@@ -73,14 +83,14 @@ public static class WorldInspector
             .ToArray();
     }
 
-            /// <summary>Reads level metadata and verifies all recognized dimensions in a world root.</summary>
-            /// <param name="rootPath">Candidate world root containing <c>level.dat</c>.</param>
-            /// <param name="limits">NBT and occupied-chunk safety limits.</param>
-            /// <param name="cancellationToken">Token that cancels metadata and chunk inspection.</param>
-            /// <returns>Inspected world metadata with exact bounds for each recognized dimension.</returns>
-            /// <exception cref="InputValidationException">The root lacks valid level metadata or recognized chunk storage.</exception>
-            /// <exception cref="InputSecurityException">A dimension escapes the world root or chunk inspection fails a security check.</exception>
-            /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <summary>Reads level metadata and verifies all recognized dimensions in a world root.</summary>
+    /// <param name="rootPath">Candidate world root containing <c>level.dat</c>.</param>
+    /// <param name="limits">NBT and occupied-chunk safety limits.</param>
+    /// <param name="cancellationToken">Token that cancels metadata and chunk inspection.</param>
+    /// <returns>Inspected world metadata with exact bounds for each recognized dimension.</returns>
+    /// <exception cref="InputValidationException">The root lacks valid level metadata or recognized chunk storage.</exception>
+    /// <exception cref="InputSecurityException">A dimension escapes the world root or chunk inspection fails a security check.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public static async Task<WorldInfo> InspectAsync(
         string rootPath,
         IngestLimits limits,
@@ -115,18 +125,27 @@ public static class WorldInspector
             {
                 var dimension = await InspectDimensionAsync(root, key, rendererId, relativePath, limits, cancellationToken);
                 if (dimension is not null)
+                {
                     candidates.Add(dimension);
+                }
             }
             if (candidates.Count > 1)
+            {
                 throw new InputValidationException(
                     $"World contains more than one recognized storage root for {key}: " +
                     string.Join(", ", candidates.Select(value => value.RelativePath)) + ". Select or normalize one source before ingestion.");
+            }
+
             if (candidates.Count == 1)
+            {
                 dimensions.Add(candidates[0]);
+            }
         }
 
         if (dimensions.Count == 0)
+        {
             throw new InputValidationException("World has no recognized Java chunk storage (.mca, .mcr, or legacy chunks).");
+        }
 
         ArchiveWdlEvidence evidence;
         try
@@ -143,10 +162,16 @@ public static class WorldInspector
         evidence.PlayerY = summary.PlayerY ?? evidence.PlayerY;
         evidence.PlayerZ = summary.PlayerZ ?? evidence.PlayerZ;
         if (!string.IsNullOrWhiteSpace(summary.LevelName))
+        {
             evidence.NameCandidates.Add(summary.LevelName);
+        }
+
         evidence.RawDimensionIds.AddRange(FindRawDimensionIds(root));
         if (!string.IsNullOrWhiteSpace(evidence.PlayerDimension))
+        {
             evidence.RawDimensionIds.Add(evidence.PlayerDimension);
+        }
+
         evidence.RawDimensionIds = ArchiveWdlEvidence.DistinctBounded(evidence.RawDimensionIds, 128);
         evidence.NameCandidates = ArchiveWdlEvidence.DistinctBounded(evidence.NameCandidates, 24);
 
@@ -202,7 +227,9 @@ public static class WorldInspector
         var legacy = anvil + mcRegion == 0 ? CountLegacyChunks(dimensionRoot) : 0;
         var total = anvil + mcRegion + legacy;
         if (total == 0)
+        {
             return null;
+        }
 
         var storage = anvil > 0 ? "anvil" : mcRegion > 0 ? "mcregion" : "legacy-alpha";
         WorldBounds bounds;
@@ -222,16 +249,25 @@ public static class WorldInspector
     private static int CountLegacyChunks(string dimensionRoot)
     {
         if (!Directory.Exists(dimensionRoot))
+        {
             return 0;
+        }
+
         var count = 0;
         foreach (var first in Directory.EnumerateDirectories(dimensionRoot))
         {
             if (Path.GetFileName(first).Length > 2)
+            {
                 continue;
+            }
+
             foreach (var second in Directory.EnumerateDirectories(first))
             {
                 if (Path.GetFileName(second).Length > 2)
+                {
                     continue;
+                }
+
                 count += Directory.EnumerateFiles(second, "c.*.dat", SearchOption.TopDirectoryOnly).Count();
             }
         }
@@ -251,15 +287,27 @@ public static class WorldInspector
     private static IEnumerable<string> FindRawDimensionIds(string root)
     {
         var dimensionsRoot = Path.Combine(root, "dimensions");
-        if (!Directory.Exists(dimensionsRoot)) yield break;
+        if (!Directory.Exists(dimensionsRoot))
+        {
+            yield break;
+        }
+
         var found = 0;
         foreach (var regionRoot in Directory.EnumerateDirectories(dimensionsRoot, "region", SearchOption.AllDirectories))
         {
-            if (++found > 128) yield break;
+            if (++found > 128)
+            {
+                yield break;
+            }
+
             var relative = Path.GetRelativePath(dimensionsRoot, Path.GetDirectoryName(regionRoot)!)
                 .Replace('\\', '/');
             var separator = relative.IndexOf('/');
-            if (separator <= 0 || separator == relative.Length - 1) continue;
+            if (separator <= 0 || separator == relative.Length - 1)
+            {
+                continue;
+            }
+
             yield return relative[..separator] + ":" + relative[(separator + 1)..];
         }
     }

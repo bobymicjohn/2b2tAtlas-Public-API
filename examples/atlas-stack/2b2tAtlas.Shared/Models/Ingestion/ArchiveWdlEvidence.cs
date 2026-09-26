@@ -11,59 +11,59 @@ namespace Atlas;
 /// </remarks>
 public sealed class ArchiveWdlEvidence
 {
-    /// <summary>Gets or sets the recognized downloader family.</summary>
+    /// <summary>Recognized downloader family.</summary>
     public string DownloaderKind { get; set; } = "unknown";
-    /// <summary>Gets or sets the newest recognized machine-report schema version.</summary>
+    /// <summary>Newest recognized machine-report schema version.</summary>
     public int? ReportSchemaVersion { get; set; }
-    /// <summary>Gets or sets the number of valid completed machine-report sessions.</summary>
+    /// <summary>Number of valid completed machine-report sessions.</summary>
     public int ReportSessionCount { get; set; }
-    /// <summary>Gets or sets the earliest reported capture start.</summary>
+    /// <summary>Earliest reported capture start.</summary>
     public DateTime? StartedAtUtc { get; set; }
-    /// <summary>Gets or sets the newest reported capture finish.</summary>
+    /// <summary>Newest reported capture finish.</summary>
     public DateTime? FinishedAtUtc { get; set; }
-    /// <summary>Gets or sets the latest reported finish state: complete, partial, or interrupted.</summary>
+    /// <summary>Latest reported finish state: complete, partial, or interrupted.</summary>
     public string? CompletionStatus { get; set; }
-    /// <summary>Gets or sets whether the downloader left its unfinished-session sentinel in the save.</summary>
+    /// <summary>Whether the downloader left its unfinished-session sentinel in the save.</summary>
     public bool HasPendingCapture { get; set; }
-    /// <summary>Gets or sets the downloader-supplied capture name.</summary>
+    /// <summary>Downloader-supplied capture name.</summary>
     public string? DownloadName { get; set; }
-    /// <summary>Gets or sets the captured server address.</summary>
+    /// <summary>Captured server address.</summary>
     public string? SourceAddress { get; set; }
-    /// <summary>Gets or sets the captured server-list name.</summary>
+    /// <summary>Captured server-list name.</summary>
     public string? SourceName { get; set; }
-    /// <summary>Gets or sets the captured server MOTD.</summary>
+    /// <summary>Captured server MOTD.</summary>
     public string? SourceMotd { get; set; }
-    /// <summary>Gets or sets the downloader's source classification, such as multiplayer or replay.</summary>
+    /// <summary>Downloader's source classification, such as multiplayer or replay.</summary>
     public string? SourceKind { get; set; }
-    /// <summary>Gets or sets the server software brand recorded at capture time.</summary>
+    /// <summary>Server software brand recorded at capture time.</summary>
     public string? ServerBrand { get; set; }
     /// <summary>Gets or sets the Minecraft version used for the latest capture.</summary>
     public string? MinecraftVersion { get; set; }
     /// <summary>Gets or sets the Archive World Downloader version used for the latest capture.</summary>
     public string? ModVersion { get; set; }
-    /// <summary>Gets or sets the mod loader name used for the latest capture.</summary>
+    /// <summary>Mod loader name used for the latest capture.</summary>
     public string? LoaderName { get; set; }
-    /// <summary>Gets or sets the mod loader version used for the latest capture.</summary>
+    /// <summary>Mod loader version used for the latest capture.</summary>
     public string? LoaderVersion { get; set; }
-    /// <summary>Gets or sets the downloader-reported, possibly normalized dimension.</summary>
+    /// <summary>Downloader-reported, possibly normalized dimension.</summary>
     public string? ReportedDimension { get; set; }
-    /// <summary>Gets or sets the raw dimension stored with player NBT.</summary>
+    /// <summary>Raw dimension stored with player NBT.</summary>
     public string? PlayerDimension { get; set; }
-    /// <summary>Gets or sets the downloaded-player X coordinate.</summary>
+    /// <summary>Downloaded-player X coordinate.</summary>
     public double? PlayerX { get; set; }
-    /// <summary>Gets or sets the downloaded-player Y coordinate.</summary>
+    /// <summary>Downloaded-player Y coordinate.</summary>
     public double? PlayerY { get; set; }
-    /// <summary>Gets or sets the downloaded-player Z coordinate.</summary>
+    /// <summary>Downloaded-player Z coordinate.</summary>
     public double? PlayerZ { get; set; }
-    /// <summary>Gets or sets the latest session's received chunk count.</summary>
+    /// <summary>Latest session's received chunk count.</summary>
     public int? CapturedChunkCount { get; set; }
-    /// <summary>Gets or sets the latest post-save on-disk chunk count.</summary>
+    /// <summary>Latest post-save on-disk chunk count.</summary>
     public int? SavedChunkCount { get; set; }
-    /// <summary>Gets or sets the latest session's captured entity count.</summary>
+    /// <summary>Latest session's captured entity count.</summary>
     public int? EntityCount { get; set; }
-    /// <summary>Gets or sets the latest session's captured container count.</summary>
+    /// <summary>Latest session's captured container count.</summary>
     public int? ContainerCount { get; set; }
-    /// <summary>Gets or sets whether bounded metadata identifies a known Archive address or name.</summary>
+    /// <summary>Whether bounded metadata identifies a known Archive address or name.</summary>
     public bool IsArchiveSource { get; set; }
     /// <summary>Gets or sets names eligible for reviewed location/warp matching.</summary>
     public List<string> NameCandidates { get; set; } = [];
@@ -75,7 +75,11 @@ public sealed class ArchiveWdlEvidence
     /// <summary>Merges complementary evidence, preferring the richer worker-side value when supplied.</summary>
     public static ArchiveWdlEvidence? Merge(ArchiveWdlEvidence? intake, ArchiveWdlEvidence? inspected)
     {
-        if (intake is null && inspected is null) return null;
+        if (intake is null && inspected is null)
+        {
+            return null;
+        }
+
         var first = inspected ?? intake!;
         var second = intake ?? inspected!;
         return new ArchiveWdlEvidence
@@ -150,7 +154,10 @@ public static partial class ArchiveWdlEvidenceReader
                 entry.FullName.Replace('\\', '/').StartsWith(selectedRoot + "/", StringComparison.OrdinalIgnoreCase))
             .ToList();
         if (metadataEntries.Count > 512)
+        {
             throw new InvalidDataException("Archive contains too many recognized WDL metadata entries.");
+        }
+
         var roots = metadataEntries
             .Select(entry => MetadataWorldRoot(entry.FullName.Replace('\\', '/')))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -164,18 +171,29 @@ public static partial class ArchiveWdlEvidenceReader
         }
         var evidenceRoot = selectedRoot ?? (roots.Count == 1 ? roots[0] : null);
         if (evidenceRoot is not null)
+        {
             CollectNamespacedDimensionIds(archive, evidenceRoot, evidence);
+        }
+
         foreach (var entry in metadataEntries)
         {
             var normalized = entry.FullName.Replace('\\', '/');
             if (normalized.EndsWith("wdl/download.jsonl", StringComparison.OrdinalIgnoreCase))
+            {
                 ParseDownloadReport(ReadEntry(entry), evidence);
+            }
             else if (normalized.EndsWith("wdl/download.pending", StringComparison.OrdinalIgnoreCase))
+            {
                 ParsePendingReport(ReadEntry(entry), evidence);
+            }
             else if (normalized.EndsWith("WorldTools/Capture Metadata.md", StringComparison.OrdinalIgnoreCase))
+            {
                 ParseWorldToolsMetadata(ReadEntry(entry), evidence);
+            }
             else if (normalized.EndsWith("WorldTools/Dimension Tree.txt", StringComparison.OrdinalIgnoreCase))
+            {
                 ParseDimensionTree(ReadEntry(entry), evidence);
+            }
         }
         Finish(evidence);
         return evidence;
@@ -192,16 +210,31 @@ public static partial class ArchiveWdlEvidenceReader
         foreach (var entry in archive.Entries)
         {
             var normalized = entry.FullName.Replace('\\', '/');
-            if (!normalized.StartsWith(dimensionsPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!normalized.StartsWith(dimensionsPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             var relative = normalized[dimensionsPrefix.Length..];
             var regionMarker = relative.IndexOf("/region/", StringComparison.OrdinalIgnoreCase);
             if (regionMarker <= 0 || !normalized.EndsWith(".mca", StringComparison.OrdinalIgnoreCase) &&
-                !normalized.EndsWith(".mcr", StringComparison.OrdinalIgnoreCase)) continue;
+                !normalized.EndsWith(".mcr", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             var dimensionPath = relative[..regionMarker];
             var separator = dimensionPath.IndexOf('/');
-            if (separator <= 0 || separator == dimensionPath.Length - 1) continue;
+            if (separator <= 0 || separator == dimensionPath.Length - 1)
+            {
+                continue;
+            }
+
             evidence.RawDimensionIds.Add(dimensionPath[..separator] + ":" + dimensionPath[(separator + 1)..]);
-            if (++found >= 128) break;
+            if (++found >= 128)
+            {
+                break;
+            }
         }
     }
 
@@ -219,7 +252,9 @@ public static partial class ArchiveWdlEvidenceReader
         })
         {
             if (path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
                 return path[..^suffix.Length].TrimEnd('/');
+            }
         }
         return string.Empty;
     }
@@ -245,7 +280,9 @@ public static partial class ArchiveWdlEvidenceReader
             evidence.NameCandidates.Add(stem);
             var withoutWorldToolsTimestamp = EpochSuffixRegex().Replace(stem, string.Empty).Trim(' ', '-', '_');
             if (withoutWorldToolsTimestamp.Length > 0 && !withoutWorldToolsTimestamp.Equals(stem, StringComparison.Ordinal))
+            {
                 evidence.NameCandidates.Add(withoutWorldToolsTimestamp);
+            }
         }
         return evidence;
     }
@@ -269,8 +306,16 @@ public static partial class ArchiveWdlEvidenceReader
                 evidence.CompletionStatus = GetString(root, "status") ?? evidence.CompletionStatus;
                 var downloadName = GetString(root, "downloadName");
                 var sourceAddress = GetString(root, "sourceAddress");
-                if (downloadName is not null) downloadNames.Add(downloadName);
-                if (sourceAddress is not null) sourceAddresses.Add(sourceAddress);
+                if (downloadName is not null)
+                {
+                    downloadNames.Add(downloadName);
+                }
+
+                if (sourceAddress is not null)
+                {
+                    sourceAddresses.Add(sourceAddress);
+                }
+
                 evidence.DownloadName = downloadName ?? evidence.DownloadName;
                 evidence.SourceAddress = sourceAddress ?? evidence.SourceAddress;
                 evidence.SourceName = GetString(root, "sourceName") ?? evidence.SourceName;
@@ -293,7 +338,9 @@ public static partial class ArchiveWdlEvidenceReader
                     {
                         var separator = property.Name.IndexOf('.');
                         if (separator >= 0 && separator < property.Name.Length - 1)
+                        {
                             evidence.RawDimensionIds.Add(property.Name[(separator + 1)..]);
+                        }
                     }
                 }
             }
@@ -303,13 +350,24 @@ public static partial class ArchiveWdlEvidenceReader
             }
         }
         if (downloadNames.Count > 1)
+        {
             evidence.Warnings.Add("The report contains sessions with different download names; identity needs review.");
+        }
+
         if (sourceAddresses.Count > 1)
+        {
             evidence.Warnings.Add("The report contains sessions from different server addresses; provenance needs review.");
+        }
+
         if (evidence.CompletionStatus?.Equals("partial", StringComparison.OrdinalIgnoreCase) == true)
+        {
             evidence.Warnings.Add("Archive World Downloader marked the latest capture partial; some data failed to save.");
+        }
+
         if (!string.IsNullOrWhiteSpace(evidence.DownloadName))
+        {
             evidence.NameCandidates.Add(evidence.DownloadName);
+        }
     }
 
     private static void ParsePendingReport(string content, ArchiveWdlEvidence evidence)
@@ -319,7 +377,11 @@ public static partial class ArchiveWdlEvidenceReader
         evidence.CompletionStatus ??= "interrupted";
         evidence.Warnings.Add("An unfinished Archive World Downloader session marker is present; the capture may be interrupted.");
         var firstLine = content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        if (firstLine is null) return;
+        if (firstLine is null)
+        {
+            return;
+        }
+
         try
         {
             using var document = JsonDocument.Parse(firstLine, new JsonDocumentOptions { MaxDepth = 16 });
@@ -348,15 +410,33 @@ public static partial class ArchiveWdlEvidenceReader
         {
             var line = rawLine.Trim().TrimStart('-', '*').Trim();
             var separator = line.IndexOf(':');
-            if (separator <= 0) continue;
+            if (separator <= 0)
+            {
+                continue;
+            }
+
             var key = Regex.Replace(line[..separator].ToLowerInvariant(), "[^a-z]", string.Empty);
             var value = line[(separator + 1)..].Trim().Trim('`');
-            if (value.Length is 0 or > 500 || value.Any(char.IsControl)) continue;
+            if (value.Length is 0 or > 500 || value.Any(char.IsControl))
+            {
+                continue;
+            }
+
             switch (key)
             {
-                case "ip": case "address": case "serverip": evidence.SourceAddress ??= value; break;
-                case "name": case "server": case "servername": evidence.SourceName ??= value; break;
-                case "motd": evidence.SourceMotd ??= value; break;
+                case "ip":
+                case "address":
+                case "serverip":
+                    evidence.SourceAddress ??= value;
+                    break;
+                case "name":
+                case "server":
+                case "servername":
+                    evidence.SourceName ??= value;
+                    break;
+                case "motd":
+                    evidence.SourceMotd ??= value;
+                    break;
             }
         }
     }
@@ -364,15 +444,23 @@ public static partial class ArchiveWdlEvidenceReader
     private static void ParseDimensionTree(string content, ArchiveWdlEvidence evidence)
     {
         foreach (Match match in DimensionIdRegex().Matches(content).Take(128))
+        {
             evidence.RawDimensionIds.Add(match.Value);
+        }
     }
 
     private static void Finish(ArchiveWdlEvidence evidence)
     {
         if (!string.IsNullOrWhiteSpace(evidence.ReportedDimension))
+        {
             evidence.RawDimensionIds.Add(evidence.ReportedDimension);
+        }
+
         if (!string.IsNullOrWhiteSpace(evidence.PlayerDimension))
+        {
             evidence.RawDimensionIds.Add(evidence.PlayerDimension);
+        }
+
         evidence.NameCandidates = ArchiveWdlEvidence.DistinctBounded(evidence.NameCandidates, 24);
         evidence.RawDimensionIds = ArchiveWdlEvidence.DistinctBounded(evidence.RawDimensionIds, 128);
         evidence.Warnings = ArchiveWdlEvidence.DistinctBounded(evidence.Warnings, 24);
@@ -382,9 +470,17 @@ public static partial class ArchiveWdlEvidenceReader
 
     private static bool IsArchiveAddress(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return false;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
         var candidate = value.Contains("://", StringComparison.Ordinal) ? value : "minecraft://" + value;
-        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri)) return false;
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
         var host = uri.Host.TrimEnd('.');
         return host.Equals("thearchive.world", StringComparison.OrdinalIgnoreCase) ||
                host.EndsWith(".thearchive.world", StringComparison.OrdinalIgnoreCase) ||
@@ -426,7 +522,10 @@ public static partial class ArchiveWdlEvidenceReader
     private static string ReadEntry(ZipArchiveEntry entry)
     {
         if (entry.Length > MaxMetadataBytes)
+        {
             throw new InvalidDataException($"WDL metadata file is larger than {MaxMetadataBytes:N0} bytes.");
+        }
+
         using var input = entry.Open();
         using var reader = new StreamReader(input, detectEncodingFromByteOrderMarks: true);
         var builder = new System.Text.StringBuilder((int)Math.Min(entry.Length, MaxMetadataBytes));
@@ -434,9 +533,16 @@ public static partial class ArchiveWdlEvidenceReader
         while (true)
         {
             var read = reader.Read(buffer, 0, buffer.Length);
-            if (read == 0) break;
+            if (read == 0)
+            {
+                break;
+            }
+
             if (builder.Length + read > MaxMetadataBytes)
+            {
                 throw new InvalidDataException("WDL metadata expands beyond the safety limit.");
+            }
+
             builder.Append(buffer, 0, read);
         }
         return builder.ToString();
@@ -444,10 +550,17 @@ public static partial class ArchiveWdlEvidenceReader
 
     private static void ReadKnownFile(string path, Action<string> parse)
     {
-        if (!File.Exists(path)) return;
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
         var info = new FileInfo(path);
         if (info.Length > MaxMetadataBytes)
+        {
             throw new InvalidDataException($"WDL metadata file is larger than {MaxMetadataBytes:N0} bytes.");
+        }
+
         parse(File.ReadAllText(path));
     }
 

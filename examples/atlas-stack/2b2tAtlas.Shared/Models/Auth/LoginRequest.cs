@@ -8,11 +8,11 @@ namespace Atlas.Auth;
 /// </summary>
 public class LoginRequest
 {
-    /// <summary>Gets or sets the required account username.</summary>
+    /// <summary>Required account username.</summary>
     [Required(ErrorMessage = "Username is required")]
     public string Username { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the required plaintext credential submitted for verification.</summary>
+    /// <summary>Required plaintext credential submitted for verification.</summary>
     [Required(ErrorMessage = "Password is required")]
     public string Password { get; set; } = string.Empty;
 }

@@ -52,7 +52,9 @@ public static class IngestionWorker
         using var workerLock = AcquireWorkerLock(options.FullWorkRoot);
         var apiKey = Environment.GetEnvironmentVariable(options.ApiKeyEnvironment);
         if (string.IsNullOrWhiteSpace(apiKey) || apiKey.Length < 32)
+        {
             throw new InputValidationException($"Worker key environment variable {options.ApiKeyEnvironment} must contain at least 32 characters.");
+        }
 
         using var handler = new SocketsHttpHandler { AllowAutoRedirect = false };
         using var client = new HttpClient(handler)
@@ -69,13 +71,20 @@ public static class IngestionWorker
                 var job = await ClaimAsync(client, cancellationToken);
                 if (job is null)
                 {
-                    if (once) return;
+                    if (once)
+                    {
+                        return;
+                    }
+
                     await Task.Delay(TimeSpan.FromSeconds(options.PollSeconds), cancellationToken);
                     continue;
                 }
 
                 await ProcessAsync(client, options, job, cancellationToken);
-                if (once) return;
+                if (once)
+                {
+                    return;
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -84,7 +93,11 @@ public static class IngestionWorker
             catch (Exception exception)
             {
                 Console.Error.WriteLine($"Worker polling error: {exception.Message}");
-                if (once) throw;
+                if (once)
+                {
+                    throw;
+                }
+
                 await Task.Delay(TimeSpan.FromSeconds(options.PollSeconds), cancellationToken);
             }
         } while (!cancellationToken.IsCancellationRequested);
@@ -106,7 +119,11 @@ public static class IngestionWorker
     private static async Task<IngestionJobDto?> ClaimAsync(HttpClient client, CancellationToken cancellationToken)
     {
         using var response = await client.PostAsync("api/ingestion-jobs/claim", null, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.NoContent) return null;
+        if (response.StatusCode == HttpStatusCode.NoContent)
+        {
+            return null;
+        }
+
         await EnsureSuccessAsync(response, "claim an ingestion job", cancellationToken);
         return await response.Content.ReadFromJsonAsync<IngestionJobDto>(cancellationToken: cancellationToken)
             ?? throw new InputValidationException("The ingestion API returned an empty claimed job.");
@@ -129,14 +146,21 @@ public static class IngestionWorker
         try
         {
             if (string.IsNullOrWhiteSpace(job.ClaimToken))
+            {
                 throw new InputSecurityException("The claimed job did not include a claim token.");
+            }
+
             var requestErrors = IngestionJobValidator.ValidateRequest(job);
             if (requestErrors.Count > 0)
+            {
                 throw new InputValidationException(string.Join(" ", requestErrors));
+            }
 
             var dimensionKey = string.IsNullOrWhiteSpace(job.Dimension) ? "overworld" : job.Dimension.Trim().ToLowerInvariant();
             if (!RenderDimensions.TryGetValue(dimensionKey, out var dim))
+            {
                 throw new InputValidationException($"Dimension '{dimensionKey}' is not supported for rendering yet.");
+            }
 
             var archivedPath = !string.IsNullOrWhiteSpace(job.ArchiveSha256)
                 ? WdlArchiveStore.ObjectPath(options.FullArchiveRoot, job.ArchiveSha256)
@@ -148,9 +172,11 @@ public static class IngestionWorker
             {
                 archivePath = Path.Combine(options.FullWorkRoot, ".sources", job.ArchiveSha256!.ToLowerInvariant() + ".zip");
                 if (!File.Exists(archivePath))
+                {
                     await RunStageAsync(client, job, stage, "Recovering WDL to local scratch.", job.ArchiveSha256,
                         token => WdlArchiveStore.MaterializeAsync(options.FullArchiveRoot, job.ArchiveSha256, archivePath, token),
                         cancellationToken);
+                }
             }
             var limits = new IngestLimits();
             var report = await RunStageAsync(
@@ -172,7 +198,10 @@ public static class IngestionWorker
             var manifestPath = await WriteManifestAsync(dimWorkRoot, job, dimensionKey, cancellationToken);
             var jobRoot = Path.Combine(dimWorkRoot, archiveSha256);
             if (job.RerenderRequested && Directory.Exists(jobRoot))
+            {
                 Directory.Delete(jobRoot, recursive: true);
+            }
+
             var paths = JobStore.BuildPaths(jobRoot);
             var localState = File.Exists(paths.State)
                 ? await JobStore.ReadJsonAsync<JobState>(paths.State, cancellationToken)
@@ -251,7 +280,11 @@ public static class IngestionWorker
                         nightPaths.RenderProvenance(dimensionKey), cancellationToken);
                     await JobStore.WriteJsonAsync(
                         nightPaths.RenderProvenance(dimensionKey),
-                        nightProvenance with { NightColorGrade = grade, UpdatedAtUtc = DateTimeOffset.UtcNow },
+                        nightProvenance with
+                        {
+                            NightColorGrade = grade,
+                            UpdatedAtUtc = DateTimeOffset.UtcNow
+                        },
                         cancellationToken);
                 }
                 await JobStore.WriteJsonAsync(
@@ -322,8 +355,16 @@ public static class IngestionWorker
                 publicationDestination = destination;
                 publicationBackup = destination + ".rerender-prev-" + job.Id;
                 publicationStaging = destination + ".rerender-next-" + job.Id;
-                if (Directory.Exists(publicationBackup)) Directory.Delete(publicationBackup, recursive: true);
-                if (Directory.Exists(publicationStaging)) Directory.Delete(publicationStaging, recursive: true);
+                if (Directory.Exists(publicationBackup))
+                {
+                    Directory.Delete(publicationBackup, recursive: true);
+                }
+
+                if (Directory.Exists(publicationStaging))
+                {
+                    Directory.Delete(publicationStaging, recursive: true);
+                }
+
                 try
                 {
                     foreach (var variant in variants)
@@ -350,10 +391,17 @@ public static class IngestionWorker
                         var publishedReport = TilePublisher.Verify(
                             variantDestination, limits, stagedReceipt.Report.CoordinateScheme);
                         if (!TilePublisher.ReportsMatch(stagedReceipt.Report, publishedReport))
+                        {
                             throw new InputSecurityException($"Synchronized {variant} tile inventory does not match staging.");
+                        }
+
                         await JobStore.WriteJsonAsync(
                             variantPaths.PublicationReceipt(dimensionKey),
-                            stagedReceipt with { Destination = variantDestination, Report = publishedReport },
+                            stagedReceipt with
+                            {
+                                Destination = variantDestination,
+                                Report = publishedReport
+                            },
                             cancellationToken);
                     }
                     Directory.Delete(publicationStaging, recursive: true);
@@ -372,7 +420,9 @@ public static class IngestionWorker
             }
 
             if (localState.Stage is not ("published" or "registered-unpublished"))
+            {
                 throw new InputValidationException($"Local job cannot safely continue from stage '{localState.Stage}'.");
+            }
 
             // A resumed job can spend minutes re-hashing a large already-published pyramid. Keep the
             // API lease alive during that verification just as we do during render/adapt/publish work.
@@ -382,8 +432,11 @@ public static class IngestionWorker
                 {
                     var verified = new List<PublicationReceipt>();
                     foreach (var variant in variants)
+                    {
                         verified.Add(await PublicationService.ReadAndVerifyAsync(
                             VariantPaths(paths, variant), archiveSha256, dimensionKey, limits, token));
+                    }
+
                     return verified;
                 },
                 cancellationToken);
@@ -395,7 +448,10 @@ public static class IngestionWorker
             }
             if (receipts.Any(value => value.Report.MaxZoom != receipt.Report.MaxZoom ||
                                       value.Report.CoordinateScheme != receipt.Report.CoordinateScheme))
+            {
                 throw new InputSecurityException("Day and night tile pyramids do not share one layout contract.");
+            }
+
             var plan = await JobStore.ReadJsonAsync<RenderPlan>(paths.RenderPlan, cancellationToken);
             var bounds = plan.Dimensions.Single(value => value.Key == dimensionKey).Bounds
                 ?? throw new InputSecurityException($"Prepared {dim.Label} plan has no authoritative chunk bounds.");
@@ -421,7 +477,10 @@ public static class IngestionWorker
             // render. Retention belongs to a separate catalog-aware maintenance pass.
             if (publicationBackup is not null && Directory.Exists(publicationBackup))
             {
-                try { Directory.Delete(publicationBackup, recursive: true); }
+                try
+                {
+                    Directory.Delete(publicationBackup, recursive: true);
+                }
                 catch (IOException exception) { Console.Error.WriteLine($"Could not remove render rollback: {exception.Message}"); }
             }
             publicationBackup = null;
@@ -453,9 +512,21 @@ public static class IngestionWorker
         CancellationToken cancellationToken,
         bool registrationAttempted = false)
     {
-        if (registrationAttempted) return;
-        if (staging is not null && Directory.Exists(staging)) Directory.Delete(staging, recursive: true);
-        if (destination is null || backup is null) return;
+        if (registrationAttempted)
+        {
+            return;
+        }
+
+        if (staging is not null && Directory.Exists(staging))
+        {
+            Directory.Delete(staging, recursive: true);
+        }
+
+        if (destination is null || backup is null)
+        {
+            return;
+        }
+
         if (hadExistingDestination && backupReady && Directory.Exists(backup))
         {
             await SynchronizeDirectoryAsync(backup, destination, cancellationToken);
@@ -463,8 +534,14 @@ public static class IngestionWorker
             return;
         }
         if (!hadExistingDestination && Directory.Exists(destination))
+        {
             Directory.Delete(destination, recursive: true);
-        if (Directory.Exists(backup)) Directory.Delete(backup, recursive: true);
+        }
+
+        if (Directory.Exists(backup))
+        {
+            Directory.Delete(backup, recursive: true);
+        }
     }
 
     private static async Task SynchronizeDirectoryAsync(
@@ -490,12 +567,18 @@ public static class IngestionWorker
         {
             cancellationToken.ThrowIfCancellationRequested();
             var relative = Path.GetRelativePath(destinationRoot, destinationFile);
-            if (!expected.Contains(relative)) File.Delete(destinationFile);
+            if (!expected.Contains(relative))
+            {
+                File.Delete(destinationFile);
+            }
         }
         foreach (var directory in Directory.EnumerateDirectories(destinationRoot, "*", SearchOption.AllDirectories)
                      .OrderByDescending(path => path.Length))
         {
-            if (!Directory.EnumerateFileSystemEntries(directory).Any()) Directory.Delete(directory);
+            if (!Directory.EnumerateFileSystemEntries(directory).Any())
+            {
+                Directory.Delete(directory);
+            }
         }
     }
 
@@ -525,7 +608,10 @@ public static class IngestionWorker
     private static JobPaths VariantPaths(JobPaths paths, string variant)
     {
         if (variant is not ("day" or "night"))
+        {
             throw new InputValidationException("Render variant must be day or night.");
+        }
+
         var artifactRoot = Path.Combine(paths.Root, "variants", variant);
         Directory.CreateDirectory(artifactRoot);
         return new JobPaths(
@@ -540,8 +626,15 @@ public static class IngestionWorker
 
     private static void ResetVariantArtifacts(JobPaths paths)
     {
-        if (Directory.Exists(paths.Render)) Directory.Delete(paths.Render, recursive: true);
-        foreach (var file in Directory.EnumerateFiles(paths.Root)) File.Delete(file);
+        if (Directory.Exists(paths.Render))
+        {
+            Directory.Delete(paths.Render, recursive: true);
+        }
+
+        foreach (var file in Directory.EnumerateFiles(paths.Root))
+        {
+            File.Delete(file);
+        }
     }
 
     private static RendererOptions WithVariant(
@@ -556,7 +649,11 @@ public static class IngestionWorker
                 .Where(argument => !argument.StartsWith("--night", StringComparison.OrdinalIgnoreCase))
                 .ToList(),
             StringComparer.Ordinal);
-        if (variant == "night") commands[dimension].Add("--night=true");
+        if (variant == "night")
+        {
+            commands[dimension].Add("--night=true");
+        }
+
         if (renderTopY is int topY)
         {
             commands[dimension].RemoveAll(argument =>
@@ -587,8 +684,10 @@ public static class IngestionWorker
         var required = checked((oneVariantBytes * 3) + existingBytes + reserveBytes);
         var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(publishRoot))!);
         if (drive.AvailableFreeSpace < required)
+        {
             throw new InputValidationException(
                 $"Insufficient free space for dual render replacement. Need {required:N0}, have {drive.AvailableFreeSpace:N0} bytes.");
+        }
     }
 
     private static string ResolveArchivePath(string intakeRoot, string fileName, bool requireExists = true)
@@ -596,9 +695,15 @@ public static class IngestionWorker
         var fullPath = Path.GetFullPath(Path.Combine(intakeRoot, fileName));
         var relative = Path.GetRelativePath(intakeRoot, fullPath);
         if (relative != fileName || requireExists && !File.Exists(fullPath))
+        {
             throw new InputValidationException("The requested intake file does not exist.");
+        }
+
         if (File.Exists(fullPath) && (File.GetAttributes(fullPath) & FileAttributes.ReparsePoint) != 0)
+        {
             throw new InputSecurityException("Intake files cannot be links or reparse points.");
+        }
+
         return fullPath;
     }
 
@@ -729,7 +834,11 @@ public static class IngestionWorker
         while (!stageTask.IsCompleted)
         {
             var delay = Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-            if (await Task.WhenAny(stageTask, delay) == stageTask) break;
+            if (await Task.WhenAny(stageTask, delay) == stageTask)
+            {
+                break;
+            }
+
             try
             {
                 await ReportProgressAsync(client, job, stage, message, archiveSha256,
@@ -738,7 +847,11 @@ public static class IngestionWorker
             catch
             {
                 stageCancellation.Cancel();
-                try { await stageTask; } catch { }
+                try
+                {
+                    await stageTask;
+                }
+                catch { }
                 throw;
             }
         }
@@ -765,13 +878,24 @@ public static class IngestionWorker
 
     private static int? EstimateRemainingSeconds(string stage, TimeSpan elapsed)
     {
-        if (!ProgressByStage.TryGetValue(stage, out var current)) return null;
+        if (!ProgressByStage.TryGetValue(stage, out var current))
+        {
+            return null;
+        }
+
         var remaining = Math.Max(0, current.EstimatedSeconds - (int)elapsed.TotalSeconds);
         var afterCurrent = false;
         foreach (var item in ProgressByStage)
         {
-            if (afterCurrent) remaining += item.Value.EstimatedSeconds;
-            if (item.Key == stage) afterCurrent = true;
+            if (afterCurrent)
+            {
+                remaining += item.Value.EstimatedSeconds;
+            }
+
+            if (item.Key == stage)
+            {
+                afterCurrent = true;
+            }
         }
         return remaining;
     }
@@ -786,7 +910,10 @@ public static class IngestionWorker
         bool receiptIsVariant)
     {
         if (string.IsNullOrWhiteSpace(publishedDestination))
+        {
             throw new InputSecurityException("Published job state does not identify its immutable tile destination.");
+        }
+
         var destination = Path.GetFullPath(publishedDestination);
         var generationPath = receiptIsVariant
             ? Directory.GetParent(destination)?.FullName
@@ -794,11 +921,17 @@ public static class IngestionWorker
         if (generationPath is null || !string.Equals(
                 Path.GetDirectoryName(generationPath), Path.GetFullPath(dimensionDestination),
                 OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+        {
             throw new InputSecurityException("Published receipt destination escaped the render's dimension root.");
+        }
+
         var generation = Path.GetFileName(generationPath);
         if (!System.Text.RegularExpressions.Regex.IsMatch(
                 generation, "^g-[0-9]{14}-[a-f0-9]{8}$", System.Text.RegularExpressions.RegexOptions.CultureInvariant))
+        {
             throw new InputSecurityException("Published receipt has an invalid generation identifier.");
+        }
+
         return generation;
     }
 
@@ -806,17 +939,24 @@ public static class IngestionWorker
     {
         if (savedPlan.Slug != job.Slug || savedPlan.Name != job.Name ||
             savedPlan.Source != job.Source || savedPlan.Scale != job.Scale)
+        {
             return false;
+        }
 
         if (savedPlan.WorldDownloadDate.ToString("yyyy-MM-dd") == job.WorldDownloadDate)
+        {
             return true;
+        }
 
         // The API may replace an uploader's provisional date with this same snapshot's
         // validated LastPlayed date during prepare. Permit exactly that authenticated drift
         // so a manually matched job can resume; arbitrary metadata changes remain rejected.
         if (job.UseArchiveLastPlayed == false ||
             savedPlan.World.LastPlayedUnixMilliseconds is not long milliseconds)
+        {
             return false;
+        }
+
         try
         {
             return DateTimeOffset.FromUnixTimeMilliseconds(milliseconds)
@@ -838,7 +978,9 @@ public static class IngestionWorker
                 var candidate = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds);
                 if (candidate >= new DateTimeOffset(2010, 1, 1, 0, 0, 0, TimeSpan.Zero) &&
                     candidate <= DateTimeOffset.UtcNow.AddDays(1))
+                {
                     lastPlayedUtc = candidate.UtcDateTime;
+                }
             }
             catch (ArgumentOutOfRangeException) { }
         }
@@ -879,9 +1021,17 @@ public static class IngestionWorker
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
     {
-        if (response.IsSuccessStatusCode) return;
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (body.Length > 500) body = body[..500];
+        if (body.Length > 500)
+        {
+            body = body[..500];
+        }
+
         throw new InputValidationException($"Could not {operation}: HTTP {(int)response.StatusCode} {body}");
     }
 }

@@ -83,10 +83,15 @@ public sealed class EnrichmentPipeline
         var archiveCredits = autoApply
             ? await new ArchiveGroupAttributionService(_context).StageAsync(locationId, cancellationToken)
             : 0;
-        if (archiveCredits > 0) await _context.SaveChangesAsync(cancellationToken);
+        if (archiveCredits > 0)
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         if (!_enrichment.IsAvailable)
+        {
             return archiveCredits > 0 ? EnrichmentOutcome.AutoApplied : EnrichmentOutcome.Unavailable;
+        }
 
         var row = await _context.Locations
             .AsSplitQuery()
@@ -95,14 +100,18 @@ public sealed class EnrichmentPipeline
             .Include(location => location.LocationGroups).ThenInclude(link => link.Group)
             .FirstOrDefaultAsync(location => location.Rowid == locationId, cancellationToken);
         if (row is null)
+        {
             return EnrichmentOutcome.NotFound;
+        }
 
         var alreadyOpen = await _context.Revisions.AnyAsync(
             r => r.Source == SourceAi && r.EntityType == TypeLocation && r.EntityId == locationId
                  && (r.Status == "Applied" || r.Status == "Pending"),
             cancellationToken);
         if (alreadyOpen)
+        {
             return archiveCredits > 0 ? EnrichmentOutcome.AutoApplied : EnrichmentOutcome.Skipped;
+        }
 
         var atlas = ToAtlas(row);
         var knownGroups = await _context.Groups.AsNoTracking().ToListAsync(cancellationToken);
@@ -119,12 +128,22 @@ public sealed class EnrichmentPipeline
         var existingGroupIds = row.LocationGroups.Select(link => link.GroupId).ToHashSet();
         var groupsToAdd = groupSuggestions.Where(group => !existingGroupIds.Contains(group.GroupId)).ToArray();
         if (!wikiChanged && !descriptionChanged && groupsToAdd.Length == 0)
+        {
             return archiveCredits > 0 ? EnrichmentOutcome.AutoApplied : EnrichmentOutcome.Skipped;
+        }
 
         var previousJson = JsonSerializer.Serialize(atlas, JsonOptions);
         var proposed = ToAtlas(row);
-        if (wikiChanged) proposed.Wiki = newWiki;
-        if (descriptionChanged) proposed.Description = newDescription;
+        if (wikiChanged)
+        {
+            proposed.Wiki = newWiki;
+        }
+
+        if (descriptionChanged)
+        {
+            proposed.Description = newDescription;
+        }
+
         proposed.Groups ??= [];
         foreach (var group in groupsToAdd)
         {
@@ -165,8 +184,16 @@ public sealed class EnrichmentPipeline
         if (eligible)
         {
             var before = Snapshot(row);
-            if (wikiChanged) row.Wiki = newWiki;
-            if (descriptionChanged) row.Description = newDescription;
+            if (wikiChanged)
+            {
+                row.Wiki = newWiki;
+            }
+
+            if (descriptionChanged)
+            {
+                row.Description = newDescription;
+            }
+
             var now = DateTime.UtcNow.ToString("o");
             foreach (var group in groupsToAdd)
             {
@@ -249,7 +276,10 @@ public sealed class EnrichmentPipeline
     {
         var parts = new List<string>();
         if (!string.IsNullOrWhiteSpace(wikiReason))
+        {
             parts.Add(wikiReason);
+        }
+
         foreach (var group in groupSuggestions)
         {
             var revision = group.SourceRevisionId is null ? "unknown revision" : $"revision {group.SourceRevisionId}";

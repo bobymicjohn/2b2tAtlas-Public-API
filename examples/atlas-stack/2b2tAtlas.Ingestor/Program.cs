@@ -129,7 +129,13 @@ internal static class Cli
             var plan = RenderPlanBuilder.Build(manifest, worlds, paths.Extracted);
             await JobStore.WriteJsonAsync(paths.RenderPlan, plan, cancellationToken);
             await JobStore.WriteJsonAsync(paths.State, new JobState("prepared", DateTimeOffset.UtcNow, null), cancellationToken);
-            WriteJson(new { jobId = report.Sha256, paths.Root, report, plan });
+            WriteJson(new
+            {
+                jobId = report.Sha256,
+                paths.Root,
+                report,
+                plan
+            });
         }
         catch (Exception exception)
         {
@@ -156,7 +162,10 @@ internal static class Cli
             limits.RenderTimeout,
             limits.MaxLogBytes,
             cancellationToken);
-        var rendererOptions = loadedOptions with { Resume = options.OptionalBool("resume", false) };
+        var rendererOptions = loadedOptions with
+        {
+            Resume = options.OptionalBool("resume", false)
+        };
         JobStatePolicy.RequireRender(
             await JobStore.ReadJsonAsync<JobState>(paths.State, cancellationToken),
             rendererOptions.Resume);
@@ -190,11 +199,11 @@ internal static class Cli
             options.Optional("coordinate-scheme") ?? TilePublisher.StandardXyzScheme));
     }
 
-            /// <summary>Adapts authenticated renderer output and records a durable failed-adapt state on error.</summary>
-            /// <param name="options">Strict adaptation options.</param>
-            /// <param name="limits">Renderer-output and tile-output ceilings.</param>
-            /// <param name="cancellationToken">Token that cancels the stage.</param>
-            /// <returns>A task that completes after the job reaches <c>adapted</c>.</returns>
+    /// <summary>Adapts authenticated renderer output and records a durable failed-adapt state on error.</summary>
+    /// <param name="options">Strict adaptation options.</param>
+    /// <param name="limits">Renderer-output and tile-output ceilings.</param>
+    /// <param name="cancellationToken">Token that cancels the stage.</param>
+    /// <returns>A task that completes after the job reaches <c>adapted</c>.</returns>
     internal static async Task AdaptAsync(Arguments options, IngestLimits limits, CancellationToken cancellationToken)
     {
         options.RequireOnly("job", "work", "dimension", "scheme");
@@ -294,7 +303,7 @@ internal static class Cli
     private static void WriteJson<T>(T value) =>
         Console.WriteLine(JsonSerializer.Serialize(value, JsonOptions));
 
-        private static void PrintHelp() => Console.WriteLine("""
+    private static void PrintHelp() => Console.WriteLine("""
                 2b2t Atlas WDL Ingestor
 
                 inspect --archive <world.zip>
@@ -342,10 +351,15 @@ internal sealed class Arguments
         for (var index = 0; index < args.Length; index += 2)
         {
             if (!args[index].StartsWith("--", StringComparison.Ordinal) || index + 1 >= args.Length)
+            {
                 throw new InputValidationException($"Expected --name value, got: {args[index]}");
+            }
+
             var key = args[index][2..];
             if (key.Length == 0 || !values.TryAdd(key, args[index + 1]))
+            {
                 throw new InputValidationException($"Duplicate or empty option: {args[index]}");
+            }
         }
         return new Arguments(values);
     }
@@ -359,34 +373,39 @@ internal sealed class Arguments
             ? value
             : throw new InputValidationException($"Missing required option: --{key}");
 
-            /// <summary>Gets an optional value.</summary>
-            /// <param name="key">Option name without leading dashes.</param>
-            /// <returns>The supplied value, or <see langword="null"/>.</returns>
+    /// <summary>Gets an optional value.</summary>
+    /// <param name="key">Option name without leading dashes.</param>
+    /// <returns>The supplied value, or <see langword="null"/>.</returns>
     public string? Optional(string key) => values.GetValueOrDefault(key);
 
-            /// <summary>Gets an optional Boolean value.</summary>
-            /// <param name="key">Option name without leading dashes.</param>
-            /// <param name="defaultValue">Value returned when the option is absent.</param>
-            /// <returns>The parsed value or <paramref name="defaultValue"/>.</returns>
-            /// <exception cref="InputValidationException">The supplied value is not Boolean.</exception>
+    /// <summary>Gets an optional Boolean value.</summary>
+    /// <param name="key">Option name without leading dashes.</param>
+    /// <param name="defaultValue">Value returned when the option is absent.</param>
+    /// <returns>The parsed value or <paramref name="defaultValue"/>.</returns>
+    /// <exception cref="InputValidationException">The supplied value is not Boolean.</exception>
     public bool OptionalBool(string key, bool defaultValue)
     {
         var value = Optional(key);
         if (value is null)
+        {
             return defaultValue;
+        }
+
         return bool.TryParse(value, out var parsed)
             ? parsed
             : throw new InputValidationException($"Option --{key} must be true or false.");
     }
 
-            /// <summary>Rejects options outside an operation's allowlist.</summary>
-            /// <param name="allowed">Allowed option names without leading dashes.</param>
-            /// <exception cref="InputValidationException">An unknown option is present.</exception>
+    /// <summary>Rejects options outside an operation's allowlist.</summary>
+    /// <param name="allowed">Allowed option names without leading dashes.</param>
+    /// <exception cref="InputValidationException">An unknown option is present.</exception>
     public void RequireOnly(params string[] allowed)
     {
         var allowedSet = allowed.ToHashSet(StringComparer.Ordinal);
         var unknown = values.Keys.FirstOrDefault(key => !allowedSet.Contains(key));
         if (unknown is not null)
+        {
             throw new InputValidationException($"Unknown option: --{unknown}");
+        }
     }
 }

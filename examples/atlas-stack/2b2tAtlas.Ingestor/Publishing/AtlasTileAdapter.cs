@@ -91,12 +91,17 @@ public static partial class AtlasTileAdapter
     {
         var scheme = AtlasTileScheme.Parse(schemeName);
         if (scheme.Dimension != dimension)
+        {
             throw new InputValidationException($"Tile scheme {scheme.Key} does not support dimension {dimension}.");
+        }
 
         var plan = await JobStore.ReadJsonAsync<RenderPlan>(paths.RenderPlan, cancellationToken);
         var dimensionInfo = plan.Dimensions.SingleOrDefault(value => value.Key == dimension);
         if (dimensionInfo is null)
+        {
             throw new InputValidationException($"Dimension is not in the render plan: {dimension}");
+        }
+
         var planHash = await JobStore.ComputeSha256Async(paths.RenderPlan, cancellationToken);
         var provenancePath = paths.RenderProvenance(dimension);
         var provenance = await JobStore.ReadJsonAsync<RenderProvenance>(provenancePath, cancellationToken);
@@ -164,21 +169,23 @@ public static partial class AtlasTileAdapter
         var current = TilePublisher.Verify(
             Path.Combine(paths.Render, dimension, receipt.OutputRelativePath), limits, scheme.CoordinateScheme);
         if (!TilePublisher.ReportsMatch(current, receipt.Report))
+        {
             throw new InputSecurityException("Adapted tile inventory no longer matches its receipt.");
+        }
     }
 
-            /// <summary>Copies certified native tiles, builds all parent zooms, and verifies the resulting pyramid.</summary>
-            /// <param name="sourceRoot">uNmINeD <c>zoom.0</c> directory.</param>
-            /// <param name="outputRoot">Final Atlas tile output directory, which must not exist.</param>
-            /// <param name="scheme">Certified coordinate mapping.</param>
-            /// <param name="limits">Source traversal and output limits.</param>
-            /// <param name="cancellationToken">Token checked throughout traversal and parent generation.</param>
-            /// <param name="expectedBounds">Optional authoritative occupied native-tile inventory.</param>
-            /// <returns>A task containing the verified deterministic tile report.</returns>
-            /// <exception cref="InputValidationException">The source layout, image format, coordinates, or destination is invalid.</exception>
-            /// <exception cref="InputSecurityException">Output exceeds limits or fails collision, visibility, inventory, or zoom checks.</exception>
-            /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-            /// <remarks>A partial output directory is deleted on every failure and renamed to <paramref name="outputRoot"/> only after verification.</remarks>
+    /// <summary>Copies certified native tiles, builds all parent zooms, and verifies the resulting pyramid.</summary>
+    /// <param name="sourceRoot">uNmINeD <c>zoom.0</c> directory.</param>
+    /// <param name="outputRoot">Final Atlas tile output directory, which must not exist.</param>
+    /// <param name="scheme">Certified coordinate mapping.</param>
+    /// <param name="limits">Source traversal and output limits.</param>
+    /// <param name="cancellationToken">Token checked throughout traversal and parent generation.</param>
+    /// <param name="expectedBounds">Optional authoritative occupied native-tile inventory.</param>
+    /// <returns>A task containing the verified deterministic tile report.</returns>
+    /// <exception cref="InputValidationException">The source layout, image format, coordinates, or destination is invalid.</exception>
+    /// <exception cref="InputSecurityException">Output exceeds limits or fails collision, visibility, inventory, or zoom checks.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <remarks>A partial output directory is deleted on every failure and renamed to <paramref name="outputRoot"/> only after verification.</remarks>
     public static Task<TileSetReport> AdaptAsync(
         string sourceRoot,
         string outputRoot,
@@ -188,9 +195,14 @@ public static partial class AtlasTileAdapter
         WorldBounds? expectedBounds = null)
     {
         if (!Directory.Exists(sourceRoot))
+        {
             throw new InputValidationException($"uNmINeD zoom.0 tile root does not exist: {sourceRoot}");
+        }
+
         if (Directory.Exists(outputRoot) || File.Exists(outputRoot))
+        {
             throw new InputValidationException($"Atlas tile output already exists: {outputRoot}");
+        }
 
         var outputParent = Directory.GetParent(Path.GetFullPath(outputRoot))
             ?? throw new InputValidationException("Atlas tile output requires a parent directory.");
@@ -208,14 +220,20 @@ public static partial class AtlasTileAdapter
 
             var report = TilePublisher.Verify(temporary, limits, scheme.CoordinateScheme);
             if (report.MaxZoom != scheme.TargetMaxZoom)
+            {
                 throw new InputSecurityException("Adapted tile pyramid has an unexpected maximum zoom.");
+            }
+
             Directory.Move(temporary, outputRoot);
             return Task.FromResult(report);
         }
         catch
         {
             if (Directory.Exists(temporary))
+            {
                 Directory.Delete(temporary, recursive: true);
+            }
+
             throw;
         }
     }
@@ -242,9 +260,14 @@ public static partial class AtlasTileAdapter
             RejectReparsePoint(xGroupPath);
             var xGroupName = Path.GetFileName(xGroupPath);
             if (xGroupName == "metadata" && Directory.Exists(xGroupPath))
+            {
                 continue;
+            }
+
             if (!Directory.Exists(xGroupPath) || !TryParseCanonicalInteger(xGroupName, out var xGroup))
+            {
                 throw new InputValidationException($"Unexpected uNmINeD zoom directory entry: {xGroupName}");
+            }
 
             foreach (var yGroupPath in Directory.EnumerateFileSystemEntries(xGroupPath))
             {
@@ -252,7 +275,9 @@ public static partial class AtlasTileAdapter
                 RejectReparsePoint(yGroupPath);
                 var yGroupName = Path.GetFileName(yGroupPath);
                 if (!Directory.Exists(yGroupPath) || !TryParseCanonicalInteger(yGroupName, out var yGroup))
+                {
                     throw new InputValidationException($"Unexpected uNmINeD tile-group entry: {yGroupName}");
+                }
 
                 foreach (var sourceTile in Directory.EnumerateFileSystemEntries(yGroupPath))
                 {
@@ -260,7 +285,10 @@ public static partial class AtlasTileAdapter
                     CountEntry(ref sourceEntries, limits);
                     RejectReparsePoint(sourceTile);
                     if (Directory.Exists(sourceTile))
+                    {
                         throw new InputValidationException($"Unexpected directory in uNmINeD tile group: {sourceTile}");
+                    }
+
                     var match = NativeTilePattern().Match(Path.GetFileName(sourceTile));
                     if (!match.Success ||
                         !TryParseCanonicalInteger(match.Groups[1].Value, out var nativeX) ||
@@ -274,28 +302,43 @@ public static partial class AtlasTileAdapter
                     var targetX = checked(nativeX + scheme.TileOffsetX);
                     var targetY = checked(nativeY + scheme.TileOffsetY);
                     if (!seenNativeCoordinates.Add((nativeX, nativeY)))
+                    {
                         throw new InputSecurityException($"Renderer output duplicates native tile {nativeX},{nativeY}.");
+                    }
+
                     var coordinateLimit = 1 << scheme.TargetMaxZoom;
                     if (scheme.CoordinateScheme == TilePublisher.StandardXyzScheme &&
                         (targetX < 0 || targetY < 0 || targetX >= coordinateLimit || targetY >= coordinateLimit))
+                    {
                         throw new InputValidationException($"Native tile is outside scheme {scheme.Key}: {nativeX},{nativeY}");
+                    }
+
                     using var input = File.OpenRead(sourceTile);
                     using var codec = SKCodec.Create(input)
                         ?? throw new InputValidationException($"Native tile is not a valid image: {sourceTile}");
                     if (codec.Info.Width != 256 || codec.Info.Height != 256 ||
                         codec.EncodedFormat != SKEncodedImageFormat.Png)
+                    {
                         throw new InputValidationException($"Native tile is not 256x256 pixels: {sourceTile}");
+                    }
+
                     if (expectedNativeCoordinates is not null &&
                         !expectedNativeCoordinates.Contains((nativeX, nativeY)))
                     {
                         if (!IsFullyTransparent(sourceTile))
+                        {
                             throw new InputSecurityException(
                                 $"Renderer produced visible pixels outside occupied chunks at {nativeX},{nativeY}.");
+                        }
+
                         continue;
                     }
                     nativeCoordinates.Add((nativeX, nativeY));
                     if (result.ContainsKey((targetX, targetY)))
+                    {
                         throw new InputSecurityException($"Native tiles collide at Atlas coordinate {targetX},{targetY}.");
+                    }
+
                     var target = TilePath(temporary, scheme.TargetMaxZoom, targetX, targetY);
                     Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                     File.Copy(sourceTile, target);
@@ -304,9 +347,15 @@ public static partial class AtlasTileAdapter
             }
         }
         if (result.Count == 0)
+        {
             throw new InputValidationException("uNmINeD zoom.0 output contains no native PNG tiles.");
+        }
+
         if (expectedBounds is not null)
+        {
             VerifyNativeInventory(nativeCoordinates, expectedBounds);
+        }
+
         return result;
     }
 
@@ -324,7 +373,10 @@ public static partial class AtlasTileAdapter
         using var inventory = System.Security.Cryptography.IncrementalHash.CreateHash(
             System.Security.Cryptography.HashAlgorithmName.SHA256);
         foreach (var tile in nativeCoordinates.OrderBy(value => value.Z).ThenBy(value => value.X))
+        {
             inventory.AppendData(System.Text.Encoding.ASCII.GetBytes($"{tile.X},{tile.Z}\n"));
+        }
+
         var actualHash = Convert.ToHexStringLower(inventory.GetHashAndReset());
         if (nativeCoordinates.Count != expectedBounds.NativeTileCount ||
             !actualHash.Equals(expectedBounds.NativeTileInventorySha256, StringComparison.OrdinalIgnoreCase))
@@ -348,7 +400,10 @@ public static partial class AtlasTileAdapter
             .ThenBy(value => value.X)
             .ToArray();
         if (parents.Length > limits.MaxOutputEntries)
+        {
             throw new InputSecurityException("Adapted output exceeds the configured entry-count limit.");
+        }
+
         var result = new Dictionary<(int X, int Y), string>(parents.Length);
         foreach (var parent in parents)
         {
@@ -361,7 +416,10 @@ public static partial class AtlasTileAdapter
                 for (var childX = 0; childX < 2; childX++)
                 {
                     if (!children.TryGetValue((parent.X * 2 + childX, parent.Y * 2 + childY), out var childPath))
+                    {
                         continue;
+                    }
+
                     using var child = DecodeBitmap(childPath);
                     mosaicCanvas.DrawBitmap(
                         child,
@@ -422,13 +480,17 @@ public static partial class AtlasTileAdapter
     {
         count = checked(count + 1);
         if (count > limits.MaxOutputEntries)
+        {
             throw new InputSecurityException("Native renderer output exceeds the configured entry-count limit.");
+        }
     }
 
     private static void RejectReparsePoint(string path)
     {
         if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+        {
             throw new InputSecurityException($"Native renderer output contains a reparse point: {path}");
+        }
     }
 
     [GeneratedRegex("^tile\\.(-?(?:0|[1-9][0-9]*))\\.(-?(?:0|[1-9][0-9]*))\\.png$", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]

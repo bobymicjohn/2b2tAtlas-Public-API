@@ -2,7 +2,10 @@ namespace Atlas.Ingestor.Tests;
 
 public sealed class TempDirectory : IDisposable
 {
-    public string Path { get; } = System.IO.Path.Combine(
+    public string Path
+    {
+        get;
+    } = System.IO.Path.Combine(
         System.IO.Path.GetTempPath(),
         "atlas-ingestor-tests",
         Guid.NewGuid().ToString("N"));
@@ -15,6 +18,8 @@ public sealed class TempDirectory : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(Path))
+        {
             Directory.Delete(Path, recursive: true);
+        }
     }
 }

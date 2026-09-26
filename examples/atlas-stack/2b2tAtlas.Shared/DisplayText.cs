@@ -10,7 +10,10 @@ public static class DisplayText
     /// <summary>Converts legacy escaped and stripped newline markers into displayable paragraph breaks.</summary>
     public static string NormalizeDescription(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
 
         var normalized = value
             .Replace("\\r\\n", "\n", StringComparison.OrdinalIgnoreCase)

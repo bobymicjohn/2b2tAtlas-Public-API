@@ -27,7 +27,11 @@ public class RenderSettingsService
     public async Task<RenderSettingsDto?> GetAsync()
     {
         var request = await CreateAsync(HttpMethod.Get, "api/render-settings");
-        if (request is null) return null;
+        if (request is null)
+        {
+            return null;
+        }
+
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<RenderSettingsDto>() : null;
     }
@@ -36,7 +40,11 @@ public class RenderSettingsService
     public async Task<(bool Ok, string? Error)> SaveAsync(RenderSettingsDto dto)
     {
         var request = await CreateAsync(HttpMethod.Put, "api/render-settings");
-        if (request is null) return (false, "Not authenticated");
+        if (request is null)
+        {
+            return (false, "Not authenticated");
+        }
+
         request.Content = JsonContent.Create(dto);
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode ? (true, null) : (false, await response.Content.ReadAsStringAsync());
@@ -49,7 +57,11 @@ public class RenderSettingsService
     {
         var request = await CreateAsync(HttpMethod.Post,
             $"api/render-settings/preview?world={Uri.EscapeDataString(world)}&dimension={Uri.EscapeDataString(dimension)}");
-        if (request is null) return null;
+        if (request is null)
+        {
+            return null;
+        }
+
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<RenderPreviewResult>() : null;
     }
@@ -58,7 +70,11 @@ public class RenderSettingsService
     public async Task<BulkRerenderStatus?> GetRerenderStatusAsync()
     {
         var request = await CreateAsync(HttpMethod.Get, "api/render-settings/rerender-status");
-        if (request is null) return null;
+        if (request is null)
+        {
+            return null;
+        }
+
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<BulkRerenderStatus>() : null;
     }
@@ -67,17 +83,28 @@ public class RenderSettingsService
     public async Task<(bool Ok, BulkRerenderResult? Result, string? Error)> RerenderAllAsync()
     {
         var request = await CreateAsync(HttpMethod.Post, "api/render-settings/rerender-all");
-        if (request is null) return (false, null, "Not authenticated");
+        if (request is null)
+        {
+            return (false, null, "Not authenticated");
+        }
+
         var response = await _http.SendAsync(request);
         if (!response.IsSuccessStatusCode)
+        {
             return (false, null, await response.Content.ReadAsStringAsync());
+        }
+
         return (true, await response.Content.ReadFromJsonAsync<BulkRerenderResult>(), null);
     }
 
     private async Task<HttpRequestMessage?> CreateAsync(HttpMethod method, string url)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return null;
+        if (string.IsNullOrEmpty(token))
+        {
+            return null;
+        }
+
         var request = new HttpRequestMessage(method, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return request;

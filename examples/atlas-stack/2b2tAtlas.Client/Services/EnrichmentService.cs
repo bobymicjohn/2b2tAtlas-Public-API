@@ -29,7 +29,11 @@ public class EnrichmentService
     public async Task<EnrichmentStatusDto?> GetStatusAsync()
     {
         var request = await CreateAsync(HttpMethod.Get, "api/enrichment/status");
-        if (request == null) return null;
+        if (request == null)
+        {
+            return null;
+        }
+
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<EnrichmentStatusDto>()
@@ -43,9 +47,17 @@ public class EnrichmentService
             ? "api/enrichment/revisions"
             : $"api/enrichment/revisions?status={Uri.EscapeDataString(status)}";
         var request = await CreateAsync(HttpMethod.Get, url);
-        if (request == null) return new();
+        if (request == null)
+        {
+            return new();
+        }
+
         var response = await _http.SendAsync(request);
-        if (!response.IsSuccessStatusCode) return new();
+        if (!response.IsSuccessStatusCode)
+        {
+            return new();
+        }
+
         return await response.Content.ReadFromJsonAsync<List<RevisionDto>>() ?? new();
     }
 
@@ -56,11 +68,18 @@ public class EnrichmentService
     public async Task<EnrichmentRunStatusDto?> RunAsync(EnrichmentRunRequest options)
     {
         var request = await CreateAsync(HttpMethod.Post, "api/enrichment/run");
-        if (request == null) return null;
+        if (request == null)
+        {
+            return null;
+        }
+
         request.Content = JsonContent.Create(options);
         var response = await _http.SendAsync(request);
         if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
             return await response.Content.ReadFromJsonAsync<EnrichmentRunStatusDto>();
+        }
+
         return null;
     }
 
@@ -68,7 +87,11 @@ public class EnrichmentService
     public async Task<GroupDiscoveryRunSummary?> RunGroupDiscoveryAsync(GroupDiscoveryRunRequest options)
     {
         var request = await CreateAsync(HttpMethod.Post, "api/enrichment/groups/run");
-        if (request == null) return null;
+        if (request == null)
+        {
+            return null;
+        }
+
         request.Content = JsonContent.Create(options);
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode
@@ -99,7 +122,11 @@ public class EnrichmentService
     {
         var url = $"api/locations/{locationId}/enrich?regenerateDescription={(regenerateDescription ? "true" : "false")}";
         var request = await CreateAsync(HttpMethod.Post, url);
-        if (request == null) return null;
+        if (request == null)
+        {
+            return null;
+        }
+
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<WikiEnrichmentSuggestion>()
@@ -109,7 +136,11 @@ public class EnrichmentService
     private async Task<HttpRequestMessage?> CreateAsync(HttpMethod method, string url)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return null;
+        if (string.IsNullOrEmpty(token))
+        {
+            return null;
+        }
+
         var request = new HttpRequestMessage(method, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return request;
@@ -118,7 +149,11 @@ public class EnrichmentService
     private async Task<bool> PostAsync(string url)
     {
         var request = await CreateAsync(HttpMethod.Post, url);
-        if (request == null) return false;
+        if (request == null)
+        {
+            return false;
+        }
+
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode;
     }

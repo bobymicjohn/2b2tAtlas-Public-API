@@ -74,7 +74,10 @@ public sealed class ChunkBoundsInspectorTests
         var nbt = BuildChunkNbt(0, 0);
         await using var compressed = new MemoryStream();
         await using (var zlib = new ZLibStream(compressed, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
             await zlib.WriteAsync(nbt, TestContext.Current.CancellationToken);
+        }
+
         var payload = compressed.ToArray();
 
         var region = new byte[3 * 4096];
@@ -109,7 +112,10 @@ public sealed class ChunkBoundsInspectorTests
         var nbt = BuildChunkNbt(nbtX, nbtZ);
         await using var compressed = new MemoryStream();
         await using (var zlib = new ZLibStream(compressed, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
             await zlib.WriteAsync(nbt, TestContext.Current.CancellationToken);
+        }
+
         var payload = compressed.ToArray();
         Assert.True(payload.Length + 5 <= 4096);
 

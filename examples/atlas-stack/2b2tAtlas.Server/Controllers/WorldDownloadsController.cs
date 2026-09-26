@@ -48,7 +48,14 @@ public sealed class WorldDownloadsController : ControllerBase
     public async Task<ActionResult<WorldDownloadRecord>> GetMetadata(int id, CancellationToken cancellationToken)
     {
         var resolved = await ResolveAsync(id, cancellationToken);
-        if (resolved.Status is not null) return StatusCode(resolved.Status.Value, new { message = resolved.Message });
+        if (resolved.Status is not null)
+        {
+            return StatusCode(resolved.Status.Value, new
+            {
+                message = resolved.Message
+            });
+        }
+
         return Ok(await CreateRecordAsync(resolved.Warp!, resolved.Path!, cancellationToken));
     }
 
@@ -61,10 +68,20 @@ public sealed class WorldDownloadsController : ControllerBase
     public async Task<IActionResult> Download(int id, CancellationToken cancellationToken)
     {
         var resolved = await ResolveAsync(id, cancellationToken);
-        if (resolved.Status is not null) return StatusCode(resolved.Status.Value, new { message = resolved.Message });
+        if (resolved.Status is not null)
+        {
+            return StatusCode(resolved.Status.Value, new
+            {
+                message = resolved.Message
+            });
+        }
 
         var sha = resolved.Warp!.ArchiveSha256!.ToLowerInvariant();
-        if (ValidateDownloadVersion(sha) is { } versionError) return versionError;
+        if (ValidateDownloadVersion(sha) is { } versionError)
+        {
+            return versionError;
+        }
+
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         Response.Headers["X-Atlas-World-Scope"] = Scope;
         Response.Headers["X-Atlas-Complete-World"] = "false";
@@ -86,7 +103,14 @@ public sealed class WorldDownloadsController : ControllerBase
     public async Task<ActionResult<WorldDownloadRecord>> GetRenderMetadata(int id, CancellationToken cancellationToken)
     {
         var resolved = await ResolveRenderAsync(id, cancellationToken);
-        if (resolved.Status is not null) return StatusCode(resolved.Status.Value, new { message = resolved.Message });
+        if (resolved.Status is not null)
+        {
+            return StatusCode(resolved.Status.Value, new
+            {
+                message = resolved.Message
+            });
+        }
+
         return Ok(CreateRenderRecord(resolved.Render!, resolved.Job!, resolved.Path!));
     }
 
@@ -96,10 +120,20 @@ public sealed class WorldDownloadsController : ControllerBase
     public async Task<IActionResult> DownloadRenderSource(int id, CancellationToken cancellationToken)
     {
         var resolved = await ResolveRenderAsync(id, cancellationToken);
-        if (resolved.Status is not null) return StatusCode(resolved.Status.Value, new { message = resolved.Message });
+        if (resolved.Status is not null)
+        {
+            return StatusCode(resolved.Status.Value, new
+            {
+                message = resolved.Message
+            });
+        }
 
         var sha = resolved.Job!.ArchiveSha256!.ToLowerInvariant();
-        if (ValidateDownloadVersion(sha) is { } versionError) return versionError;
+        if (ValidateDownloadVersion(sha) is { } versionError)
+        {
+            return versionError;
+        }
+
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         Response.Headers["X-Atlas-World-Scope"] = PreservedRenderScope;
         Response.Headers["X-Atlas-Complete-World"] = "false";
@@ -119,7 +153,10 @@ public sealed class WorldDownloadsController : ControllerBase
             !string.Equals(requested, sha, StringComparison.OrdinalIgnoreCase))
         {
             Response.Headers.CacheControl = "no-store";
-            return Conflict(new { message = "This world download has been replaced. Refresh its metadata for the current download link." });
+            return Conflict(new
+            {
+                message = "This world download has been replaced. Refresh its metadata for the current download link."
+            });
         }
 
         // IDs point to the latest reviewed source; only digest-qualified URLs are immutable.
@@ -136,17 +173,25 @@ public sealed class WorldDownloadsController : ControllerBase
             .Include(value => value.LocationRow)
             .Include(value => value.Render)
             .SingleOrDefaultAsync(value => value.Id == id, cancellationToken);
-        if (warp?.LocationRow is null || !IsPublicCollectorWdl(warp))
+        if (warp?.LocationRow is null || !PublicWorldDownloadRules.HasArchiveSource(warp))
+        {
             return (null, null, StatusCodes.Status404NotFound, "No public world download is available for this warp.");
+        }
 
         string path;
-        try { path = WdlArchiveStore.ObjectPath(_options.Root, warp.ArchiveSha256!); }
+        try
+        {
+            path = WdlArchiveStore.ObjectPath(_options.Root, warp.ArchiveSha256!);
+        }
         catch (Exception ex) when (ex is ArgumentException or FormatException or IOException)
         {
             return (null, null, StatusCodes.Status404NotFound, "No public world download is available for this warp.");
         }
         if (!System.IO.File.Exists(path))
+        {
             return (null, null, StatusCodes.Status503ServiceUnavailable, "The archived world download is temporarily unavailable.");
+        }
+
         return (warp, path, null, null);
     }
 
@@ -157,24 +202,34 @@ public sealed class WorldDownloadsController : ControllerBase
             .Include(value => value.LocationRow)
             .SingleOrDefaultAsync(value => value.Id == id && value.IsPublic == 1, cancellationToken);
         if (render?.LocationRow is null || render.ArchiveWarpId is not null)
+        {
             return (null, null, null, StatusCodes.Status404NotFound, "No preserved source world download is available for this render.");
+        }
 
         var jobs = await _context.IngestionJobs.AsNoTracking()
             .Where(value => value.RenderId == id && value.Status == "completed" && value.WarpId == null && value.ArchiveSha256 != null)
             .OrderByDescending(value => value.Id)
             .ToListAsync(cancellationToken);
-        var job = jobs.FirstOrDefault(IsPublicRenderSourceJob);
+        var job = jobs.FirstOrDefault(PublicWorldDownloadRules.HasRenderSource);
         if (job is null)
+        {
             return (null, null, null, StatusCodes.Status404NotFound, "No preserved source world download is available for this render.");
+        }
 
         string path;
-        try { path = WdlArchiveStore.ObjectPath(_options.Root, job.ArchiveSha256!); }
+        try
+        {
+            path = WdlArchiveStore.ObjectPath(_options.Root, job.ArchiveSha256!);
+        }
         catch (Exception ex) when (ex is ArgumentException or FormatException or IOException)
         {
             return (null, null, null, StatusCodes.Status404NotFound, "No preserved source world download is available for this render.");
         }
         if (!System.IO.File.Exists(path))
+        {
             return (render, job, null, StatusCodes.Status503ServiceUnavailable, "The archived world download is temporarily unavailable.");
+        }
+
         return (render, job, path, null, null);
     }
 
@@ -274,7 +329,10 @@ public sealed class WorldDownloadsController : ControllerBase
     {
         if (render?.MinX is int minX && render.MinZ is int minZ &&
             render.MaxXExclusive is int maxX && render.MaxZExclusive is int maxZ)
+        {
             return new WorldDownloadBounds { MinX = minX, MinZ = minZ, MaxXExclusive = maxX, MaxZExclusive = maxZ };
+        }
+
         return inspection is null ? null : new WorldDownloadBounds
         {
             MinX = inspection.MinX,
@@ -283,16 +341,6 @@ public sealed class WorldDownloadsController : ControllerBase
             MaxZExclusive = inspection.MaxZExclusive,
         };
     }
-
-    private static bool IsPublicCollectorWdl(ServerWarp warp) =>
-        warp.ArchiveSha256 is { Length: 64 } sha && sha.All(Uri.IsHexDigit) &&
-        warp.Source?.StartsWith("The Archive automated sync", StringComparison.OrdinalIgnoreCase) == true;
-
-    private static bool IsPublicRenderSourceJob(IngestionJob job) =>
-        job.RenderId.HasValue && job.WarpId is null &&
-        job.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) &&
-        job.ArchiveSha256 is { Length: 64 } sha && sha.All(Uri.IsHexDigit) &&
-        !string.IsNullOrWhiteSpace(job.Source);
 
     private static string? ConceptDownloadName(string? locationName, string? warpName) =>
         ArchiveWarpResolver.IsSinglePlayerConcept(warpName)

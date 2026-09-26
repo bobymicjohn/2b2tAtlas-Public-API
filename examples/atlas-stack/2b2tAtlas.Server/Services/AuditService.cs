@@ -32,7 +32,10 @@ public class AuditService
             DetailsJson = detailsJson,
             CreatedUtc = DateTime.UtcNow.ToString("o"),
         });
-        if (save) await _context.SaveChangesAsync();
+        if (save)
+        {
+            await _context.SaveChangesAsync();
+        }
     }
 
     /// <summary>
@@ -49,7 +52,13 @@ public class AuditService
             before.TryGetValue(key, out var oldValue);
             after.TryGetValue(key, out var newValue);
             if (!Equals(oldValue, newValue))
-                changes[key] = new { before = oldValue, after = newValue };
+            {
+                changes[key] = new
+                {
+                    before = oldValue,
+                    after = newValue
+                };
+            }
         }
 
         var detailsJson = changes.Count > 0 ? JsonSerializer.Serialize(changes) : null;

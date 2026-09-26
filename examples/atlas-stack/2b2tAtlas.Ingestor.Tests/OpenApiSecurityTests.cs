@@ -36,7 +36,8 @@ public sealed class OpenApiSecurityTests
         var ct = TestContext.Current.CancellationToken;
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
-            EnvironmentName = "Testing", ContentRootPath = AppContext.BaseDirectory,
+            EnvironmentName = "Testing",
+            ContentRootPath = AppContext.BaseDirectory,
             ApplicationName = typeof(ApiIndexController).Assembly.FullName
         });
         builder.Logging.ClearProviders();
@@ -44,7 +45,8 @@ public sealed class OpenApiSecurityTests
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["JwtSettings:SecretKey"] = Key,
-            ["JwtSettings:Issuer"] = "security-fixture", ["JwtSettings:Audience"] = "security-fixture"
+            ["JwtSettings:Issuer"] = "security-fixture",
+            ["JwtSettings:Audience"] = "security-fixture"
         });
         builder.Services.AddControllers().AddApplicationPart(typeof(ApiIndexController).Assembly);
         using var connection = new SqliteConnection("Data Source=:memory:");
@@ -81,7 +83,9 @@ public sealed class OpenApiSecurityTests
         Assert.DoesNotContain("IngestionJobRequest", publicDoc.RootElement.GetRawText());
         Assert.DoesNotContain("CreateUserRequest", publicDoc.RootElement.GetRawText());
         foreach (var path in publicPaths.EnumerateObject())
+        {
             Assert.All(path.Value.EnumerateObject(), method => Assert.Equal("get", method.Name));
+        }
 
         using var anonymousInternal = await client.GetAsync("/openapi/internal.json", ct);
         Assert.Equal(HttpStatusCode.Unauthorized, anonymousInternal.StatusCode);
@@ -141,7 +145,9 @@ public sealed class OpenApiSecurityTests
             {
                 Assert.False(operation.TryGetProperty("security", out var security) && security.GetArrayLength() > 0);
                 if (description.HttpMethod != "GET")
+                {
                     Assert.Contains(path, new[] { "/api/Auth/login", "/api/Auth/register", "/api/newWarp.php" });
+                }
             }
         }
         Assert.True(protectedCount > 40);
@@ -168,7 +174,11 @@ public sealed class OpenApiSecurityTests
         var user = FixtureUser(permission != null);
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new("atlas_session", AtlasSessionValidator.Stamp(user, Key)) };
-        if (permission != null) claims.Add(new Claim("perm", permission));
+        if (permission != null)
+        {
+            claims.Add(new Claim("perm", permission));
+        }
+
         return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
             "security-fixture", "security-fixture", claims, now.AddMinutes(-5),
             expired ? now.AddMinutes(-1) : now.AddMinutes(5),
@@ -177,8 +187,11 @@ public sealed class OpenApiSecurityTests
 
     private static _2b2tAtlas.Server.Models.User FixtureUser(bool admin) => new()
     {
-        Id = admin ? 3 : 2, Username = admin ? "fixture-archivist" : "fixture-viewer",
-        Role = admin ? RoleNames.Admin : RoleNames.User, IsActive = 1,
-        PasswordHash = "isolated-fixture-password-digest", CreatedAt = DateTime.UtcNow.ToString("o")
+        Id = admin ? 3 : 2,
+        Username = admin ? "fixture-archivist" : "fixture-viewer",
+        Role = admin ? RoleNames.Admin : RoleNames.User,
+        IsActive = 1,
+        PasswordHash = "isolated-fixture-password-digest",
+        CreatedAt = DateTime.UtcNow.ToString("o")
     };
 }

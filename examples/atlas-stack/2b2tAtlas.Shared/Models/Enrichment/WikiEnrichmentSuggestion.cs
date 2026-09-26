@@ -8,37 +8,37 @@ namespace Atlas.Enrichment;
 /// </summary>
 public sealed class WikiEnrichmentSuggestion
 {
-    /// <summary>Gets or sets the target location row id.</summary>
+    /// <summary>Target location row id.</summary>
     public int LocationId { get; set; }
 
-    /// <summary>Gets or sets the target location name at generation time.</summary>
+    /// <summary>Target location name at generation time.</summary>
     public string LocationName { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the matched wiki page title, or null when no confident page was found.</summary>
+    /// <summary>Matched wiki page title, or null when no confident page was found.</summary>
     public string? WikiTitle { get; set; }
 
-    /// <summary>Gets or sets the matched wiki page URL, or null when no page was found.</summary>
+    /// <summary>Matched wiki page URL, or null when no page was found.</summary>
     public string? WikiUrl { get; set; }
 
-    /// <summary>Gets or sets the overall match confidence from 0 (none) to 1 (name and coordinates agree).</summary>
+    /// <summary>Overall match confidence from 0 (none) to 1 (name and coordinates agree).</summary>
     public double Confidence { get; set; }
 
-    /// <summary>Gets or sets whether the wiki page's coordinates matched the location within tolerance.</summary>
+    /// <summary>Whether the wiki page's coordinates matched the location within tolerance.</summary>
     public bool CoordinatesAgree { get; set; }
 
-    /// <summary>Gets or sets the closest Overworld-scale distance between wiki and location coordinates, or -1.</summary>
+    /// <summary>Closest Overworld-scale distance between wiki and location coordinates, or -1.</summary>
     public long CoordinateDistanceBlocks { get; set; }
 
-    /// <summary>Gets or sets a short, human-readable explanation of why this page was matched.</summary>
+    /// <summary>A short, human-readable explanation of why this page was matched.</summary>
     public string? MatchReason { get; set; }
 
-    /// <summary>Gets or sets the drafted description, or null when generation was skipped or empty.</summary>
+    /// <summary>Drafted description, or null when generation was skipped or empty.</summary>
     public string? SuggestedDescription { get; set; }
 
-    /// <summary>Gets or sets the source attribution line for the description (wiki URL + license).</summary>
+    /// <summary>Source attribution line for the description (wiki URL + license).</summary>
     public string? Attribution { get; set; }
 
-    /// <summary>Gets or sets whether this suggestion cleared the auto-apply confidence and coordinate gates.</summary>
+    /// <summary>Whether this suggestion cleared the auto-apply confidence and coordinate gates.</summary>
     public bool AutoApplyEligible { get; set; }
 
     /// <summary>
@@ -54,27 +54,27 @@ public sealed class WikiEnrichmentSuggestion
 /// <summary>A reviewable group/build relationship derived from explicit, revision-pinned source evidence.</summary>
 public sealed class GroupAttributionSuggestion
 {
-    /// <summary>Gets or sets the existing Atlas group identifier.</summary>
+    /// <summary>Existing Atlas group identifier.</summary>
     public int GroupId { get; set; }
 
-    /// <summary>Gets or sets the canonical Atlas group name.</summary>
+    /// <summary>Canonical Atlas group name.</summary>
     public string GroupName { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the proposed relationship role.</summary>
+    /// <summary>Proposed relationship role.</summary>
     public string Role { get; set; } = "Builder";
 
-    /// <summary>Gets or sets the source article URL.</summary>
+    /// <summary>Source article URL.</summary>
     public string EvidenceUrl { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the pinned MediaWiki revision identifier.</summary>
+    /// <summary>Pinned MediaWiki revision identifier.</summary>
     public long? SourceRevisionId { get; set; }
 
-    /// <summary>Gets or sets the explicit evidence type, such as an infobox base list.</summary>
+    /// <summary>Explicit evidence type, such as an infobox base list.</summary>
     public string Evidence { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the deterministic relationship confidence.</summary>
+    /// <summary>Deterministic relationship confidence.</summary>
     public double Confidence { get; set; }
 
-    /// <summary>Gets or sets whether the relationship meets the strict automatic-application policy.</summary>
+    /// <summary>Whether the relationship meets the strict automatic-application policy.</summary>
     public bool AutoApplyEligible { get; set; }
 }

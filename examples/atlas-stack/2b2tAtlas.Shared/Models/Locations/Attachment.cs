@@ -8,11 +8,11 @@ namespace Atlas.Locations;
 public class Attachment
 {
     /// <summary>
-    /// Gets or sets the unique identifier for the attachment.
+    /// Unique identifier for the attachment.
     /// </summary>
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the public API URL for this attachment metadata record.</summary>
+    /// <summary>Public API URL for this attachment metadata record.</summary>
     public string? ApiUrl { get; set; }
 
     /// <summary>
@@ -22,20 +22,20 @@ public class Attachment
     public int LocationRowid { get; set; }
 
     /// <summary>
-    /// Gets or sets the name of the file.
+    /// Name of the file.
     /// </summary>
     [Required(ErrorMessage = "File name is required")]
     [StringLength(255, ErrorMessage = "File name cannot exceed 255 characters")]
     public string? FileName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the path to the file / URL.
+    /// Path to the file / URL.
     /// </summary>
     [Required(ErrorMessage = "File path is required")]
     [StringLength(500, ErrorMessage = "File path cannot exceed 500 characters")]
     public string? Path { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the normalized media kind: Image, Video, Wiki, Link, Timeline, or Article.</summary>
+    /// <summary>Normalized media kind: Image, Video, Wiki, Link, Timeline, or Article.</summary>
     [StringLength(32)]
     public string? MediaType { get; set; }
 
@@ -43,11 +43,11 @@ public class Attachment
     [StringLength(500)]
     public string? ThumbnailPath { get; set; }
 
-    /// <summary>Gets or sets the original publication page retained for provenance.</summary>
+    /// <summary>Original publication page retained for provenance.</summary>
     [StringLength(500)]
     public string? SourceUrl { get; set; }
 
-    /// <summary>Gets or sets a concise public caption.</summary>
+    /// <summary>A concise public caption.</summary>
     [StringLength(500)]
     public string? Caption { get; set; }
 
@@ -56,7 +56,7 @@ public class Attachment
     public string? Attribution { get; set; }
 
     /// <summary>
-    /// Gets or sets the date and time when the attachment was added (UTC).
+    /// Date and time when the attachment was added (UTC).
     /// </summary>
     public string? DateAddedUtc { get; set; }
 }

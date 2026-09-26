@@ -54,7 +54,10 @@ public sealed class AtlasMcpTools
         CancellationToken cancellationToken = default)
     {
         if (!DateOnly.TryParse(from, out var fromDate) || !DateOnly.TryParse(to, out var toDate))
+        {
             throw new ArgumentException("from and to must be valid dates, preferably YYYY-MM-DD.");
+        }
+
         return _queries.FindByCaptureDateAsync(fromDate, toDate, dimension, limit, cancellationToken);
     }
 

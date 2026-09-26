@@ -38,9 +38,14 @@ public sealed class CanonicalContentSeederTests
         await using var fixture = await Fixture.CreateAsync();
         fixture.Context.Groups.Add(new ServerGroup
         {
-            Name = "SpawnMasons", Type = "Build", Description = "Operator-reviewed history",
-            DiscordUrl = "https://discord.gg/spawnmasons", Founded = "2017", Status = "Active",
-            LogoSourceUrl = "https://example.org/source", DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            Name = "SpawnMasons",
+            Type = "Build",
+            Description = "Operator-reviewed history",
+            DiscordUrl = "https://discord.gg/spawnmasons",
+            Founded = "2017",
+            Status = "Active",
+            LogoSourceUrl = "https://example.org/source",
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         });
         await fixture.Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -173,16 +178,26 @@ public sealed class CanonicalContentSeederTests
         await using var fixture = await Fixture.CreateAsync();
         fixture.Context.Groups.Add(new ServerGroup
         {
-            Name = "DonFuer", Type = "Build", Description = "Operator-reviewed history",
-            WikiUrl = "https://2b2t.miraheze.org/wiki/DonFuer", Founded = "2013", Status = "Active",
-            LogoSourceUrl = "https://example.org/source", DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            Name = "DonFuer",
+            Type = "Build",
+            Description = "Operator-reviewed history",
+            WikiUrl = "https://2b2t.miraheze.org/wiki/DonFuer",
+            Founded = "2013",
+            Status = "Active",
+            LogoSourceUrl = "https://example.org/source",
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         });
         fixture.Context.Groups.Add(new ServerGroup
         {
-            Name = "Valkyria", Type = "Other", Description = "Operator-reviewed faction history",
-            WikiUrl = "https://2b2t.miraheze.org/wiki/Valkyria", Founded = "2013", Status = "Disbanded",
+            Name = "Valkyria",
+            Type = "Other",
+            Description = "Operator-reviewed faction history",
+            WikiUrl = "https://2b2t.miraheze.org/wiki/Valkyria",
+            Founded = "2013",
+            Status = "Disbanded",
             LogoUrl = "https://2b2t.miraheze.org/wiki/Special:Redirect/file/Valkyria_Banner.png",
-            LogoSourceUrl = "https://2b2t.miraheze.org/wiki/Valkyria", DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LogoSourceUrl = "https://2b2t.miraheze.org/wiki/Valkyria",
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         });
         await fixture.Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -244,18 +259,26 @@ public sealed class CanonicalContentSeederTests
         fixture.Context.Groups.AddRange(
             new ServerGroup
             {
-                Name = "DGA", Type = "Other", Description = null, Color = null,
+                Name = "DGA",
+                Type = "Other",
+                Description = null,
+                Color = null,
                 WikiUrl = "https://2b2t.wikioasis.org/wiki/Democratic_Group_Alliance",
                 LogoSourceUrl = "https://2b2t.wikioasis.org/wiki/File:SGAv2_Banner.png",
-                Founded = "July 20, 2019", Status = "Inactive",
+                Founded = "July 20, 2019",
+                Status = "Inactive",
                 DateAddedUtc = DateTime.UtcNow.ToString("o"),
             },
             new ServerGroup
             {
-                Name = "The Republic", Type = "Other", Description = "Operator-reviewed Republic history",
-                Color = "#123456", WikiUrl = "https://2b2t.wikioasis.org/wiki/The_Republic",
+                Name = "The Republic",
+                Type = "Other",
+                Description = "Operator-reviewed Republic history",
+                Color = "#123456",
+                WikiUrl = "https://2b2t.wikioasis.org/wiki/The_Republic",
                 LogoSourceUrl = "https://2b2t.wikioasis.org/wiki/File:Greece.png",
-                Founded = "December 2017", Status = "Active",
+                Founded = "December 2017",
+                Status = "Active",
                 DateAddedUtc = DateTime.UtcNow.ToString("o"),
             });
         await fixture.Context.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -278,14 +301,21 @@ public sealed class CanonicalContentSeederTests
         await using var fixture = await Fixture.CreateAsync();
         fixture.Context.Groups.Add(new ServerGroup
         {
-            Name = "Crimson Star", Type = "Other", Description = "Operator-reviewed Crimson Star history",
-            Color = "#123456", Status = "Operator-reviewed status",
-            WebsiteUrl = "https://operator.example/", DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            Name = "Crimson Star",
+            Type = "Other",
+            Description = "Operator-reviewed Crimson Star history",
+            Color = "#123456",
+            Status = "Operator-reviewed status",
+            WebsiteUrl = "https://operator.example/",
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         });
         fixture.Context.Groups.Add(new ServerGroup
         {
-            Name = "The Society Project", Type = "Other", Description = "Operator-reviewed Society history",
-            Color = "#654321", Status = "Operator-reviewed Society status",
+            Name = "The Society Project",
+            Type = "Other",
+            Description = "Operator-reviewed Society history",
+            Color = "#654321",
+            Status = "Operator-reviewed Society status",
             WikiUrl = "https://2b2t.wikioasis.org/wiki/The_Society_Project",
             DateAddedUtc = DateTime.UtcNow.ToString("o"),
         });
@@ -318,7 +348,10 @@ public sealed class CanonicalContentSeederTests
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly SqliteConnection _connection;
-        public AtlasContext Context { get; }
+        public AtlasContext Context
+        {
+            get;
+        }
 
         private Fixture(SqliteConnection connection, AtlasContext context)
         {
@@ -339,8 +372,13 @@ public sealed class CanonicalContentSeederTests
         {
             var location = new ServerLocation
             {
-                LocationUuid = Guid.NewGuid().ToString(), Name = name, X = 0, Y = 64, Z = 0,
-                Dimension = 0, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+                LocationUuid = Guid.NewGuid().ToString(),
+                Name = name,
+                X = 0,
+                Y = 64,
+                Z = 0,
+                Dimension = 0,
+                DateAddedUtc = DateTime.UtcNow.ToString("o"),
             };
             Context.Locations.Add(location);
             return location;

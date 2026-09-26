@@ -22,12 +22,30 @@ public sealed partial class ArchiveGroupAttributionService(AtlasContext context)
         void Family(string? value, string source)
         {
             var name = Normalize(value);
-            if (SbaPrefix().IsMatch(name)) Add("Spawn Builders Association", $"{source}: {value}");
-            if (SpawnMasonPrefix().IsMatch(name)) Add("SpawnMasons", $"{source}: {value}");
-            if (DonFuerPrefix().IsMatch(name)) Add("DonFuer", $"{source}: {value}");
-            if (NerdsPrefix().IsMatch(name)) Add("Nerds Inc", $"{source}: {value}");
+            if (SbaPrefix().IsMatch(name))
+            {
+                Add("Spawn Builders Association", $"{source}: {value}");
+            }
+
+            if (SpawnMasonPrefix().IsMatch(name))
+            {
+                Add("SpawnMasons", $"{source}: {value}");
+            }
+
+            if (DonFuerPrefix().IsMatch(name))
+            {
+                Add("DonFuer", $"{source}: {value}");
+            }
+
+            if (NerdsPrefix().IsMatch(name))
+            {
+                Add("Nerds Inc", $"{source}: {value}");
+            }
+
             if (name == "krizz sba initial base" || name.StartsWith("krizz sba initial base ", StringComparison.Ordinal))
+            {
                 Add("Spawn Builders Association", $"reviewed named SBA build: {value}");
+            }
         }
         foreach (var warp in warpNames.Where(value => !string.IsNullOrWhiteSpace(value)))
         {
@@ -47,7 +65,10 @@ public sealed partial class ArchiveGroupAttributionService(AtlasContext context)
                     "nerds inc" or "nerds inc." or "nerdsinc" => "Nerds Inc",
                     _ => null
                 };
-                if (owner is not null) Add(owner, $"explicit Archive owner tag @{tag}: {warp}");
+                if (owner is not null)
+                {
+                    Add(owner, $"explicit Archive owner tag @{tag}: {warp}");
+                }
             }
         }
         Family(locationName, "location name family");
@@ -82,20 +103,40 @@ public sealed partial class ArchiveGroupAttributionService(AtlasContext context)
             var evidence = new List<object>();
             foreach (var match in FindMatches(location.Name, warps[location.Rowid]))
             {
-                if (!groups.TryGetValue(match.GroupName, out var group) || !existing.Add((location.Rowid, group.Id))) continue;
+                if (!groups.TryGetValue(match.GroupName, out var group) || !existing.Add((location.Rowid, group.Id)))
+                {
+                    continue;
+                }
+
                 context.LocationGroups.Add(new LocationGroup
                 {
-                    LocationRowid = location.Rowid, GroupId = group.Id, Role = "Builder", DateAddedUtc = now
+                    LocationRowid = location.Rowid,
+                    GroupId = group.Id,
+                    Role = "Builder",
+                    DateAddedUtc = now
                 });
-                evidence.Add(new { groupId = group.Id, groupName = group.Name, role = "Builder", match.Evidence });
+                evidence.Add(new
+                {
+                    groupId = group.Id,
+                    groupName = group.Name,
+                    role = "Builder",
+                    match.Evidence
+                });
                 added++;
             }
-            if (evidence.Count == 0) continue;
+            if (evidence.Count == 0)
+            {
+                continue;
+            }
+
             location.ModifiedUtc = now;
             context.AuditLogs.Add(new AuditLog
             {
-                Action = "location.group.archive", EntityType = "Location", EntityId = location.Rowid,
-                Username = "Archive group attribution", CreatedUtc = now,
+                Action = "location.group.archive",
+                EntityType = "Location",
+                EntityId = location.Rowid,
+                Username = "Archive group attribution",
+                CreatedUtc = now,
                 Summary = $"Added {evidence.Count} group credit(s) from reviewed naming evidence for '{location.Name}'",
                 DetailsJson = JsonSerializer.Serialize(new { ruleVersion = "2026-09-07.1", added = evidence })
             });

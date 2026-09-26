@@ -98,7 +98,10 @@ public sealed class BlueMapGenerationStatusService
             : state == "completed-with-errors" ? "Batch finished with failures; watchdog will retry missing derivatives"
             : "BlueMap renderer is between resumable passes";
         if (coordinated && active)
+        {
             phase = $"Coordinated BlueMap generation | {workers.Count(worker => worker.State == "running")} / {workers.Count} workers active | new renders discovered every minute";
+        }
+
         if (coordinated && state == "draining")
         {
             status = "Draining";
@@ -159,7 +162,11 @@ public sealed class BlueMapGenerationStatusService
 
     private JsonDocument? ReadJson(string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return null;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return null;
+        }
+
         for (var attempt = 0; attempt < 4; attempt++)
         {
             try
@@ -171,9 +178,13 @@ public sealed class BlueMapGenerationStatusService
             catch (Exception exception) when (exception is IOException or JsonException)
             {
                 if (attempt == 3)
+                {
                     _logger.LogWarning(exception, "BlueMap checkpoint could not be read");
+                }
                 else
+                {
                     Thread.Sleep(20 * (attempt + 1));
+                }
             }
         }
         return null;
@@ -181,7 +192,11 @@ public sealed class BlueMapGenerationStatusService
 
     private static BlueMapGenerationCurrentDto? Current(JsonElement root)
     {
-        if (!root.TryGetProperty("Current", out var current) || current.ValueKind != JsonValueKind.Object) return null;
+        if (!root.TryGetProperty("Current", out var current) || current.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
         return new BlueMapGenerationCurrentDto
         {
             RenderId = Int(current, "RenderId"),
@@ -199,7 +214,9 @@ public sealed class BlueMapGenerationStatusService
         {
             var statusRoot = Path.GetDirectoryName(Path.GetFullPath(statusPath));
             if (!string.IsNullOrWhiteSpace(statusRoot) && Directory.Exists(statusRoot))
+            {
                 logPaths.AddRange(Directory.EnumerateFiles(statusRoot, "full-batch*.log", SearchOption.TopDirectoryOnly));
+            }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException) { }
 
@@ -207,9 +224,16 @@ public sealed class BlueMapGenerationStatusService
         {
             try
             {
-                if (!File.Exists(path)) continue;
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
                 var write = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
-                if (latest is null || write > latest) latest = write;
+                if (latest is null || write > latest)
+                {
+                    latest = write;
+                }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
         }

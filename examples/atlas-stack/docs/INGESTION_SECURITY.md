@@ -1,12 +1,10 @@
 # WDL ingestion security review
 
-> **AI-Generated documentation.**
-
-## Security objective
+## What this protects
 
 Assume an archive is intentionally crafted to execute code, overwrite files, exhaust CPU/RAM/disk, poison published metadata, steal credentials, or create a subtly incorrect map. The public Atlas server must remain outside the extraction and rendering trust boundary.
 
-## Hostile-actor analysis
+## Input checks and remaining risks
 
 | Attack | Defense | Residual risk / operation |
 | --- | --- | --- |
@@ -17,11 +15,11 @@ Assume an archive is intentionally crafted to execute code, overwrite files, exh
 | encrypted or unsupported ZIP | .NET reader failure becomes rejection; no password handling | central-directory encryption variants require corpus tests |
 | ZIP bomb | archive, entry, expanded-total, count, and ratio limits; streamed copy verifies declared size | CPU cost within allowed ratio remains possible |
 | proxy/body-size rejection | ordered 32 MiB chunks, exact offsets, declared total, owner binding, and 24-hour cleanup | interrupted browser sessions restart rather than resume across devices |
-| Archive outage or duplicate source | require a verified SHA-addressed E object before queueing; accepted duplicates converge | NAS X availability affects backups, not normal ingestion |
+| Archive outage or duplicate source | require a verified SHA-addressed archive object before queueing; accepted duplicates converge | Backup-store availability affects backups, not normal ingestion |
 | archive mutation during intake | private SHA-256-named snapshot followed by hash reinspection | source can change while copying, but snapshot is revalidated and becomes authoritative |
 | partial/stale extraction | random `.partial` directory and atomic rename; explicit prepare retry revalidates the snapshot and preserves prior artifacts | retained attempts consume quota and require deliberate retention policy |
 | disk exhaustion | declared expansion check, free-space reserve, output byte cap, log cap | renderer can create many non-tile files before `verify`; OS quota is still recommended |
-| parser stack/memory abuse | bounded NBT expansion, depth, element count, collection lengths, and UTF-8 validation | region-file internals are parsed by uNmINeD, not this process |
+| parser stack/memory abuse | bounded NBT expansion, depth, element count, collection lengths, and UTF-8 validation | the renderer still parses terrain beyond the bounded metadata inspected here |
 | renderer command injection | fixed trusted argument arrays and `ArgumentList`; no shell | renderer profile is privileged configuration |
 | trojan renderer | executable basename and mandatory SHA-256 pin | a pinned malicious binary remains malicious; verify source/signature separately |
 | stale/mixed renderer resume | provenance binds plan, world, dimension, renderer version/hash, and exact profile arguments | renderer-internal resume correctness still depends on the pinned release |
@@ -35,7 +33,7 @@ Assume an archive is intentionally crafted to execute code, overwrite files, exh
 | failed re-render | previous generation remains registered until replacement succeeds; failed generation is deleted/restored | superseded cleanup is best-effort after registration |
 | register-before-publish or destination tampering | receipt binds the job/plan/dimension plus a deterministic SHA-256 of every tile path, length, and byte; registration rehashes the destination | verification cost scales with published bytes; keep the destination read-only |
 | accidental public exposure | registration forces `IsPublished=false`; human promotion is separate | protect `renders.manage` and issue short-lived tokens |
-| wrong-but-valid coordinates | mandatory known-point and overlap review before promotion | fixture-based coordinate validation is future work |
+| wrong-but-valid coordinates | mandatory known-point and overlap review before promotion | synthetic coordinate tests cannot prove a real render is correctly aligned |
 | malicious archive committed to Git | `.gitignore` excludes ZIPs, worlds, chunks, tools, work, output, and secrets | use repository secret scanning and review `git status` |
 | compromised/changed Archive GUI | bounded GUI contract, exact clicked leaf, durable checkpoints, exclusions, shared single-client lock | stop on changed menus or unexpected dimension transitions; never infer a leaf from display text alone |
 | stale or malicious Archive identity metadata | preserve exact warp/catalog/report provenance; deterministic bounded candidate set; conflicts become `needs-match` | provenance supports identity but is not cryptographic proof of original 2b2t origin |
@@ -56,7 +54,7 @@ For production WDL processing:
 - Apply malware scanning to inputs as defense-in-depth, but never treat a clean scan as archive validation.
 - Patch the OS, .NET runtime, and renderer. Changing the renderer requires a new profile/hash and coordinate acceptance run.
 - Keep the outbound-connected Archive collector separate from the extraction/render account. Cataloging or successful WDL save must never grant write access to published tiles or Atlas metadata.
-- Keep BlueMap scratch, tool cache, lock/checkpoint state, immutable output, and X source objects in their documented separate roots. Give the API read-only access to completed BlueMap output and never expose scratch or manifests by directory listing.
+- Keep BlueMap scratch, tool cache, lock/checkpoint state, immutable output, and preserved source objects in their documented separate roots. Give the API read-only access to completed BlueMap output and never expose scratch or manifests by directory listing.
 
 On Windows, a dedicated local account plus NTFS ACLs and Defender/WDAC controls is the minimum practical boundary. For stronger containment, use a disposable VM with a data-only output handoff. Do not grant the renderer access to the Atlas database, source repository, SSH keys, browser profile, cloud credentials, or API token.
 
@@ -98,7 +96,7 @@ Before production, maintain a quarantined corpus for encrypted ZIPs, ZIP64 edge 
 ## Known limitations
 
 - Only ZIP intake is accepted. Convert RAR/7z/tar in a separate untrusted conversion sandbox, then ingest the ZIP.
-- The .NET layer inventories region/chunk storage but does not parse region contents; renderer vulnerabilities remain in the renderer boundary.
+- The .NET layer inventories region/chunk storage and reads bounded metadata. It does not replace the renderer's terrain parser; renderer bugs remain inside the renderer boundary.
 - Renderer profiles are operator-authored because documented uNmINeD flags and output layout vary. The example intentionally configures only the officially documented command.
 - Tile verification checks layout, coordinate bounds, and size, not PNG/WebP decode integrity or geographic correctness.
 - Work-directory ACLs and disk quotas are operational prerequisites, not configured by the cross-platform CLI.

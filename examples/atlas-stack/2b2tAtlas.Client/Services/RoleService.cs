@@ -26,9 +26,17 @@ public class RoleService
     public async Task<RoleMatrix?> GetMatrixAsync()
     {
         var req = await BuildAsync(HttpMethod.Get, "api/roles", null);
-        if (req == null) return null;
+        if (req == null)
+        {
+            return null;
+        }
+
         var resp = await _http.SendAsync(req);
-        if (!resp.IsSuccessStatusCode) return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
         return await resp.Content.ReadFromJsonAsync<RoleMatrix>();
     }
 
@@ -36,9 +44,17 @@ public class RoleService
     public async Task<RoleMatrix?> SetRoleAsync(string role, IEnumerable<string> permissions)
     {
         var req = await BuildAsync(HttpMethod.Put, $"api/roles/{role}", permissions.ToList());
-        if (req == null) return null;
+        if (req == null)
+        {
+            return null;
+        }
+
         var resp = await _http.SendAsync(req);
-        if (!resp.IsSuccessStatusCode) return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
         return await resp.Content.ReadFromJsonAsync<RoleMatrix>();
     }
 
@@ -46,18 +62,34 @@ public class RoleService
     public async Task<RoleMatrix?> ResetRoleAsync(string role)
     {
         var req = await BuildAsync(HttpMethod.Delete, $"api/roles/{role}", null);
-        if (req == null) return null;
+        if (req == null)
+        {
+            return null;
+        }
+
         var resp = await _http.SendAsync(req);
-        if (!resp.IsSuccessStatusCode) return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
         return await resp.Content.ReadFromJsonAsync<RoleMatrix>();
     }
 
     private async Task<HttpRequestMessage?> BuildAsync(HttpMethod method, string url, object? body)
     {
         var token = await _auth.GetTokenAsync();
-        if (string.IsNullOrEmpty(token)) return null;
+        if (string.IsNullOrEmpty(token))
+        {
+            return null;
+        }
+
         var req = new HttpRequestMessage(method, url);
-        if (body != null) req.Content = JsonContent.Create(body);
+        if (body != null)
+        {
+            req.Content = JsonContent.Create(body);
+        }
+
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return req;
     }

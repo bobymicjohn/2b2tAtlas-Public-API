@@ -53,13 +53,17 @@ public class EnrichmentController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         if (!_enrichment.IsAvailable)
+        {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, "AI enrichment is disabled or paused.");
+        }
 
         var entity = await _context.Locations.AsNoTracking()
             .Include(location => location.LocationGroups).ThenInclude(link => link.Group)
             .FirstOrDefaultAsync(l => l.Rowid == id, cancellationToken);
         if (entity is null)
+        {
             return NotFound();
+        }
 
         var location = new Atlas.Location
         {

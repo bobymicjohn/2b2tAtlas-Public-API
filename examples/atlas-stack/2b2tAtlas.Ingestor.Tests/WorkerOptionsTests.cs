@@ -42,7 +42,11 @@ public sealed class WorkerOptionsTests
     [Fact]
     public void Cross_volume_paths_do_not_overlap()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         var method = typeof(WorkerOptions).GetMethod("IsWithin", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(method);
 

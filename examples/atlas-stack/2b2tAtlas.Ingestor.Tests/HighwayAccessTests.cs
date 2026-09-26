@@ -37,8 +37,11 @@ public sealed class HighwayAccessTests
             builder.WebHost.UseUrls("http://127.0.0.1:0");
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["JwtSettings:SecretKey"] = key, ["JwtSettings:Issuer"] = "fixture", ["JwtSettings:Audience"] = "fixture",
-                ["Recovery:DatabasePath"] = dbPath, ["Recovery:Root"] = Path.Combine(root, "backups")
+                ["JwtSettings:SecretKey"] = key,
+                ["JwtSettings:Issuer"] = "fixture",
+                ["JwtSettings:Audience"] = "fixture",
+                ["Recovery:DatabasePath"] = dbPath,
+                ["Recovery:Root"] = Path.Combine(root, "backups")
             });
             builder.Services.AddControllers().AddApplicationPart(typeof(HighwaysController).Assembly);
             builder.Services.AddDbContext<AtlasContext>(options => options.UseSqlite($"Data Source={dbPath};Pooling=False"));
@@ -55,7 +58,11 @@ public sealed class HighwayAccessTests
                 db.Highways.Add(new _2b2tAtlas.Server.Models.Highway { Id = 1, Name = "Test highway", PointsJson = "[[0,0],[0,10000]]" });
                 await db.SaveChangesAsync(ct);
             }
-            app.UseRouting(); app.UseAuthentication(); app.UseAuthorization(); app.UseMiddleware<AtlasWriteProtection>(); app.MapControllers();
+            app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.UseMiddleware<AtlasWriteProtection>();
+            app.MapControllers();
             await app.StartAsync(ct);
             var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
             using var client = new HttpClient { BaseAddress = new Uri(address) };
@@ -67,9 +74,15 @@ public sealed class HighwayAccessTests
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("api/highways/all", ct)).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("api/highways/history", ct)).StatusCode);
             foreach (var url in new[] { "api/audit", "api/admin/users", "api/roles" })
+            {
                 Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync(url, ct)).StatusCode);
+            }
+
             foreach (var url in new[] { "api/highways/1", "api/locations/1", "api/groups/1" })
+            {
                 Assert.Equal(HttpStatusCode.Forbidden, (await client.DeleteAsync(url, ct)).StatusCode);
+            }
+
             Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync("api/highways/history/1/restore", new Atlas.HighwayRestoreRequest(), ct)).StatusCode);
             var highway = await client.GetFromJsonAsync<Atlas.Highway>("api/highways/1", ct);
             highway!.Width = 7;

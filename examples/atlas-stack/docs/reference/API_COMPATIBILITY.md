@@ -1,14 +1,10 @@
-# API And Legacy Compatibility
+# API and legacy compatibility
 
-> **AI-Generated documentation.**
-
-## Scope
-
-This file routes modern, administrative, worker, proxy, and legacy HTTP contracts. Exact DTO validation is code-owned; concise public usage remains in `docs/API.md`.
+These are the API routes to check when changing public reads, authenticated edits or worker calls. See [API usage](../API.md) for request examples and the controllers for validation rules.
 
 ## Modern Public Reads
 
-**Production:** public JSON endpoints are:
+public JSON endpoints are:
 
 - `GET /api/locations` and `GET /api/locations/{id}`.
 - `GET /api/highways` and `GET /api/highways/{id}`.
@@ -88,4 +84,4 @@ Legacy dimensions are `0=Overworld`, `1=End`, and `-1=Nether`. Never apply those
 
 ## Browser-Generated Exports
 
-**Production:** map and directory exports are generated in the client. There is no supported server JourneyMap or Xaero export endpoint. Files under `2b2tAtlas.Server/Controllers/V1/` are not listed in `docs/API.md` as the supported integration surface; use current public GET contracts unless source and tests establish a required legacy contract.
+map and directory exports are generated in the client. There is no supported server JourneyMap or Xaero export endpoint. Files under `2b2tAtlas.Server/Controllers/V1/` are not listed in `docs/API.md` as the supported integration surface; use current public GET contracts unless source and tests establish a required legacy contract.

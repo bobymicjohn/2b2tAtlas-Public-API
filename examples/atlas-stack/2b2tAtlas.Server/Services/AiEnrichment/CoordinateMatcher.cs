@@ -36,7 +36,9 @@ public static class CoordinateMatcher
         int toleranceBlocks)
     {
         if (wikiCoordinates.Count == 0)
+        {
             return new CoordinateAgreement(false, false, -1, "No coordinates on the wiki page.");
+        }
 
         // Normalize the location to the Overworld plane so a Nether base and its Overworld coordinates align.
         var (locOverworldX, locOverworldZ) = locationDimension == 1

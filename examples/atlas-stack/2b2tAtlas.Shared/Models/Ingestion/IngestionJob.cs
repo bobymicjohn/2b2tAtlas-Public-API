@@ -5,34 +5,34 @@ namespace Atlas;
 /// <summary>Describes a validated world-download archive to queue for local ingestion.</summary>
 public class IngestionJobRequest
 {
-    /// <summary>Gets or sets the portable ASCII <c>.zip</c> basename expected in the worker intake directory.</summary>
+    /// <summary>Portable ASCII <c>.zip</c> basename expected in the worker intake directory.</summary>
     public string IntakeFileName { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the unique lowercase path segment used for the job and published tile directory.</summary>
+    /// <summary>Unique lowercase path segment used for the job and published tile directory.</summary>
     public string Slug { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the location and render name shown by the Atlas.</summary>
+    /// <summary>Location and render name shown by the Atlas.</summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the non-future world-download date in <c>yyyy-MM-dd</c> format.</summary>
+    /// <summary>Non-future world-download date in <c>yyyy-MM-dd</c> format.</summary>
     public string WorldDownloadDate { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the human-readable source or provenance attribution.</summary>
+    /// <summary>Human-readable source or provenance attribution.</summary>
     public string Source { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the display scale tag, such as <c>5k</c>, <c>256k</c>, or <c>1m</c>.</summary>
+    /// <summary>Display scale tag, such as <c>5k</c>, <c>256k</c>, or <c>1m</c>.</summary>
     public string Scale { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets whether separate day and night tiles are produced; worker jobs always enable this.</summary>
+    /// <summary>Whether separate day and night tiles are produced; worker jobs always enable this.</summary>
     public bool DayNight { get; set; } = true;
 
-    /// <summary>Gets or sets the location to receive the render, or <see langword="null"/> to create a location at the render center.</summary>
+    /// <summary>Location to receive the render, or <see langword="null"/> to create a location at the render center.</summary>
     public int? ExistingLocationId { get; set; }
 
-    /// <summary>Gets or sets whether a valid <c>level.dat</c> LastPlayed value may replace <see cref="WorldDownloadDate"/>; <see langword="null"/> defaults to enabled.</summary>
+    /// <summary>Whether a valid <c>level.dat</c> LastPlayed value may replace <see cref="WorldDownloadDate"/>; <see langword="null"/> defaults to enabled.</summary>
     public bool? UseArchiveLastPlayed { get; set; }
 
-    /// <summary>Gets or sets the target render dimension: <c>overworld</c>, <c>nether</c>, or <c>end</c>.</summary>
+    /// <summary>Target render dimension: <c>overworld</c>, <c>nether</c>, or <c>end</c>.</summary>
     public string Dimension { get; set; } = "overworld";
 
     /// <summary>Gets or sets an optional archive-relative world root when a ZIP contains multiple worlds.</summary>
@@ -44,13 +44,13 @@ public class IngestionJobRequest
     /// </summary>
     public string? ArchiveWarpName { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing X coordinate captured immediately after the warp.</summary>
+    /// <summary>Live Archive landing X coordinate captured immediately after the warp.</summary>
     public double? ArchiveWarpX { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing Y coordinate captured immediately after the warp.</summary>
+    /// <summary>Live Archive landing Y coordinate captured immediately after the warp.</summary>
     public double? ArchiveWarpY { get; set; }
 
-    /// <summary>Gets or sets the live Archive landing Z coordinate captured immediately after the warp.</summary>
+    /// <summary>Live Archive landing Z coordinate captured immediately after the warp.</summary>
     public double? ArchiveWarpZ { get; set; }
 }
 
@@ -60,67 +60,67 @@ public sealed class ChunkedUploadStartRequest
     /// <summary>Gets or sets JSON-encoded <see cref="IngestionJobRequest"/> metadata.</summary>
     public string Metadata { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the original ZIP filename.</summary>
+    /// <summary>Original ZIP filename.</summary>
     public string FileName { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the total ZIP length in bytes.</summary>
+    /// <summary>Total ZIP length in bytes.</summary>
     public long TotalBytes { get; set; }
 }
 
 /// <summary>Identifies a resumable WDL upload and its bounded chunk size.</summary>
 public sealed class ChunkedUploadSession
 {
-    /// <summary>Gets or sets the opaque upload identifier.</summary>
+    /// <summary>Opaque upload identifier.</summary>
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the maximum bytes per chunk.</summary>
+    /// <summary>Maximum bytes per chunk.</summary>
     public int ChunkSizeBytes { get; set; }
 }
 
 /// <summary>Queues a completed ZIP already present in the server's configured local intake directory.</summary>
 public sealed class LocalIntakeQueueRequest
 {
-    /// <summary>Gets or sets the normal bounded ingestion metadata.</summary>
+    /// <summary>Normal bounded ingestion metadata.</summary>
     public IngestionJobRequest Metadata { get; set; } = new();
 
-    /// <summary>Gets or sets the acquisition-side filename retained for Archive warp and provenance inference.</summary>
+    /// <summary>Acquisition-side filename retained for Archive warp and provenance inference.</summary>
     public string OriginalFileName { get; set; } = string.Empty;
 }
 
 /// <summary>Represents a queued ingestion job and its server-managed execution state.</summary>
 public sealed class IngestionJobDto : IngestionJobRequest
 {
-    /// <summary>Gets or sets the job's public, opaque identifier.</summary>
+    /// <summary>Job's public, opaque identifier.</summary>
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the original uploader-visible ZIP filename.</summary>
+    /// <summary>Original uploader-visible ZIP filename.</summary>
     public string? OriginalFileName { get; set; }
 
-    /// <summary>Gets or sets the queue state, such as <c>queued</c>, <c>needs-match</c>, <c>claimed</c>, <c>running</c>, <c>completed</c>, <c>failed</c>, or <c>cancelled</c>.</summary>
+    /// <summary>Queue state, such as <c>queued</c>, <c>needs-match</c>, <c>claimed</c>, <c>running</c>, <c>completed</c>, <c>failed</c>, or <c>cancelled</c>.</summary>
     public string Status { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the worker pipeline stage currently associated with the job.</summary>
+    /// <summary>Worker pipeline stage currently associated with the job.</summary>
     public string? Stage { get; set; }
 
-    /// <summary>Gets or sets the latest operator-safe progress or failure message.</summary>
+    /// <summary>Latest operator-safe progress or failure message.</summary>
     public string? Message { get; set; }
 
     /// <summary>Gets or sets overall progress from 0 through 100.</summary>
     public int ProgressPercent { get; set; }
 
-    /// <summary>Gets or sets the estimated remaining seconds, or <see langword="null"/> when unavailable or terminal.</summary>
+    /// <summary>Estimated remaining seconds, or <see langword="null"/> when unavailable or terminal.</summary>
     public int? EtaSeconds { get; set; }
 
-    /// <summary>Gets or sets the lowercase SHA-256 digest of the immutable intake archive after inspection.</summary>
+    /// <summary>Lowercase SHA-256 digest of the immutable intake archive after inspection.</summary>
     public string? ArchiveSha256 { get; set; }
 
-    /// <summary>Gets or sets the one-lease worker secret returned only by a successful claim response.</summary>
+    /// <summary>One-lease worker secret returned only by a successful claim response.</summary>
     public string? ClaimToken { get; set; }
 
-    /// <summary>Gets or sets the number of times the job has been claimed, including retries after expired leases.</summary>
+    /// <summary>Number of times the job has been claimed, including retries after expired leases.</summary>
     public int AttemptCount { get; set; }
 
-    /// <summary>Gets or sets whether this completed job is being rebuilt from its archived source.</summary>
+    /// <summary>Whether this completed job is being rebuilt from its archived source.</summary>
     public bool RerenderRequested { get; set; }
 
     /// <summary>Gets or sets an optional inclusive top-Y render cutoff selected from reviewed historical evidence.</summary>
@@ -141,7 +141,7 @@ public sealed class IngestionJobDto : IngestionJobRequest
     /// <summary>Gets or sets the UTC time at which the job entered a terminal state.</summary>
     public DateTime? CompletedUtc { get; set; }
 
-    /// <summary>Gets or sets the worker's bounded inspection summary for the Minecraft world.</summary>
+    /// <summary>Worker's bounded inspection summary for the Minecraft world.</summary>
     public IngestionWorldInspection? Inspection { get; set; }
 
     /// <summary>Gets or sets untrusted downloader/provenance evidence captured before or during preparation.</summary>
@@ -150,29 +150,29 @@ public sealed class IngestionJobDto : IngestionJobRequest
     /// <summary>Gets or sets ranked existing-location suggestions when the job is awaiting a manual match.</summary>
     public IReadOnlyList<LocationMatchSuggestion>? MatchSuggestions { get; set; }
 
-    /// <summary>Gets or sets the evidence source used to infer <see cref="IngestionJobRequest.ArchiveWarpName"/>.</summary>
+    /// <summary>Evidence source used to infer <see cref="IngestionJobRequest.ArchiveWarpName"/>.</summary>
     public string? ArchiveWarpSource { get; set; }
 
-    /// <summary>Gets or sets the warp row reused or created for the immutable WDL.</summary>
+    /// <summary>Warp row reused or created for the immutable WDL.</summary>
     public int? WarpId { get; set; }
 
-    /// <summary>Gets or sets the persisted automatic/manual location decision.</summary>
+    /// <summary>Persisted automatic/manual location decision.</summary>
     public string? MatchDecision { get; set; }
 
-    /// <summary>Gets or sets the confidence of the persisted match decision.</summary>
+    /// <summary>Confidence of the persisted match decision.</summary>
     public double? MatchConfidence { get; set; }
 
-    /// <summary>Gets or sets the concise evidence supporting the persisted match decision.</summary>
+    /// <summary>Concise evidence supporting the persisted match decision.</summary>
     public string? MatchReason { get; set; }
 }
 
 /// <summary>Resolves a job awaiting a manual location match.</summary>
 public sealed class ResolveMatchRequest
 {
-    /// <summary>Gets or sets the existing location to attach, or <see langword="null"/> to create a new location at the render centroid.</summary>
+    /// <summary>Existing location to attach, or <see langword="null"/> to create a new location at the render centroid.</summary>
     public int? LocationId { get; set; }
 
-    /// <summary>Gets or sets the reviewed Archive warp, or an empty value when this is not an Archive WDL.</summary>
+    /// <summary>Reviewed Archive warp, or an empty value when this is not an Archive WDL.</summary>
     public string? WarpName { get; set; }
 }
 
@@ -182,10 +182,10 @@ public sealed class IngestionJobUpdate
     /// <summary>Gets or sets the 43-character claim secret proving ownership of the active lease.</summary>
     public string ClaimToken { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the worker-reported state: <c>running</c>, <c>completed</c>, or <c>failed</c>.</summary>
+    /// <summary>Worker-reported state: <c>running</c>, <c>completed</c>, or <c>failed</c>.</summary>
     public string Status { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the current pipeline stage, limited to 40 characters without control characters.</summary>
+    /// <summary>Current pipeline stage, limited to 40 characters without control characters.</summary>
     public string? Stage { get; set; }
 
     /// <summary>Gets or sets an operator-safe status message, limited to 1,000 characters without control characters.</summary>
@@ -197,41 +197,41 @@ public sealed class IngestionJobUpdate
     /// <summary>Gets or sets estimated remaining seconds from zero through seven days.</summary>
     public int? EtaSeconds { get; set; }
 
-    /// <summary>Gets or sets the lowercase SHA-256 archive digest; completion reports require it.</summary>
+    /// <summary>Lowercase SHA-256 archive digest; completion reports require it.</summary>
     public string? ArchiveSha256 { get; set; }
 
-    /// <summary>Gets or sets the published render metadata; completion reports require it.</summary>
+    /// <summary>Published render metadata; completion reports require it.</summary>
     public LocationRenderCompletion? LocationRender { get; set; }
 
-    /// <summary>Gets or sets a replacement bounded world-inspection summary to persist with the job.</summary>
+    /// <summary>A replacement bounded world-inspection summary to persist with the job.</summary>
     public IngestionWorldInspection? Inspection { get; set; }
 }
 
 /// <summary>Summarizes trusted structural metadata extracted from a prepared Minecraft Java world.</summary>
 public sealed class IngestionWorldInspection
 {
-    /// <summary>Gets or sets the optional world name read from <c>level.dat</c>.</summary>
+    /// <summary>Optional world name read from <c>level.dat</c>.</summary>
     public string? LevelName { get; set; }
 
-    /// <summary>Gets or sets the optional numeric Minecraft data version read from <c>level.dat</c>.</summary>
+    /// <summary>Optional numeric Minecraft data version read from <c>level.dat</c>.</summary>
     public int? DataVersion { get; set; }
 
-    /// <summary>Gets or sets the optional human-readable Minecraft version name.</summary>
+    /// <summary>Optional human-readable Minecraft version name.</summary>
     public string? VersionName { get; set; }
 
-    /// <summary>Gets or sets a plausible UTC LastPlayed time read from <c>level.dat</c>.</summary>
+    /// <summary>A plausible UTC LastPlayed time read from <c>level.dat</c>.</summary>
     public DateTime? LastPlayedUtc { get; set; }
 
-    /// <summary>Gets or sets the aggregate storage era: <c>anvil</c>, <c>mcregion</c>, <c>legacy-alpha</c>, or <c>mixed</c>.</summary>
+    /// <summary>Aggregate storage era: <c>anvil</c>, <c>mcregion</c>, <c>legacy-alpha</c>, or <c>mixed</c>.</summary>
     public string StorageEra { get; set; } = string.Empty;
 
     /// <summary>Gets or sets one to three unique Overworld, Nether, or End inspection summaries.</summary>
     public List<IngestionDimensionInspection> Dimensions { get; set; } = [];
 
-    /// <summary>Gets or sets the provenance assessment: <c>unverified</c>, <c>source-attributed</c>, or <c>overlap-verified</c>.</summary>
+    /// <summary>Provenance assessment: <c>unverified</c>, <c>source-attributed</c>, or <c>overlap-verified</c>.</summary>
     public string ProvenanceStatus { get; set; } = "unverified";
 
-    /// <summary>Gets or sets the human-readable evidence statement supporting <see cref="ProvenanceStatus"/>.</summary>
+    /// <summary>Human-readable evidence statement supporting <see cref="ProvenanceStatus"/>.</summary>
     public string ProvenanceMessage { get; set; } = string.Empty;
 
     /// <summary>Gets or sets bounded Archive downloader, raw-dimension, and player-position evidence.</summary>
@@ -247,62 +247,62 @@ public sealed class IngestionDimensionInspection
     /// <summary>Gets or sets <c>anvil</c>, <c>mcregion</c>, or <c>legacy-alpha</c> for this dimension.</summary>
     public string StorageEra { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the number of validated region or chunk-storage files.</summary>
+    /// <summary>Number of validated region or chunk-storage files.</summary>
     public int StorageFileCount { get; set; }
 
-    /// <summary>Gets or sets the number of present chunks found in validated storage.</summary>
+    /// <summary>Number of present chunks found in validated storage.</summary>
     public int ChunkCount { get; set; }
 
-    /// <summary>Gets or sets the native tiles implied by the authoritative chunk bounds.</summary>
+    /// <summary>Native tiles implied by the authoritative chunk bounds.</summary>
     public int NativeTileCount { get; set; }
 
-    /// <summary>Gets or sets the inclusive minimum block X coordinate.</summary>
+    /// <summary>Inclusive minimum block X coordinate.</summary>
     public int MinX { get; set; }
 
-    /// <summary>Gets or sets the inclusive minimum block Z coordinate.</summary>
+    /// <summary>Inclusive minimum block Z coordinate.</summary>
     public int MinZ { get; set; }
 
-    /// <summary>Gets or sets the exclusive maximum block X coordinate.</summary>
+    /// <summary>Exclusive maximum block X coordinate.</summary>
     public int MaxXExclusive { get; set; }
 
-    /// <summary>Gets or sets the exclusive maximum block Z coordinate.</summary>
+    /// <summary>Exclusive maximum block Z coordinate.</summary>
     public int MaxZExclusive { get; set; }
 
-    /// <summary>Gets or sets the number of region files skipped as corrupt or truncated during inspection.</summary>
+    /// <summary>Number of region files skipped as corrupt or truncated during inspection.</summary>
     public int SkippedRegionCount { get; set; }
 
-    /// <summary>Gets or sets the number of individual chunks skipped as corrupt or unreadable during inspection.</summary>
+    /// <summary>Number of individual chunks skipped as corrupt or unreadable during inspection.</summary>
     public int SkippedChunkCount { get; set; }
 }
 
 /// <summary>Describes a verified immutable tile pyramid that the server can register as a location render.</summary>
 public sealed class LocationRenderCompletion
 {
-    /// <summary>Gets or sets the approved HTTPS XYZ tile template ending in <c>{z}/{y}/{x}.png</c>.</summary>
+    /// <summary>Approved HTTPS XYZ tile template ending in <c>{z}/{y}/{x}.png</c>.</summary>
     public string TilesPath { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets whether <see cref="TilesPath"/> contains a <c>{dn}</c> day/night token.</summary>
+    /// <summary>Whether <see cref="TilesPath"/> contains a <c>{dn}</c> day/night token.</summary>
     public bool HasDayNight { get; set; }
 
-    /// <summary>Gets or sets the map dimension number: 0 Overworld, 1 Nether, or 2 End.</summary>
+    /// <summary>Map dimension number: 0 Overworld, 1 Nether, or 2 End.</summary>
     public int Dimension { get; set; }
 
-    /// <summary>Gets or sets the inclusive minimum rendered block X coordinate.</summary>
+    /// <summary>Inclusive minimum rendered block X coordinate.</summary>
     public int MinX { get; set; }
 
-    /// <summary>Gets or sets the inclusive minimum rendered block Z coordinate.</summary>
+    /// <summary>Inclusive minimum rendered block Z coordinate.</summary>
     public int MinZ { get; set; }
 
-    /// <summary>Gets or sets the exclusive maximum rendered block X coordinate.</summary>
+    /// <summary>Exclusive maximum rendered block X coordinate.</summary>
     public int MaxXExclusive { get; set; }
 
-    /// <summary>Gets or sets the exclusive maximum rendered block Z coordinate.</summary>
+    /// <summary>Exclusive maximum rendered block Z coordinate.</summary>
     public int MaxZExclusive { get; set; }
 
-    /// <summary>Gets or sets the deepest zoom level backed by native tile files, from 0 through 30.</summary>
+    /// <summary>Deepest zoom level backed by native tile files, from 0 through 30.</summary>
     public int MaxNativeZoom { get; set; }
 
-    /// <summary>Gets or sets the signed tile-coordinate contract; registration currently requires <c>atlas-sparse-v1</c>.</summary>
+    /// <summary>Signed tile-coordinate contract; registration currently requires <c>atlas-sparse-v1</c>.</summary>
     public string CoordinateScheme { get; set; } = string.Empty;
 }
 
@@ -339,43 +339,69 @@ public static partial class IngestionJobValidator
 
         var slug = request.Slug?.Trim() ?? string.Empty;
         if (!SlugPattern.IsMatch(slug))
+        {
             errors.Add("Slug must be 1-54 lowercase letters, numbers, or hyphens.");
+        }
 
         var rawName = request.Name ?? string.Empty;
         var name = rawName.Trim();
         if (name.Length is < 1 or > 90 || name != rawName || HasControlCharacters(rawName))
+        {
             errors.Add("Name must be between 1 and 90 characters.");
+        }
 
         var rawSource = request.Source ?? string.Empty;
         var source = rawSource.Trim();
         if (source.Length is < 1 or > 200 || source != rawSource || HasControlCharacters(rawSource))
+        {
             errors.Add("Source must be between 1 and 200 characters.");
+        }
 
         var scale = request.Scale?.Trim() ?? string.Empty;
         if (scale.Length > 12 || !ScalePattern.IsMatch(scale))
+        {
             errors.Add("Scale must look like 5k, 256k, or 1m.");
+        }
 
         var dimension = request.Dimension?.Trim().ToLowerInvariant() ?? string.Empty;
         if (dimension is not ("overworld" or "nether" or "end" or "auto"))
+        {
             errors.Add("Render dimension must be Overworld, Nether, End, or Auto-detect.");
+        }
+
         if (!string.IsNullOrWhiteSpace(request.WorldRoot))
         {
             var worldRoot = request.WorldRoot.Replace('\\', '/').Trim('/');
             if (worldRoot.Length is < 1 or > 240 || Path.IsPathRooted(worldRoot) ||
                 worldRoot.Split('/').Any(part => part is "" or "." or "..") || HasControlCharacters(worldRoot))
+            {
                 errors.Add("World root must be a safe archive-relative path up to 240 characters.");
+            }
         }
         if (!string.IsNullOrWhiteSpace(request.ArchiveWarpName) &&
             (request.ArchiveWarpName.Length > 240 || request.ArchiveWarpName.Any(char.IsControl)))
+        {
             errors.Add("Archive warp must be at most 240 characters without control characters.");
+        }
+
         var warpCoordinates = new[] { request.ArchiveWarpX, request.ArchiveWarpY, request.ArchiveWarpZ };
         if (warpCoordinates.Any(value => value.HasValue) && warpCoordinates.Any(value => !value.HasValue))
+        {
             errors.Add("Archive warp coordinates must provide X, Y, and Z together.");
+        }
+
         foreach (var coordinate in warpCoordinates)
+        {
             if (coordinate is double value && (!double.IsFinite(value) || Math.Abs(value) > 100_000_000))
+            {
                 errors.Add("Archive warp coordinates are outside the safety limit.");
+            }
+        }
+
         if (request.ExistingLocationId is <= 0)
+        {
             errors.Add("Existing location ID must be a positive integer.");
+        }
 
         if (!DateOnly.TryParseExact(request.WorldDownloadDate, "yyyy-MM-dd", out var date) ||
             date > DateOnly.FromDateTime(DateTime.UtcNow))
@@ -393,52 +419,105 @@ public static partial class IngestionJobValidator
     {
         var errors = new List<string>();
         if (!ClaimTokenPattern.IsMatch(update.ClaimToken ?? string.Empty))
+        {
             errors.Add("A valid claim token is required.");
+        }
+
         if (update.Status is not ("running" or "completed" or "failed"))
+        {
             errors.Add("Worker status must be running, completed, or failed.");
+        }
+
         if (update.Stage?.Length > 40 || update.Stage is not null && HasControlCharacters(update.Stage))
+        {
             errors.Add("Stage must be at most 40 characters without control characters.");
+        }
+
         if (update.Message?.Length > 1000 || update.Message is not null && HasControlCharacters(update.Message))
+        {
             errors.Add("Message must be at most 1000 characters without control characters.");
+        }
+
         if (update.ProgressPercent is < 0 or > 100)
+        {
             errors.Add("Progress percent must be between 0 and 100.");
+        }
+
         if (update.EtaSeconds is < 0 or > 7 * 24 * 60 * 60)
+        {
             errors.Add("ETA must be between zero and seven days.");
+        }
+
         if (update.ArchiveSha256 is not null && !Sha256Pattern.IsMatch(update.ArchiveSha256))
+        {
             errors.Add("Archive SHA-256 must be 64 lowercase hexadecimal characters.");
+        }
+
         if (update.Status == "completed" && update.ArchiveSha256 is null)
+        {
             errors.Add("Completed jobs require an archive SHA-256.");
+        }
+
         if (update.Status == "completed" && update.LocationRender is null)
+        {
             errors.Add("Completed jobs require location render metadata.");
+        }
+
         if (update.Inspection is not null)
+        {
             ValidateInspection(update.Inspection, errors);
+        }
+
         return errors;
     }
 
     private static void ValidateInspection(IngestionWorldInspection inspection, List<string> errors)
     {
         if (inspection.LevelName?.Length > 200 || inspection.LevelName is not null && HasControlCharacters(inspection.LevelName))
+        {
             errors.Add("World level name must be at most 200 characters without control characters.");
+        }
+
         if (inspection.VersionName?.Length > 80 || inspection.VersionName is not null && HasControlCharacters(inspection.VersionName))
+        {
             errors.Add("World version name must be at most 80 characters without control characters.");
+        }
+
         if (inspection.StorageEra is not ("anvil" or "mcregion" or "legacy-alpha" or "mixed"))
+        {
             errors.Add("World storage era is invalid.");
+        }
+
         if (inspection.ProvenanceStatus is not ("unverified" or "source-attributed" or "overlap-verified"))
+        {
             errors.Add("World provenance status is invalid.");
+        }
+
         if (inspection.ProvenanceMessage.Length is < 1 or > 500 || HasControlCharacters(inspection.ProvenanceMessage))
+        {
             errors.Add("World provenance message must be between 1 and 500 characters without control characters.");
+        }
+
         if (inspection.ArchiveEvidence is { } evidence)
+        {
             ValidateArchiveEvidence(evidence, errors);
+        }
+
         if (inspection.Dimensions.Count is < 1 or > 3 ||
             inspection.Dimensions.Select(value => value.Key).Distinct(StringComparer.Ordinal).Count() != inspection.Dimensions.Count)
+        {
             errors.Add("World inspection must contain one to three unique dimensions.");
+        }
+
         foreach (var dimension in inspection.Dimensions)
         {
             if (dimension.Key is not ("overworld" or "nether" or "end") ||
                 dimension.StorageEra is not ("anvil" or "mcregion" or "legacy-alpha") ||
                 dimension.StorageFileCount < 1 || dimension.ChunkCount < 1 || dimension.NativeTileCount < 1 ||
                 dimension.MinX >= dimension.MaxXExclusive || dimension.MinZ >= dimension.MaxZExclusive)
+            {
                 errors.Add("World dimension inspection is invalid.");
+            }
         }
     }
 
@@ -453,18 +532,31 @@ public static partial class IngestionJobValidator
             Invalid(evidence.SourceKind, 80) || Invalid(evidence.ServerBrand, 120) ||
             Invalid(evidence.MinecraftVersion, 80) || Invalid(evidence.ModVersion, 80) ||
             Invalid(evidence.LoaderName, 80) || Invalid(evidence.LoaderVersion, 80))
+        {
             errors.Add("Archive WDL evidence contains an invalid text field.");
+        }
+
         if (evidence.ReportSchemaVersion is < 0 or > 1_000 || evidence.ReportSessionCount is < 0 or > 256 ||
             new[] { evidence.CapturedChunkCount, evidence.SavedChunkCount, evidence.EntityCount, evidence.ContainerCount }
                 .Any(value => value is < 0 or > 100_000_000))
+        {
             errors.Add("Archive WDL evidence contains an invalid report count.");
+        }
+
         if (evidence.NameCandidates.Count > 24 || evidence.RawDimensionIds.Count > 128 || evidence.Warnings.Count > 24 ||
             evidence.NameCandidates.Concat(evidence.RawDimensionIds).Concat(evidence.Warnings)
                 .Any(value => Invalid(value, 240)))
+        {
             errors.Add("Archive WDL evidence exceeds its bounded collection limits.");
+        }
+
         foreach (var coordinate in new[] { evidence.PlayerX, evidence.PlayerY, evidence.PlayerZ })
+        {
             if (coordinate is double value && (!double.IsFinite(value) || Math.Abs(value) > 100_000_000))
+            {
                 errors.Add("Archive WDL player position is outside the safety limit.");
+            }
+        }
     }
 
     private static bool HasControlCharacters(string value) => value.Any(char.IsControl);
@@ -502,17 +594,37 @@ public static class IngestionCompletionValidator
     {
         var errors = new List<string>();
         if (render.Dimension is not (0 or 1 or 2))
+        {
             errors.Add("The certified base-render schemes support the Overworld, Nether, and End.");
+        }
+
         if (render.CoordinateScheme != "atlas-sparse-v1")
+        {
             errors.Add("Location render must use the signed sparse Atlas coordinate scheme.");
+        }
+
         if (render.MinX >= render.MaxXExclusive || render.MinZ >= render.MaxZExclusive)
+        {
             errors.Add("Location render bounds are empty or inverted.");
+        }
+
         if (render.MinX < -RenderCoordinateLimit || render.MinZ < -RenderCoordinateLimit ||
             render.MaxXExclusive > RenderCoordinateLimit || render.MaxZExclusive > RenderCoordinateLimit)
+        {
             errors.Add("Location render bounds exceed the world border tile margin.");
+        }
+
         if (render.MaxNativeZoom is < 0 or > 30)
+        {
             errors.Add("Location render maximum native zoom is invalid.");
-        var dimensionPath = render.Dimension switch { 1 => "nether", 2 => "end", _ => "overworld" };
+        }
+
+        var dimensionPath = render.Dimension switch
+        {
+            1 => "nether",
+            2 => "end",
+            _ => "overworld"
+        };
         var pathMatches = render.HasDayNight
             ? Regex.IsMatch(
                 render.TilesPath,
@@ -522,7 +634,10 @@ public static class IngestionCompletionValidator
             : render.TilesPath.EndsWith(
                 $"/{job.Slug}/{dimensionPath}/{{z}}/{{y}}/{{x}}.png", StringComparison.Ordinal);
         if (!pathMatches || !IsAllowedTileUrl(render.TilesPath, allowedUrlPrefixes))
+        {
             errors.Add("Location render tile URL is not under the approved root or does not match the job.");
+        }
+
         return errors;
     }
 
@@ -531,7 +646,10 @@ public static class IngestionCompletionValidator
         if (value.Length is < 1 or > 500 || value.Any(char.IsControl) || value.Contains('?') || value.Contains('#') ||
             !Uri.TryCreate(value.Replace("{dn}", "day").Replace("{z}", "10").Replace("{y}", "0").Replace("{x}", "0"), UriKind.Absolute, out var uri) ||
             uri.Scheme != Uri.UriSchemeHttps || !string.IsNullOrEmpty(uri.UserInfo))
+        {
             return false;
+        }
+
         return prefixes.Any(prefix => Uri.TryCreate(prefix, UriKind.Absolute, out var allowed) &&
             uri.IdnHost.Equals(allowed.IdnHost, StringComparison.OrdinalIgnoreCase) &&
             uri.Port == allowed.Port && uri.AbsolutePath.StartsWith(

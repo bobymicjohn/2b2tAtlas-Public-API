@@ -72,7 +72,9 @@ public static class NbtSummaryReader
         finally
         {
             if (!ReferenceEquals(input, compressedInput))
+            {
                 await input.DisposeAsync();
+            }
         }
     }
 
@@ -105,13 +107,18 @@ public static class NbtSummaryReader
         CancellationToken cancellationToken = default)
     {
         if (!seekableInput.CanSeek)
+        {
             throw new InputValidationException("level.dat input must be seekable.");
+        }
+
         Stream input = seekableInput;
         var prefix = new byte[2];
         var prefixRead = await seekableInput.ReadAsync(prefix, cancellationToken);
         seekableInput.Position = 0;
         if (prefixRead == 2 && prefix[0] == 0x1f && prefix[1] == 0x8b)
+        {
             input = new GZipStream(seekableInput, CompressionMode.Decompress, leaveOpen: true);
+        }
 
         await using var bounded = await ReadBoundedAsync(
             input, maxExpandedBytes, "level.dat expands beyond the configured safety limit.", cancellationToken);
@@ -154,10 +161,16 @@ public static class NbtSummaryReader
             {
                 var read = await input.ReadAsync(buffer, cancellationToken);
                 if (read == 0)
+                {
                     break;
+                }
+
                 total += read;
                 if (total > maxExpandedBytes)
+                {
                     throw new InputValidationException(limitMessage);
+                }
+
                 await bounded.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
             }
             bounded.Position = 0;
@@ -174,7 +187,10 @@ public static class NbtSummaryReader
     {
         var reader = new Reader(bounded);
         if (reader.ReadByte() != 10)
+        {
             throw new InputValidationException("NBT root must be a compound.");
+        }
+
         _ = reader.ReadString();
         reader.ReadCompound([], 0);
         return reader;
@@ -196,7 +212,10 @@ public static class NbtSummaryReader
         {
             var value = stream.ReadByte();
             if (value < 0)
+            {
                 throw new InputValidationException("Truncated NBT payload.");
+            }
+
             return (byte)value;
         }
 
@@ -231,7 +250,11 @@ public static class NbtSummaryReader
                         builder.Append((char)(((first & 0x1F) << 6) | (bytes[index + 1] & 0x3F)));
                         index += 2;
                     }
-                    else { builder.Append('\uFFFD'); index += 1; }
+                    else
+                    {
+                        builder.Append('\uFFFD');
+                        index += 1;
+                    }
                 }
                 else if ((first & 0xF0) == 0xE0)
                 {
@@ -242,9 +265,17 @@ public static class NbtSummaryReader
                         builder.Append((char)(((first & 0x0F) << 12) | ((bytes[index + 1] & 0x3F) << 6) | (bytes[index + 2] & 0x3F)));
                         index += 3;
                     }
-                    else { builder.Append('\uFFFD'); index += 1; }
+                    else
+                    {
+                        builder.Append('\uFFFD');
+                        index += 1;
+                    }
                 }
-                else { builder.Append('\uFFFD'); index += 1; }
+                else
+                {
+                    builder.Append('\uFFFD');
+                    index += 1;
+                }
             }
             return builder.ToString();
         }
@@ -256,7 +287,10 @@ public static class NbtSummaryReader
             {
                 var tag = ReadByte();
                 if (tag == 0)
+                {
                     return;
+                }
+
                 var name = ReadString();
                 var childPath = path.Append(name).ToArray();
                 ReadPayload(tag, childPath, depth + 1);
@@ -269,29 +303,48 @@ public static class NbtSummaryReader
             var joined = string.Join('/', path);
             switch (tag)
             {
-                case 1: Skip(1); break;
-                case 2: Skip(2); break;
+                case 1:
+                    Skip(1);
+                    break;
+                case 2:
+                    Skip(2);
+                    break;
                 case 3:
                     var integer = ReadInt32();
                     if (joined is "Data/DataVersion" or "Data/Player/Dimension" or "xPos" or "zPos" or "Level/xPos" or "Level/zPos")
                     {
                         if (IntValues.TryGetValue(joined, out var existing) && existing != integer)
+                        {
                             throw new InputValidationException($"NBT contains conflicting {joined} values.");
+                        }
+
                         IntValues[joined] = integer;
                     }
                     break;
                 case 4:
                     var longInteger = ReadInt64();
                     if (joined == "Data/LastPlayed")
+                    {
                         LongValues[joined] = longInteger;
+                    }
+
                     break;
-                case 5: Skip(4); break;
-                case 6: Skip(8); break;
-                case 7: Skip(CheckedByteLength(ReadLength(), 1)); break;
+                case 5:
+                    Skip(4);
+                    break;
+                case 6:
+                    Skip(8);
+                    break;
+                case 7:
+                    Skip(CheckedByteLength(ReadLength(), 1));
+                    break;
                 case 8:
                     var text = ReadString();
                     if (joined is "Data/LevelName" or "Data/Version/Name" or "Data/Player/Dimension")
+                    {
                         StringValues[joined] = text;
+                    }
+
                     break;
                 case 9:
                     var childTag = ReadByte();
@@ -302,19 +355,32 @@ public static class NbtSummaryReader
                         for (var index = 0; index < listLength; index++)
                         {
                             var value = ReadDouble();
-                            if (index < 3) values.Add(value);
+                            if (index < 3)
+                            {
+                                values.Add(value);
+                            }
                         }
                         DoubleListValues[joined] = values;
                         break;
                     }
                     var listPath = path.Append("*").ToArray();
                     for (var index = 0; index < listLength; index++)
+                    {
                         ReadPayload(childTag, listPath, depth + 1);
+                    }
+
                     break;
-                case 10: ReadCompound(path, depth + 1); break;
-                case 11: Skip(CheckedByteLength(ReadLength(), 4)); break;
-                case 12: Skip(CheckedByteLength(ReadLength(), 8)); break;
-                default: throw new InputValidationException($"Unknown NBT tag type: {tag}");
+                case 10:
+                    ReadCompound(path, depth + 1);
+                    break;
+                case 11:
+                    Skip(CheckedByteLength(ReadLength(), 4));
+                    break;
+                case 12:
+                    Skip(CheckedByteLength(ReadLength(), 8));
+                    break;
+                default:
+                    throw new InputValidationException($"Unknown NBT tag type: {tag}");
             }
         }
 
@@ -322,16 +388,25 @@ public static class NbtSummaryReader
         {
             var length = ReadInt32();
             if (length < 0 || length > MaxCollectionLength)
+            {
                 throw new InputValidationException("NBT collection exceeds the safety limit.");
+            }
+
             elements = checked(elements + length);
             if (elements > MaxElements)
+            {
                 throw new InputValidationException("NBT payload exceeds the element budget.");
+            }
+
             return length;
         }
 
         private static int CheckedByteLength(int count, int width)
         {
-            try { return checked(count * width); }
+            try
+            {
+                return checked(count * width);
+            }
             catch (OverflowException exception)
             {
                 throw new InputValidationException("NBT array size overflowed.", exception);
@@ -371,7 +446,10 @@ public static class NbtSummaryReader
         private void Skip(int length)
         {
             if (length < 0)
+            {
                 throw new InputValidationException("NBT skip length is invalid.");
+            }
+
             Span<byte> buffer = stackalloc byte[Math.Min(length, 4096)];
             var remaining = length;
             while (remaining > 0)
@@ -389,7 +467,10 @@ public static class NbtSummaryReader
             {
                 var count = stream.Read(buffer[read..]);
                 if (count == 0)
+                {
                     throw new InputValidationException("Truncated NBT payload.");
+                }
+
                 read += count;
             }
         }
@@ -397,7 +478,9 @@ public static class NbtSummaryReader
         private static void EnsureDepth(int depth)
         {
             if (depth > MaxDepth)
+            {
                 throw new InputValidationException("NBT nesting exceeds the safety limit.");
+            }
         }
     }
 }

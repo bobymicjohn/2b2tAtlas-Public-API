@@ -6,40 +6,40 @@ namespace _2b2tAtlas.Server.Models;
 /// </summary>
 public class Group
 {
-    /// <summary>Gets or sets the database-generated group identifier used by highway attribution.</summary>
+    /// <summary>Database-generated group identifier used by highway attribution.</summary>
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the canonical or administrator-defined public group name.</summary>
+    /// <summary>Canonical or administrator-defined public group name.</summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the string-backed build, highway, mixed, or other classification.</summary>
+    /// <summary>String-backed build, highway, mixed, or other classification.</summary>
     public string Type { get; set; } = "Other";
 
     /// <summary>Gets or sets public historical context for the group.</summary>
     public string? Description { get; set; }
 
-    /// <summary>Gets or sets the optional map and directory color in CSS hexadecimal form.</summary>
+    /// <summary>Optional map and directory color in CSS hexadecimal form.</summary>
     public string? Color { get; set; }
 
     /// <summary>Gets or sets an optional public 2b2t wiki reference used for attribution.</summary>
     public string? WikiUrl { get; set; }
 
-    /// <summary>Gets or sets the group's official website.</summary>
+    /// <summary>Group's official website.</summary>
     public string? WebsiteUrl { get; set; }
 
-    /// <summary>Gets or sets a public group Discord invitation.</summary>
+    /// <summary>A public group Discord invitation.</summary>
     public string? DiscordUrl { get; set; }
 
-    /// <summary>Gets or sets the public group logo or representative emblem.</summary>
+    /// <summary>Public group logo or representative emblem.</summary>
     public string? LogoUrl { get; set; }
 
-    /// <summary>Gets or sets the public source page for the logo.</summary>
+    /// <summary>Public source page for the logo.</summary>
     public string? LogoSourceUrl { get; set; }
 
-    /// <summary>Gets or sets the documented, potentially approximate founding date.</summary>
+    /// <summary>Documented, potentially approximate founding date.</summary>
     public string? Founded { get; set; }
 
-    /// <summary>Gets or sets the documented activity status.</summary>
+    /// <summary>Documented activity status.</summary>
     public string? Status { get; set; }
 
     /// <summary>Gets or sets the UTC record creation timestamp in round-trip text form.</summary>

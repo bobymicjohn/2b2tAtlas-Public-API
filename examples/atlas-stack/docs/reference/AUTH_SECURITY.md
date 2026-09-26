@@ -1,12 +1,10 @@
 # Authentication, RBAC, Security, And Trust Boundaries
 
-## Scope
-
 This file covers user identity, authorization, worker credentials, and system trust boundaries. WDL archive defenses are summarized in `WDL_INGESTION.md` and detailed in `docs/INGESTION_SECURITY.md`.
 
 ## JWT Authentication
 
-**Production:** `2b2tAtlas.Server/Program.cs` registers `Services/AtlasAuthentication.cs`, which validates JWT issuer, audience, lifetime, signing key, and uses zero clock skew. `2b2tAtlas.Server/Services/AuthService.cs` emits identity, role, `superadmin=true`, and one `perm` claim per effective permission.
+`2b2tAtlas.Server/Program.cs` registers `Services/AtlasAuthentication.cs`, which validates JWT issuer, audience, lifetime, signing key, and uses zero clock skew. `2b2tAtlas.Server/Services/AuthService.cs` emits identity, role, `superadmin=true`, and one `perm` claim per effective permission.
 
 `JwtSettings__SecretKey` must be host-managed. Authentication proves identity; write access still requires the endpoint's named permission policy. The authoritative client refresh path is `GET /api/auth/profile`, not editable browser-local user JSON.
 

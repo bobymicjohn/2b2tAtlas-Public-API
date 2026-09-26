@@ -157,7 +157,10 @@ public sealed class WorldInspectorTests
         var nbt = BuildChunkNbt(x, z);
         await using var compressed = new MemoryStream();
         await using (var zlib = new ZLibStream(compressed, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
             await zlib.WriteAsync(nbt, TestContext.Current.CancellationToken);
+        }
+
         var payload = compressed.ToArray();
         var region = new byte[3 * 4096];
         region[2] = 2;

@@ -7,7 +7,7 @@ namespace _2b2tAtlas.Server.Models;
 /// </summary>
 public class AuditLog
 {
-    /// <summary>Gets or sets the database-generated sequence identifier used for newest-first ordering.</summary>
+    /// <summary>Database-generated sequence identifier used for newest-first ordering.</summary>
     public int Id { get; set; }
 
     /// <summary>Dotted action key, e.g. "highway.create", "highway.approve".</summary>

@@ -255,7 +255,9 @@ public class AuthService
         {
             var token = await GetTokenAsync();
             if (string.IsNullOrEmpty(token))
+            {
                 return false;
+            }
 
             // Set authorization header
             _httpClient.DefaultRequestHeaders.Authorization =

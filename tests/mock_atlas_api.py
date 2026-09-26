@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small offline response-shape fixture used by repository CI; not an Atlas server implementation."""
+"""Small local API fixture for running the examples without the public service."""
 
 from __future__ import annotations
 

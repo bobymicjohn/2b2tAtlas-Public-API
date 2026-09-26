@@ -27,7 +27,11 @@ public sealed class IngestionJobsControllerTests
         await using var context = new AtlasContext(options);
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters");
         controller.Request.Headers.Remove("X-Atlas-Worker-Key");
-        if (suppliedKey != null) controller.Request.Headers["X-Atlas-Worker-Key"] = suppliedKey;
+        if (suppliedKey != null)
+        {
+            controller.Request.Headers["X-Atlas-Worker-Key"] = suppliedKey;
+        }
+
         Assert.IsType<UnauthorizedResult>((await controller.CreateLocal(new IngestionJobRequest())).Result);
         Assert.IsType<UnauthorizedResult>((await controller.QueueLocalIntake(new LocalIntakeQueueRequest(), TestContext.Current.CancellationToken)).Result);
         Assert.IsType<UnauthorizedResult>((await controller.Claim()).Result);
@@ -175,15 +179,22 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Temple of the Talion", Dimension = 0,
-            X = -169_902, Y = 64, Z = 311_836, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Temple of the Talion",
+            Dimension = 0,
+            X = -169_902,
+            Y = 64,
+            Z = 311_836,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
         var warp = new _2b2tAtlas.Server.Models.Warp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-            LocationRowid = location.Rowid, Name = "Temple_of_the_Talion_2017-03-06",
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = location.LocationUuid,
+            LocationRowid = location.Rowid,
+            Name = "Temple_of_the_Talion_2017-03-06",
             TimeAdded = DateTime.UtcNow.ToString("o"),
         };
         context.Warps.Add(warp);
@@ -228,24 +239,38 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Fusionia I", Dimension = 0,
-            X = -1_070_536, Y = 64, Z = 1_472_920, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Fusionia I",
+            Dimension = 0,
+            X = -1_070_536,
+            Y = 64,
+            Z = 1_472_920,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
         var warp = new _2b2tAtlas.Server.Models.Warp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-            LocationRowid = location.Rowid, Name = "Fusionia_I_2025-03-28",
-            TimeAdded = DateTime.UtcNow.ToString("o"), ArchiveSha256 = new string('b', 64),
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = location.LocationUuid,
+            LocationRowid = location.Rowid,
+            Name = "Fusionia_I_2025-03-28",
+            TimeAdded = DateTime.UtcNow.ToString("o"),
+            ArchiveSha256 = new string('b', 64),
         };
         context.Warps.Add(warp);
         await context.SaveChangesAsync(cancellationToken);
         var originalRender = new _2b2tAtlas.Server.Models.Render
         {
-            LocationRowid = location.Rowid, LocationRow = location, Name = "Fusionia I",
-            Dimension = 0, Scale = "1", TilesPath = "https://tiles.atlas.example/AtlasTiles/original/overworld/{z}/{y}/{x}.png",
-            DateAddedUtc = DateTime.UtcNow.ToString("o"), Source = "archive-collector", ArchiveWarpId = warp.Id,
+            LocationRowid = location.Rowid,
+            LocationRow = location,
+            Name = "Fusionia I",
+            Dimension = 0,
+            Scale = "1",
+            TilesPath = "https://tiles.atlas.example/AtlasTiles/original/overworld/{z}/{y}/{x}.png",
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            Source = "archive-collector",
+            ArchiveWarpId = warp.Id,
         };
         context.Renders.Add(originalRender);
         var job = CreateJob();
@@ -263,7 +288,10 @@ public sealed class IngestionJobsControllerTests
         var claim = Assert.IsType<IngestionJobDto>(Assert.IsType<OkObjectResult>((await controller.Claim()).Result).Value);
         var prepare = await controller.UpdateStatus(job.PublicId, new IngestionJobUpdate
         {
-            ClaimToken = claim.ClaimToken!, Status = "running", Stage = "prepare", ProgressPercent = 20,
+            ClaimToken = claim.ClaimToken!,
+            Status = "running",
+            Stage = "prepare",
+            ProgressPercent = 20,
             Inspection = CreateInspection(),
         });
         var prepared = Assert.IsType<IngestionJobDto>(Assert.IsType<OkObjectResult>(prepare.Result).Value);
@@ -398,8 +426,13 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Protected Existing Base", Dimension = 0,
-            X = 5_168_556, Y = 64, Z = 10_320_373, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Protected Existing Base",
+            Dimension = 0,
+            X = 5_168_556,
+            Y = 64,
+            Z = 10_320_373,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
@@ -513,8 +546,13 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "historic-mixed", Name = "Historic Mixed",
-            WorldDownloadDate = "2011-01-01", Source = "2b2t world download", Scale = "1", Dimension = "auto",
+            IntakeFileName = "pending.zip",
+            Slug = "historic-mixed",
+            Name = "Historic Mixed",
+            WorldDownloadDate = "2011-01-01",
+            Source = "2b2t world download",
+            Scale = "1",
+            Dimension = "auto",
         });
         using var archive = BuildWorldZip(
             "world/level.dat",
@@ -523,7 +561,8 @@ public sealed class IngestionJobsControllerTests
             "world/dimensions/minecraft/the_end/region/r.2.-3.mcr");
         var file = new FormFile(archive, 0, archive.Length, "archive", "historic-mixed.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<CreatedAtActionResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -546,14 +585,20 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "museum-room", Name = "Museum Room",
-            WorldDownloadDate = "2020-01-01", Source = "Archive exhibit", Scale = "1", Dimension = "auto",
+            IntakeFileName = "pending.zip",
+            Slug = "museum-room",
+            Name = "Museum Room",
+            WorldDownloadDate = "2020-01-01",
+            Source = "Archive exhibit",
+            Scale = "1",
+            Dimension = "auto",
         });
         using var archive = BuildWorldZip(
             "world/level.dat", "world/dimensions/thearchive/exhibit_42/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "museum-room.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         var result = await controller.Upload(metadata, file, cancellationToken);
@@ -826,12 +871,22 @@ public sealed class IngestionJobsControllerTests
         // A small spawn portion at 0,0 plus a denser base cluster ~ (51541, 51541).
         context.Locations.Add(new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Spawn", Dimension = 0, X = 0, Y = 64, Z = 0,
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Spawn",
+            Dimension = 0,
+            X = 0,
+            Y = 64,
+            Z = 0,
             DateAddedUtc = DateTime.UtcNow.ToString("o"),
         });
         var baseLocation = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Distant Base", Dimension = 0, X = 51541, Y = 64, Z = 51541,
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Distant Base",
+            Dimension = 0,
+            X = 51541,
+            Y = 64,
+            Z = 51541,
             DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(baseLocation);
@@ -842,8 +897,13 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, workerKey, intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "distant-base", Name = "Distant Base",
-            WorldDownloadDate = "2021-06-29", Source = "2b2t world download", Scale = "256k", Dimension = "overworld",
+            IntakeFileName = "pending.zip",
+            Slug = "distant-base",
+            Name = "Distant Base",
+            WorldDownloadDate = "2021-06-29",
+            Source = "2b2t world download",
+            Scale = "256k",
+            Dimension = "overworld",
         });
         using var archive = BuildWorldZip(
             "world/level.dat",
@@ -854,7 +914,8 @@ public sealed class IngestionJobsControllerTests
             "world/region/r.100.101.mca", "world/region/r.101.100.mca", "world/region/r.101.101.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "distant-base.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<CreatedAtActionResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -876,15 +937,22 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Temple of the Talion", Dimension = 0,
-            X = 51_456, Y = 64, Z = 51_456, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Temple of the Talion",
+            Dimension = 0,
+            X = 51_456,
+            Y = 64,
+            Z = 51_456,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
         context.Warps.Add(new _2b2tAtlas.Server.Models.Warp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-            LocationRowid = location.Rowid, Name = "Temple_of_the_Talion_2017-03-06",
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = location.LocationUuid,
+            LocationRowid = location.Rowid,
+            Name = "Temple_of_the_Talion_2017-03-06",
             TimeAdded = DateTime.UtcNow.ToString("o"),
         });
         await context.SaveChangesAsync(cancellationToken);
@@ -893,15 +961,21 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "archive-temple", Name = "Terbin capture",
-            WorldDownloadDate = "2017-03-06", Source = "The Archive", Scale = "1", Dimension = "overworld",
+            IntakeFileName = "pending.zip",
+            Slug = "archive-temple",
+            Name = "Terbin capture",
+            WorldDownloadDate = "2017-03-06",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "overworld",
             WorldRoot = "world",
         });
         var report = "{\"downloadName\":\"Temple_of_the_Talion_2017-03-06\",\"sourceAddress\":\"survival.thearchive.world\",\"dimensionName\":\"minecraft:overworld\"}";
         using var archive = BuildArchiveWdlZip(report, "world/level.dat", "world/region/r.100.100.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "renamed.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         var queued = Assert.IsType<IngestionJobDto>(Assert.IsType<CreatedAtActionResult>(
@@ -926,8 +1000,13 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Known Museum Build", Dimension = 0,
-            X = -2_000_000, Y = 64, Z = 2_000_000, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Known Museum Build",
+            Dimension = 0,
+            X = -2_000_000,
+            Y = 64,
+            Z = 2_000_000,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
@@ -936,9 +1015,12 @@ public sealed class IngestionJobsControllerTests
         var sha = Convert.ToHexStringLower(SHA256.HashData(archive.ToArray()));
         context.Warps.Add(new _2b2tAtlas.Server.Models.Warp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-            LocationRowid = location.Rowid, Name = "Canonical_Archive_Warp_2018-07-04",
-            TimeAdded = DateTime.UtcNow.ToString("o"), ArchiveSha256 = sha,
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = location.LocationUuid,
+            LocationRowid = location.Rowid,
+            Name = "Canonical_Archive_Warp_2018-07-04",
+            TimeAdded = DateTime.UtcNow.ToString("o"),
+            ArchiveSha256 = sha,
         });
         await context.SaveChangesAsync(cancellationToken);
         context.ChangeTracker.Clear();
@@ -946,13 +1028,19 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "renamed-identical-capture", Name = "Unknown export",
-            WorldDownloadDate = "2018-07-04", Source = "Unlabeled disk import", Scale = "1",
-            Dimension = "overworld", WorldRoot = "world",
+            IntakeFileName = "pending.zip",
+            Slug = "renamed-identical-capture",
+            Name = "Unknown export",
+            WorldDownloadDate = "2018-07-04",
+            Source = "Unlabeled disk import",
+            Scale = "1",
+            Dimension = "overworld",
+            WorldRoot = "world",
         });
         var file = new FormFile(archive, 0, archive.Length, "archive", "totally-renamed.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         var queued = Assert.IsType<IngestionJobDto>(Assert.IsType<CreatedAtActionResult>(
@@ -979,15 +1067,21 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "never-seen-base", Name = "Never Seen Base",
-            WorldDownloadDate = "2021-06-29", Source = "The Archive", Scale = "1", Dimension = "overworld",
+            IntakeFileName = "pending.zip",
+            Slug = "never-seen-base",
+            Name = "Never Seen Base",
+            WorldDownloadDate = "2021-06-29",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "overworld",
             WorldRoot = "world",
         });
         var report = "{\"downloadName\":\"Never_Seen_Base_2021-06-29\",\"sourceAddress\":\"survival.thearchive.world\",\"dimensionName\":\"minecraft:overworld\"}";
         using var archive = BuildArchiveWdlZip(report, "world/level.dat", "world/region/r.100.100.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "never-seen.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         var queued = Assert.IsType<IngestionJobDto>(Assert.IsType<CreatedAtActionResult>(
@@ -1025,15 +1119,22 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Bedrock City 2", Dimension = 0,
-            X = 2_871_075, Y = 65, Z = -1_732_843, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Bedrock City 2",
+            Dimension = 0,
+            X = 2_871_075,
+            Y = 65,
+            Z = -1_732_843,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
         var warp = new _2b2tAtlas.Server.Models.Warp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-            LocationRowid = location.Rowid, Name = "Bedrock_City_2_2024-05-31",
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = location.LocationUuid,
+            LocationRowid = location.Rowid,
+            Name = "Bedrock_City_2_2024-05-31",
             TimeAdded = DateTime.UtcNow.ToString("o"),
         };
         var job = CreateJob();
@@ -1077,16 +1178,25 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Space Valkyria III (second site)", Dimension = 2,
-            X = 76_933, Y = 64, Z = -112_211, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Space Valkyria III (second site)",
+            Dimension = 2,
+            X = 76_933,
+            Y = 64,
+            Z = -112_211,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
         context.Renders.Add(new _2b2tAtlas.Server.Models.Render
         {
-            LocationRowid = location.Rowid, Name = location.Name, Dimension = 2, Scale = "1",
+            LocationRowid = location.Rowid,
+            Name = location.Name,
+            Dimension = 2,
+            Scale = "1",
             TilesPath = "https://tiles.atlas.example/AtlasTiles/space-valkyria-iii/end/{z}/{y}/{x}.png",
-            IsPublic = 1, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            IsPublic = 1,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         });
         var job = CreateJob();
         job.Dimension = "end";
@@ -1129,17 +1239,29 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Sky Masons", Dimension = 0,
-            X = 827_065, Y = 160, Z = 439_090, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Sky Masons",
+            Dimension = 0,
+            X = 827_065,
+            Y = 160,
+            Z = 439_090,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
         var canonical = new _2b2tAtlas.Server.Models.Render
         {
-            LocationRowid = location.Rowid, Name = "Sky Masons", Dimension = 0, Scale = "1",
+            LocationRowid = location.Rowid,
+            Name = "Sky Masons",
+            Dimension = 0,
+            Scale = "1",
             TilesPath = "https://tiles.atlas.example/AtlasTiles/sky-masons-canonical/overworld/{z}/{y}/{x}.png",
-            WorldDownloadDate = "2022-10-03", MinX = -1024, MinZ = 2048,
-            MaxXExclusive = 512, MaxZExclusive = 4096, IsPublic = 1,
+            WorldDownloadDate = "2022-10-03",
+            MinX = -1024,
+            MinZ = 2048,
+            MaxXExclusive = 512,
+            MaxZExclusive = 4096,
+            IsPublic = 1,
             DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Renders.Add(canonical);
@@ -1187,15 +1309,23 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "-X 1M Milestone", Dimension = 0,
-            X = -1_000_002, Y = 64, Z = 0, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "-X 1M Milestone",
+            Dimension = 0,
+            X = -1_000_002,
+            Y = 64,
+            Z = 0,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
         context.Warps.Add(new _2b2tAtlas.Server.Models.Warp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-            LocationRowid = location.Rowid, Name = "x-1.0m_2015-08-29", TimeAdded = DateTime.UtcNow.ToString("o"),
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = location.LocationUuid,
+            LocationRowid = location.Rowid,
+            Name = "x-1.0m_2015-08-29",
+            TimeAdded = DateTime.UtcNow.ToString("o"),
         });
         var job = CreateJob();
         job.Slug = "x-minus-one-million-later";
@@ -1237,22 +1367,31 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var sequel = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Bedrock City 2", Dimension = 0,
-            X = 2_871_075, Y = 65, Z = -1_732_843, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Bedrock City 2",
+            Dimension = 0,
+            X = 2_871_075,
+            Y = 65,
+            Z = -1_732_843,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(sequel);
         await context.SaveChangesAsync(cancellationToken);
         context.Warps.AddRange(
             new _2b2tAtlas.Server.Models.Warp
             {
-                WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = sequel.LocationUuid,
-                LocationRowid = sequel.Rowid, Name = "Bedrock_City_2023-06-15",
+                WarpUuid = Guid.NewGuid().ToString(),
+                LocationUuidFk = sequel.LocationUuid,
+                LocationRowid = sequel.Rowid,
+                Name = "Bedrock_City_2023-06-15",
                 TimeAdded = DateTime.UtcNow.ToString("o"),
             },
             new _2b2tAtlas.Server.Models.Warp
             {
-                WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = sequel.LocationUuid,
-                LocationRowid = sequel.Rowid, Name = "Bedrock_City_2_2024-05-31",
+                WarpUuid = Guid.NewGuid().ToString(),
+                LocationUuidFk = sequel.LocationUuid,
+                LocationRowid = sequel.Rowid,
+                Name = "Bedrock_City_2_2024-05-31",
                 TimeAdded = DateTime.UtcNow.ToString("o"),
             });
         await context.SaveChangesAsync(cancellationToken);
@@ -1262,16 +1401,24 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, workerKey, intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "bedrock-city", Name = "Bedrock City",
-            WorldDownloadDate = "2023-06-15", Source = "The Archive", Scale = "1", Dimension = "overworld",
-            WorldRoot = "world", ArchiveWarpX = -3_827_249.03, ArchiveWarpY = 84.05,
+            IntakeFileName = "pending.zip",
+            Slug = "bedrock-city",
+            Name = "Bedrock City",
+            WorldDownloadDate = "2023-06-15",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "overworld",
+            WorldRoot = "world",
+            ArchiveWarpX = -3_827_249.03,
+            ArchiveWarpY = 84.05,
             ArchiveWarpZ = -3_438_802.54,
         });
         var report = "{\"downloadName\":\"Bedrock_City_2023-06-15\",\"sourceAddress\":\"survival.thearchive.world\",\"dimensionName\":\"minecraft:overworld\"}";
         using var archive = BuildArchiveWdlZip(report, "world/level.dat", "world/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "bedrock-city.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         var queued = Assert.IsType<IngestionJobDto>(Assert.IsType<CreatedAtActionResult>(
@@ -1313,15 +1460,22 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var wrongOwner = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Spawnfuer 16", Dimension = 0,
-            X = 29_241, Y = 71, Z = 40_819, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Spawnfuer 16",
+            Dimension = 0,
+            X = 29_241,
+            Y = 71,
+            Z = 40_819,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(wrongOwner);
         await context.SaveChangesAsync(cancellationToken);
         context.Warps.Add(new _2b2tAtlas.Server.Models.Warp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = wrongOwner.LocationUuid,
-            LocationRowid = wrongOwner.Rowid, Name = "Spawnfuer_s1-b_2022-07-20",
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = wrongOwner.LocationUuid,
+            LocationRowid = wrongOwner.Rowid,
+            Name = "Spawnfuer_s1-b_2022-07-20",
             TimeAdded = DateTime.UtcNow.ToString("o"),
         });
         await context.SaveChangesAsync(cancellationToken);
@@ -1330,16 +1484,24 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "spawnfuer-s1-b", Name = "Spawnfuer S1-B",
-            WorldDownloadDate = "2022-07-20", Source = "The Archive", Scale = "1", Dimension = "overworld",
-            WorldRoot = "world", ArchiveWarpX = 276_729.08, ArchiveWarpY = 65,
+            IntakeFileName = "pending.zip",
+            Slug = "spawnfuer-s1-b",
+            Name = "Spawnfuer S1-B",
+            WorldDownloadDate = "2022-07-20",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "overworld",
+            WorldRoot = "world",
+            ArchiveWarpX = 276_729.08,
+            ArchiveWarpY = 65,
             ArchiveWarpZ = 117_174.62,
         });
         const string report = "{\"downloadName\":\"Spawnfuer_s1-b_2022-07-20\",\"sourceAddress\":\"survival.thearchive.world\",\"dimensionName\":\"minecraft:overworld\"}";
         using var archive = BuildArchiveWdlZip(report, "world/level.dat", "world/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "spawnfuer-s1-b.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         var queued = Assert.IsType<IngestionJobDto>(Assert.IsType<CreatedAtActionResult>(
@@ -1365,15 +1527,24 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "sky-hotel-ukraina", Name = "Hotel Ukraina",
-            WorldDownloadDate = "2022-10-03", Source = "The Archive", Scale = "1", Dimension = "overworld",
-            WorldRoot = "world", ArchiveWarpX = 826_764, ArchiveWarpY = 191, ArchiveWarpZ = 439_161,
+            IntakeFileName = "pending.zip",
+            Slug = "sky-hotel-ukraina",
+            Name = "Hotel Ukraina",
+            WorldDownloadDate = "2022-10-03",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "overworld",
+            WorldRoot = "world",
+            ArchiveWarpX = 826_764,
+            ArchiveWarpY = 191,
+            ArchiveWarpZ = 439_161,
         });
         const string report = "{\"downloadName\":\"Sky:_Hotel_Ukraina_2022-10-03@Spawnmasons\",\"sourceAddress\":\"survival.thearchive.world\",\"dimensionName\":\"minecraft:overworld\"}";
         using var archive = BuildArchiveWdlZip(report, "world/level.dat", "world/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "sky-hotel-ukraina.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         var queued = Assert.IsType<IngestionJobDto>(Assert.IsType<CreatedAtActionResult>(
@@ -1393,24 +1564,37 @@ public sealed class IngestionJobsControllerTests
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Novus", Dimension = 0,
-            X = 133_383, Y = 70, Z = 25_648, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Novus",
+            Dimension = 0,
+            X = 133_383,
+            Y = 70,
+            Z = 25_648,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(cancellationToken);
         var warp = new _2b2tAtlas.Server.Models.Warp
         {
-            WarpUuid = Guid.NewGuid().ToString(), LocationUuidFk = location.LocationUuid,
-            LocationRowid = location.Rowid, Name = "Novus_X_2022-07-06",
-            ArchiveSha256 = new string('b', 64), TimeAdded = DateTime.UtcNow.ToString("o"),
+            WarpUuid = Guid.NewGuid().ToString(),
+            LocationUuidFk = location.LocationUuid,
+            LocationRowid = location.Rowid,
+            Name = "Novus_X_2022-07-06",
+            ArchiveSha256 = new string('b', 64),
+            TimeAdded = DateTime.UtcNow.ToString("o"),
         };
         context.Warps.Add(warp);
         await context.SaveChangesAsync(cancellationToken);
         context.Renders.Add(new _2b2tAtlas.Server.Models.Render
         {
-            LocationRowid = location.Rowid, Name = "Novus", Dimension = 0, Scale = "1",
+            LocationRowid = location.Rowid,
+            Name = "Novus",
+            Dimension = 0,
+            Scale = "1",
             TilesPath = "https://tiles.atlas.example/AtlasTiles/novus-existing/overworld/{z}/{y}/{x}.png",
-            ArchiveWarpId = warp.Id, IsPublic = 1, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            ArchiveWarpId = warp.Id,
+            IsPublic = 1,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         });
         var job = CreateJob();
         job.Slug = "novus-x-parallel";
@@ -1459,7 +1643,12 @@ public sealed class IngestionJobsControllerTests
         // Nether region r.0.0 => nether centroid (256, 256) => overworld projection (2048, 2048).
         var overworld = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Nether Base", Dimension = 0, X = 2048, Y = 64, Z = 2048,
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Nether Base",
+            Dimension = 0,
+            X = 2048,
+            Y = 64,
+            Z = 2048,
             DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(overworld);
@@ -1470,13 +1659,19 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, workerKey, intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "nether-base", Name = "Nether Base",
-            WorldDownloadDate = "2021-06-29", Source = "2b2t world download", Scale = "256k", Dimension = "auto",
+            IntakeFileName = "pending.zip",
+            Slug = "nether-base",
+            Name = "Nether Base",
+            WorldDownloadDate = "2021-06-29",
+            Source = "2b2t world download",
+            Scale = "256k",
+            Dimension = "auto",
         });
         using var archive = BuildWorldZip("world/level.dat", "world/DIM-1/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "nether-base.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<CreatedAtActionResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -1501,15 +1696,21 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "museum-base", Name = "Museum Base",
-            WorldDownloadDate = "2017-03-06", Source = "The Archive", Scale = "1", Dimension = "auto",
+            IntakeFileName = "pending.zip",
+            Slug = "museum-base",
+            Name = "Museum Base",
+            WorldDownloadDate = "2017-03-06",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "auto",
         });
         using var archive = BuildWorldZip(
             "world/level.dat",
             "world/dimensions/thearchive/museum_2017/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "museum-base.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         var result = Assert.IsType<BadRequestObjectResult>(
@@ -1534,15 +1735,21 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "custom-nether-base", Name = "Custom Nether Base",
-            WorldDownloadDate = "2019-08-04", Source = "The Archive", Scale = "1", Dimension = "auto",
+            IntakeFileName = "pending.zip",
+            Slug = "custom-nether-base",
+            Name = "Custom Nether Base",
+            WorldDownloadDate = "2019-08-04",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "auto",
         });
         using var archive = BuildWorldZip(
             "world/level.dat",
             "world/dimensions/thearchive/the_nether/region/r.2.-3.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "custom-nether-base.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<CreatedAtActionResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -1566,8 +1773,13 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "ambiguous-nether-roots", Name = "Ambiguous Nether Roots",
-            WorldDownloadDate = "2019-08-04", Source = "The Archive", Scale = "1", Dimension = "auto",
+            IntakeFileName = "pending.zip",
+            Slug = "ambiguous-nether-roots",
+            Name = "Ambiguous Nether Roots",
+            WorldDownloadDate = "2019-08-04",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "auto",
         });
         using var archive = BuildWorldZip(
             "world/level.dat",
@@ -1575,7 +1787,8 @@ public sealed class IngestionJobsControllerTests
             "world/dimensions/thearchive/the_nether/region/r.2.-3.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "ambiguous-nether-roots.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<BadRequestObjectResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -1597,8 +1810,13 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "custom-multi", Name = "Custom Multi",
-            WorldDownloadDate = "2019-08-04", Source = "The Archive", Scale = "1", Dimension = "auto",
+            IntakeFileName = "pending.zip",
+            Slug = "custom-multi",
+            Name = "Custom Multi",
+            WorldDownloadDate = "2019-08-04",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "auto",
         });
         using var archive = BuildWorldZip(
             "world/level.dat",
@@ -1606,7 +1824,8 @@ public sealed class IngestionJobsControllerTests
             "world/dimensions/thearchive/the_end/region/r.4.-5.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "custom-multi.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<BadRequestObjectResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -1628,15 +1847,21 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "museum-end-base", Name = "Museum End Base",
-            WorldDownloadDate = "2017-03-06", Source = "The Archive", Scale = "1", Dimension = "end",
+            IntakeFileName = "pending.zip",
+            Slug = "museum-end-base",
+            Name = "Museum End Base",
+            WorldDownloadDate = "2017-03-06",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "end",
         });
         using var archive = BuildWorldZip(
             "world/level.dat",
             "world/dimensions/thearchive/museum_2017/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "museum-end-base.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<CreatedAtActionResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -1659,8 +1884,13 @@ public sealed class IngestionJobsControllerTests
 
         IngestionJobRequest Request() => new()
         {
-            IntakeFileName = "wb.zip", Slug = "shared-base", Name = "Shared Base",
-            WorldDownloadDate = "2021-06-29", Source = "2b2t world download", Scale = "256k", Dimension = "overworld",
+            IntakeFileName = "wb.zip",
+            Slug = "shared-base",
+            Name = "Shared Base",
+            WorldDownloadDate = "2021-06-29",
+            Source = "2b2t world download",
+            Scale = "256k",
+            Dimension = "overworld",
         };
 
         Assert.IsType<CreatedAtActionResult>((await controller.CreateLocal(Request())).Result);
@@ -1694,15 +1924,22 @@ public sealed class IngestionJobsControllerTests
         const string fileName = "archive-ready.zip";
         await using (var destination = File.Create(Path.Combine(intakeRoot, fileName)))
         using (var archive = BuildWorldZip("world/level.dat", "world/region/r.4.-5.mca"))
+        {
             await archive.CopyToAsync(destination, cancellationToken);
+        }
 
         var request = new LocalIntakeQueueRequest
         {
             OriginalFileName = "archive-ready-original.zip",
             Metadata = new IngestionJobRequest
             {
-                IntakeFileName = fileName, Slug = "archive-ready", Name = "Archive Ready",
-                WorldDownloadDate = "2020-01-02", Source = "The Archive automated sync", Scale = "1", Dimension = "auto",
+                IntakeFileName = fileName,
+                Slug = "archive-ready",
+                Name = "Archive Ready",
+                WorldDownloadDate = "2020-01-02",
+                Source = "The Archive automated sync",
+                Scale = "1",
+                Dimension = "auto",
             },
         };
 
@@ -1731,15 +1968,22 @@ public sealed class IngestionJobsControllerTests
         const string fileName = "archive-idempotent.zip";
         await using (var destination = File.Create(Path.Combine(intakeRoot, fileName)))
         using (var archive = BuildWorldZip("world/level.dat", "world/region/r.4.-5.mca"))
+        {
             await archive.CopyToAsync(destination, cancellationToken);
+        }
 
         var request = new LocalIntakeQueueRequest
         {
             OriginalFileName = "archive-idempotent-original.zip",
             Metadata = new IngestionJobRequest
             {
-                IntakeFileName = fileName, Slug = "archive-idempotent", Name = "Archive Idempotent",
-                WorldDownloadDate = "2020-01-02", Source = "The Archive automated sync", Scale = "1", Dimension = "auto",
+                IntakeFileName = fileName,
+                Slug = "archive-idempotent",
+                Name = "Archive Idempotent",
+                WorldDownloadDate = "2020-01-02",
+                Source = "The Archive automated sync",
+                Scale = "1",
+                Dimension = "auto",
             },
         };
 
@@ -1771,8 +2015,13 @@ public sealed class IngestionJobsControllerTests
             OriginalFileName = "outside.zip",
             Metadata = new IngestionJobRequest
             {
-                IntakeFileName = "..\\outside.zip", Slug = "outside", Name = "Outside",
-                WorldDownloadDate = "2020-01-02", Source = "The Archive automated sync", Scale = "1", Dimension = "auto",
+                IntakeFileName = "..\\outside.zip",
+                Slug = "outside",
+                Name = "Outside",
+                WorldDownloadDate = "2020-01-02",
+                Source = "The Archive automated sync",
+                Scale = "1",
+                Dimension = "auto",
             },
         };
 
@@ -1796,7 +2045,12 @@ public sealed class IngestionJobsControllerTests
 
         var overworld = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "+Z Border", Dimension = 0, X = 0, Y = 64, Z = 30_000_000,
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "+Z Border",
+            Dimension = 0,
+            X = 0,
+            Y = 64,
+            Z = 30_000_000,
             DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(overworld);
@@ -1807,14 +2061,20 @@ public sealed class IngestionJobsControllerTests
         var controller = CreateController(context, workerKey, intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "z-border", Name = "+Z Border",
-            WorldDownloadDate = "2019-04-20", Source = "2b2t world download", Scale = "256k",
-            Dimension = "auto", ExistingLocationId = overworld.Rowid,
+            IntakeFileName = "pending.zip",
+            Slug = "z-border",
+            Name = "+Z Border",
+            WorldDownloadDate = "2019-04-20",
+            Source = "2b2t world download",
+            Scale = "256k",
+            Dimension = "auto",
+            ExistingLocationId = overworld.Rowid,
         });
         using var archive = BuildWorldZip("world/level.dat", "world/region/r.0.0.mca", "world/DIM-1/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "z-border.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<CreatedAtActionResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -1841,8 +2101,13 @@ public sealed class IngestionJobsControllerTests
             context, "test-worker-key-that-is-at-least-32-characters", intakeRoot);
         var metadata = JsonSerializer.Serialize(new IngestionJobRequest
         {
-            IntakeFileName = "pending.zip", Slug = "z-border-bundle", Name = "+Z Border",
-            WorldDownloadDate = "2019-04-20", Source = "The Archive", Scale = "1", Dimension = "auto",
+            IntakeFileName = "pending.zip",
+            Slug = "z-border-bundle",
+            Name = "+Z Border",
+            WorldDownloadDate = "2019-04-20",
+            Source = "The Archive",
+            Scale = "1",
+            Dimension = "auto",
         });
         using var archive = BuildWorldZip(
             "world/level.dat",
@@ -1852,7 +2117,8 @@ public sealed class IngestionJobsControllerTests
             "world/DIM1/region/r.0.0.mca");
         var file = new FormFile(archive, 0, archive.Length, "archive", "z-border.zip")
         {
-            Headers = new HeaderDictionary(), ContentType = "application/zip",
+            Headers = new HeaderDictionary(),
+            ContentType = "application/zip",
         };
 
         Assert.IsType<CreatedAtActionResult>((await controller.Upload(metadata, file, cancellationToken)).Result);
@@ -1900,7 +2166,11 @@ public sealed class IngestionJobsControllerTests
             ["IngestionWorker:ApiKeySha256"] = keyHash,
             ["MapRenders:AllowedUrlPrefixes:0"] = "https://tiles.atlas.example/AtlasTiles/",
         };
-        if (intakeRoot is not null) settings["IngestionWorker:IntakeRoot"] = intakeRoot;
+        if (intakeRoot is not null)
+        {
+            settings["IngestionWorker:IntakeRoot"] = intakeRoot;
+        }
+
         if (intakeRoot is not null)
         {
             var archiveRoot = Path.Combine(Path.GetDirectoryName(intakeRoot)!, "archive");

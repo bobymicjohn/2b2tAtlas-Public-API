@@ -30,8 +30,16 @@ public sealed class AttachmentsController : ControllerBase
         limit = Math.Clamp(limit, 1, 1000);
         offset = Math.Max(0, offset);
         var query = _context.Attachments.AsNoTracking().Include(item => item.LocationRow).AsQueryable();
-        if (locationId.HasValue) query = query.Where(item => item.LocationRowid == locationId.Value);
-        if (!string.IsNullOrWhiteSpace(mediaType)) query = query.Where(item => item.MediaType == mediaType.Trim());
+        if (locationId.HasValue)
+        {
+            query = query.Where(item => item.LocationRowid == locationId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(mediaType))
+        {
+            query = query.Where(item => item.MediaType == mediaType.Trim());
+        }
+
         var rows = await query.OrderBy(item => item.Id).Skip(offset).Take(limit).ToListAsync();
         return Ok(rows.Select(Map));
     }

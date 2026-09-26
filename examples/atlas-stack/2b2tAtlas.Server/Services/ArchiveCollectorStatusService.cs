@@ -33,13 +33,20 @@ public sealed partial class ArchiveCollectorStatusService
     public async Task<ArchiveCollectorStatusDto> GetAsync(CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        if (_cached is not null && now < _cacheExpiresUtc) return _cached;
+        if (_cached is not null && now < _cacheExpiresUtc)
+        {
+            return _cached;
+        }
 
         await _refreshLock.WaitAsync(cancellationToken);
         try
         {
             now = DateTimeOffset.UtcNow;
-            if (_cached is not null && now < _cacheExpiresUtc) return _cached;
+            if (_cached is not null && now < _cacheExpiresUtc)
+            {
+                return _cached;
+            }
+
             _cached = BuildSnapshot(now);
             _cacheExpiresUtc = now.AddSeconds(Math.Clamp(_options.CacheSeconds, 2, 60));
             return _cached;
@@ -85,7 +92,11 @@ public sealed partial class ArchiveCollectorStatusService
         foreach (var candidate in queueEntries)
         {
             var key = String(candidate, "normalizedWarp");
-            if (!byWarp.TryGetValue(key, out var prior)) continue;
+            if (!byWarp.TryGetValue(key, out var prior))
+            {
+                continue;
+            }
+
             var status = String(prior, "status");
             if (status.Equals("missing", StringComparison.OrdinalIgnoreCase))
             {
@@ -120,7 +131,11 @@ public sealed partial class ArchiveCollectorStatusService
         var finalizerStage = finalizer is null ? string.Empty : String(finalizer.RootElement, "stage");
         var rollingStage = rolling is null ? string.Empty : String(rolling.RootElement, "stage");
         var handoffStage = rollingStage is not ("" or "idle") ? rollingStage : finalizerStage;
-        if (handoffStage.Length == 0) handoffStage = "not-started";
+        if (handoffStage.Length == 0)
+        {
+            handoffStage = "not-started";
+        }
+
         var submitted = rolling is null ? 0 : Int(rolling.RootElement, "submitted");
         var active = !paused && !stale && activeWorkers > 0;
 
@@ -173,7 +188,11 @@ public sealed partial class ArchiveCollectorStatusService
         var safeStderr = SafeContainedPath(runRoot, stderr);
         var minecraftVersion = NullIfEmpty(String(worker, "minecraftVersion"));
         var lane = String(worker, "lane");
-        if (lane.Length == 0) lane = "large-wdl";
+        if (lane.Length == 0)
+        {
+            lane = "large-wdl";
+        }
+
         var logRoot = id == 5 && minecraftVersion?.Contains("1.21.10", StringComparison.Ordinal) == true
             ? _options.CompatibilityProfileRoot
             : id == 1 || profile.Equals("atlas-owner", StringComparison.OrdinalIgnoreCase)
@@ -192,7 +211,11 @@ public sealed partial class ArchiveCollectorStatusService
             ?? LastWarp(safeStdout)
             ?? NullIfEmpty(String(worker, "currentOrLastWarp"));
         var progress = LastCoverageProgress(currentCollectorLog);
-        if (progress.Received is null) progress = LastCoverageProgress(currentGameLog);
+        if (progress.Received is null)
+        {
+            progress = LastCoverageProgress(currentGameLog);
+        }
+
         var assigned = Int(worker, "assigned");
         var completed = Int(worker, "completed");
         // A live wrapper can still be waiting for the Archive backend. Calling that
@@ -257,10 +280,15 @@ public sealed partial class ArchiveCollectorStatusService
             foreach (var line in ReadTailLines(path, 256 * 1024).Reverse())
             {
                 if (line.Contains("Unable to connect to archive", StringComparison.OrdinalIgnoreCase))
+                {
                     return "archive-backend-rejected";
+                }
+
                 if (line.Contains("Client disconnected with reason:", StringComparison.OrdinalIgnoreCase) &&
                     line.Contains("Disconnected", StringComparison.OrdinalIgnoreCase))
+                {
                     return "server-disconnected";
+                }
             }
         }
         return null;
@@ -271,22 +299,37 @@ public sealed partial class ArchiveCollectorStatusService
         DateTime? latest = null;
         foreach (var path in paths)
         {
-            if (path is null || !File.Exists(path)) continue;
+            if (path is null || !File.Exists(path))
+            {
+                continue;
+            }
+
             var created = File.GetCreationTimeUtc(path);
-            if (latest is null || created > latest) latest = created;
+            if (latest is null || created > latest)
+            {
+                latest = created;
+            }
         }
         return latest;
     }
 
     private static bool IsCurrentLaunchLog(string? path, DateTime? launchStartedUtc)
     {
-        if (path is null || !File.Exists(path)) return false;
+        if (path is null || !File.Exists(path))
+        {
+            return false;
+        }
+
         return launchStartedUtc is null || File.GetCreationTimeUtc(path) >= launchStartedUtc.Value.AddSeconds(-15);
     }
 
     private JsonDocument? ReadJson(string path)
     {
-        if (!File.Exists(path)) return null;
+        if (!File.Exists(path))
+        {
+            return null;
+        }
+
         for (var attempt = 0; attempt < 4; attempt++)
         {
             try
@@ -298,9 +341,13 @@ public sealed partial class ArchiveCollectorStatusService
             catch (Exception exception) when (exception is IOException or JsonException)
             {
                 if (attempt == 3)
+                {
                     _logger.LogWarning(exception, "Collector status file could not be read: {FileName}", Path.GetFileName(path));
+                }
                 else
+                {
                     Thread.Sleep(20 * (attempt + 1));
+                }
             }
         }
         return null;
@@ -309,7 +356,10 @@ public sealed partial class ArchiveCollectorStatusService
     private static IEnumerable<JsonElement> Elements(JsonElement root, string property)
     {
         if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Array)
+        {
             return value.EnumerateArray().ToArray();
+        }
+
         return [];
     }
 
@@ -317,7 +367,10 @@ public sealed partial class ArchiveCollectorStatusService
     {
         var status = String(entry, "status");
         if (status is not ("captured" or "ready") || !entry.TryGetProperty("adaptive", out var adaptive) || adaptive.ValueKind != JsonValueKind.Object)
+        {
             return false;
+        }
+
         return Int(adaptive, "standardVersion") >= 2 && adaptive.TryGetProperty("componentSelection", out var selection) && selection.ValueKind != JsonValueKind.Null;
     }
 
@@ -326,7 +379,10 @@ public sealed partial class ArchiveCollectorStatusService
         foreach (var line in ReadTailLines(path, 256 * 1024).Reverse())
         {
             var match = WarpLineRegex().Match(line);
-            if (match.Success) return match.Groups[1].Value.Trim();
+            if (match.Success)
+            {
+                return match.Groups[1].Value.Trim();
+            }
         }
         return null;
     }
@@ -338,7 +394,10 @@ public sealed partial class ArchiveCollectorStatusService
         {
             var plainLine = AnsiEscapeRegex().Replace(line, string.Empty);
             var match = TeleportedWarpRegex().Match(plainLine);
-            if (match.Success) return match.Groups[1].Value.Trim();
+            if (match.Success)
+            {
+                return match.Groups[1].Value.Trim();
+            }
         }
         return null;
     }
@@ -347,7 +406,11 @@ public sealed partial class ArchiveCollectorStatusService
     {
         foreach (var line in ReadTailLines(path, 1024 * 1024).Reverse())
         {
-            if (!line.Contains("ATLAS_COVER", StringComparison.Ordinal) || !line.Contains("received=", StringComparison.Ordinal)) continue;
+            if (!line.Contains("ATLAS_COVER", StringComparison.Ordinal) || !line.Contains("received=", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             return (
                 MatchInt(ReceivedRegex(), line),
                 MatchInt(MissingRegex(), line),
@@ -359,7 +422,11 @@ public sealed partial class ArchiveCollectorStatusService
 
     private static IReadOnlyList<string> ReadTailLines(string? path, int maximumBytes)
     {
-        if (path is null || !File.Exists(path)) return [];
+        if (path is null || !File.Exists(path))
+        {
+            return [];
+        }
+
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
@@ -372,7 +439,11 @@ public sealed partial class ArchiveCollectorStatusService
             while (offset < bytes)
             {
                 var read = stream.Read(buffer, offset, bytes - offset);
-                if (read == 0) break;
+                if (read == 0)
+                {
+                    break;
+                }
+
                 offset += read;
             }
             var text = Encoding.UTF8.GetString(buffer, 0, offset);
@@ -387,14 +458,22 @@ public sealed partial class ArchiveCollectorStatusService
 
     private static IReadOnlyList<string> ReadAllLinesShared(string? path)
     {
-        if (path is null || !File.Exists(path)) return [];
+        if (path is null || !File.Exists(path))
+        {
+            return [];
+        }
+
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.SequentialScan);
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
             var lines = new List<string>();
-            while (reader.ReadLine() is { } line) lines.Add(line);
+            while (reader.ReadLine() is { } line)
+            {
+                lines.Add(line);
+            }
+
             return lines;
         }
         catch (IOException)
@@ -405,7 +484,11 @@ public sealed partial class ArchiveCollectorStatusService
 
     private static string? NewestCollectorLog(string directory)
     {
-        if (!Directory.Exists(directory)) return null;
+        if (!Directory.Exists(directory))
+        {
+            return null;
+        }
+
         try
         {
             return Directory.EnumerateFiles(directory, "collector-*.log", SearchOption.TopDirectoryOnly)
@@ -420,7 +503,11 @@ public sealed partial class ArchiveCollectorStatusService
 
     private static bool IsProcessAlive(int processId)
     {
-        if (processId <= 0) return false;
+        if (processId <= 0)
+        {
+            return false;
+        }
+
         try
         {
             using var process = Process.GetProcessById(processId);
@@ -432,7 +519,11 @@ public sealed partial class ArchiveCollectorStatusService
 
     private static string? SafeContainedPath(string root, string candidate)
     {
-        if (string.IsNullOrWhiteSpace(candidate)) return null;
+        if (string.IsNullOrWhiteSpace(candidate))
+        {
+            return null;
+        }
+
         try
         {
             var fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
@@ -447,7 +538,11 @@ public sealed partial class ArchiveCollectorStatusService
 
     private static string? SafeProfilePath(string root, string profile)
     {
-        if (!SafeProfileRegex().IsMatch(profile)) return null;
+        if (!SafeProfileRegex().IsMatch(profile))
+        {
+            return null;
+        }
+
         return SafeContainedPath(root, Path.Combine(root, profile));
     }
 
@@ -456,7 +551,11 @@ public sealed partial class ArchiveCollectorStatusService
         var localNow = now.ToLocalTime();
         var days = ((int)_options.WeeklyRunDay - (int)localNow.DayOfWeek + 7) % 7;
         var candidate = new DateTimeOffset(localNow.Date.AddDays(days).AddHours(Math.Clamp(_options.WeeklyRunHour, 0, 23)), localNow.Offset);
-        if (candidate <= localNow) candidate = candidate.AddDays(7);
+        if (candidate <= localNow)
+        {
+            candidate = candidate.AddDays(7);
+        }
+
         return candidate;
     }
 

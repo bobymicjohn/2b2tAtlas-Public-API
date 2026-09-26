@@ -1,14 +1,10 @@
-# Data Model And Schema Lifecycle
+# Data model and schema changes
 
-> **AI-Generated documentation.**
-
-## Scope
-
-This file explains persisted concepts and schema evolution. HTTP representations belong in `API_COMPATIBILITY.md`; field validation remains authoritative in shared DTOs and controllers.
+Atlas stores its catalog and job state in SQLite. This page explains the main relationships and how existing databases are upgraded. See [API compatibility](API_COMPATIBILITY.md) for HTTP responses.
 
 ## Database Lifecycle
 
-**Production:** Atlas uses SQLite through `2b2tAtlas.Server/Models/AtlasContext.cs` and `AtlasContext.Highways.cs`. `2b2tAtlas.Server/Program.cs` builds the path as `<current working directory>/atlas.db`.
+Atlas uses SQLite through `2b2tAtlas.Server/Models/AtlasContext.cs` and `AtlasContext.Highways.cs`. `2b2tAtlas.Server/Program.cs` reads `Database:Path`, defaulting to `.local/data/atlas.db` under the working directory. The example launcher sets an explicit path.
 
 Startup order is:
 
@@ -69,11 +65,11 @@ Owners: `2b2tAtlas.Server/Models/Highway.cs`, `HighwayGroup.cs`, `Group.cs`, `Lo
 
 `Users` stores account/authentication fields plus canonical `Role`, `IsSuperAdmin`, profile fields, failed-login state, trust metadata, and activation state. Passwords are BCrypt hashes; generated seed credentials are operational files, not schema documentation.
 
-`RolePermissions` is a replacement override for one role's code-defined default. If rows exist for a role, `2b2tAtlas.Server/Services/AuthService.cs` uses those rows; otherwise it uses `Atlas.Auth.RolePermissions.ForRole`. SuperAdmin always resolves every permission.
+`RolePermissions` is a replacement override for one role's code-defined default. If rows exist for a role, `2b2tAtlas.Server/Services/AuthService.cs` uses those rows; otherwise it uses `Atlas.Auth.RolePermissions.ForRole`. Only the validated owner receives every permission; setting a role name alone does not confer ownership.
 
 ## Ingestion Jobs
 
-`IngestionJobs` coordinates queue state without storing WDL bytes. It records public ID, intake filename, slug, target dimension, optional `WorldRoot`, optional reviewed `RenderTopY`, status/stage/progress/ETA, archive SHA-256, the inferred single Archive warp and evidence source, automatic/manual match decision/confidence/reason, warp/location/render linkage, re-render state, lease/claim data, inspection JSON, and timestamps. Source bytes live in the external X: content-addressed archive. A completed job with a render but no warp is also the durable provenance edge for a verified pre-Archive/community render source; the public API exposes it through render-native WDL routes instead of fabricating an Archive warp. `RenderTopY` is durable render provenance: retries use the same vertical cutaway instead of relying on mutable worker configuration.
+`IngestionJobs` coordinates queue state without storing WDL bytes. It records public ID, intake filename, slug, target dimension, optional `WorldRoot`, optional reviewed `RenderTopY`, status/stage/progress/ETA, archive SHA-256, the inferred single Archive warp and evidence source, automatic/manual match decision/confidence/reason, warp/location/render linkage, re-render state, lease/claim data, inspection JSON, and timestamps. Source bytes live in the configured content-addressed archive, outside SQLite. A completed job with a render but no warp is also the durable provenance edge for a verified pre-Archive/community render source; the public API exposes it through render-native WDL routes instead of fabricating an Archive warp. `RenderTopY` is durable render provenance: retries use the same vertical cutaway instead of relying on mutable worker configuration.
 
 Unique indexes protect `PublicId` and the `(Slug, Dimension)` pair (one base slug hosts a job per dimension); `IX_IngestionJobs_Status_Id` supports claim ordering. Completion transactionally creates or links a location render in `IngestionJobsController`.
 

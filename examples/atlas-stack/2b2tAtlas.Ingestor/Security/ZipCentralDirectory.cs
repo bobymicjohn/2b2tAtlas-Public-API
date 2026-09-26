@@ -20,7 +20,9 @@ internal static class ZipCentralDirectory
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         if (stream.Length < 22)
+        {
             throw new InputValidationException("ZIP archive is too short to contain an end record.");
+        }
 
         var tailLength = (int)Math.Min(stream.Length, MaximumEndRecordLength);
         var tail = new byte[tailLength];
@@ -28,7 +30,9 @@ internal static class ZipCentralDirectory
         stream.ReadExactly(tail);
         var endIndex = FindEndRecord(tail);
         if (endIndex < 0)
+        {
             throw new InputValidationException("ZIP end record is missing or malformed.");
+        }
 
         var end = tail.AsSpan(endIndex);
         var diskNumber = ReadUInt16(end, 4);
@@ -54,7 +58,10 @@ internal static class ZipCentralDirectory
         }
 
         if (totalEntries > (ulong)maxEntries || totalEntries > int.MaxValue)
+        {
             throw new InputSecurityException($"Archive has {totalEntries:N0} entries; limit is {maxEntries:N0}.");
+        }
+
         if (centralOffset > (ulong)stream.Length || centralSize > (ulong)stream.Length ||
             centralOffset + centralSize > (ulong)stream.Length)
         {
@@ -67,21 +74,31 @@ internal static class ZipCentralDirectory
         {
             stream.ReadExactly(header);
             if (BinaryPrimitives.ReadUInt32LittleEndian(header) != CentralEntrySignature)
+            {
                 throw new InputValidationException("ZIP central-directory entry is malformed.");
+            }
 
             var flags = ReadUInt16(header, 8);
             var method = ReadUInt16(header, 10);
             if ((flags & 0x0001) != 0 || (flags & 0x0040) != 0)
+            {
                 throw new InputSecurityException("Encrypted ZIP entries are not accepted.");
+            }
+
             if (method is not (0 or 8))
+            {
                 throw new InputSecurityException($"ZIP compression method {method} is not accepted; only stored and deflate are supported.");
+            }
 
             var nameLength = ReadUInt16(header, 28);
             var extraLength = ReadUInt16(header, 30);
             var commentLength = ReadUInt16(header, 32);
             var variableLength = checked(nameLength + extraLength + commentLength);
             if (stream.Position + variableLength > stream.Length)
+            {
                 throw new InputValidationException("ZIP central-directory entry extends beyond the archive.");
+            }
+
             stream.Position += variableLength;
         }
     }
@@ -91,10 +108,15 @@ internal static class ZipCentralDirectory
         for (var index = tail.Length - 22; index >= 0; index--)
         {
             if (ReadUInt32(tail, index) != EndSignature)
+            {
                 continue;
+            }
+
             var commentLength = ReadUInt16(tail, index + 20);
             if (index + 22 + commentLength == tail.Length)
+            {
                 return index;
+            }
         }
         return -1;
     }
@@ -102,7 +124,10 @@ internal static class ZipCentralDirectory
     private static (ulong Entries, ulong Size, ulong Offset) ReadZip64End(FileStream stream, long endOffset)
     {
         if (endOffset < 20)
+        {
             throw new InputValidationException("ZIP64 locator is missing.");
+        }
+
         Span<byte> locator = stackalloc byte[20];
         stream.Position = endOffset - locator.Length;
         stream.ReadExactly(locator);
@@ -114,7 +139,10 @@ internal static class ZipCentralDirectory
 
         var zip64Offset = BinaryPrimitives.ReadUInt64LittleEndian(locator[8..]);
         if (zip64Offset > (ulong)(stream.Length - 56))
+        {
             throw new InputValidationException("ZIP64 end-record offset is invalid.");
+        }
+
         Span<byte> end = stackalloc byte[56];
         stream.Position = checked((long)zip64Offset);
         stream.ReadExactly(end);
@@ -126,7 +154,10 @@ internal static class ZipCentralDirectory
         var entriesOnDisk = BinaryPrimitives.ReadUInt64LittleEndian(end[24..]);
         var totalEntries = BinaryPrimitives.ReadUInt64LittleEndian(end[32..]);
         if (entriesOnDisk != totalEntries)
+        {
             throw new InputValidationException("Multi-disk ZIP64 archives are not accepted.");
+        }
+
         return (
             totalEntries,
             BinaryPrimitives.ReadUInt64LittleEndian(end[40..]),

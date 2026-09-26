@@ -63,7 +63,10 @@ public sealed class AiEnrichmentGroupPromptTests
 
     private sealed class RecordingHandler(string responseText) : HttpMessageHandler
     {
-        public string? Prompt { get; private set; }
+        public string? Prompt
+        {
+            get; private set;
+        }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
@@ -74,10 +77,15 @@ public sealed class AiEnrichmentGroupPromptTests
                 var json = await request.Content.ReadAsStringAsync(cancellationToken);
                 using var document = JsonDocument.Parse(json);
                 if (document.RootElement.TryGetProperty("prompt", out var prompt))
+                {
                     Prompt = prompt.GetString();
+                }
             }
 
-            var response = JsonSerializer.Serialize(new { response = responseText });
+            var response = JsonSerializer.Serialize(new
+            {
+                response = responseText
+            });
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(response, Encoding.UTF8, "application/json"),

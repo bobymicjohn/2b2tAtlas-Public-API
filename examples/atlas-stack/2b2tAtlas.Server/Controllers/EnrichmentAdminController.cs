@@ -119,9 +119,13 @@ public class EnrichmentAdminController : ControllerBase
     {
         var query = _context.Revisions.Where(r => r.Source == SourceAi);
         if (!string.IsNullOrWhiteSpace(status))
+        {
             query = query.Where(r => r.Status == status);
+        }
         else
+        {
             query = query.Where(r => r.Status == "Applied" || r.Status == "Pending");
+        }
 
         var rows = await query.OrderByDescending(r => r.Id).Take(500).ToListAsync(cancellationToken);
         return Ok(rows.Select(MapToDto).ToList());
@@ -148,7 +152,9 @@ public class EnrichmentAdminController : ControllerBase
         var userId = CurrentUserId();
         var username = CurrentUsername();
         if (!_runCoordinator.TryStart(request.AutoApply, userId, username, out var status))
+        {
             return Conflict(status);
+        }
 
         return Accepted(status);
     }
@@ -255,8 +261,15 @@ public class EnrichmentAdminController : ControllerBase
     public async Task<IActionResult> Apply(int id)
     {
         var revision = await LoadAiRevisionAsync(id);
-        if (revision == null) return NotFound();
-        if (revision.Status != "Pending") return BadRequest("Only pending suggestions can be applied.");
+        if (revision == null)
+        {
+            return NotFound();
+        }
+
+        if (revision.Status != "Pending")
+        {
+            return BadRequest("Only pending suggestions can be applied.");
+        }
 
         var applied = revision.EntityType switch
         {
@@ -264,7 +277,11 @@ public class EnrichmentAdminController : ControllerBase
             TypeGroup => await WriteGroupDiscoveryAsync(revision),
             _ => false,
         };
-        if (!applied) return BadRequest("The enrichment target is missing, duplicated, or no longer valid.");
+        if (!applied)
+        {
+            return BadRequest("The enrichment target is missing, duplicated, or no longer valid.");
+        }
+
         revision.Status = "Approved";
         revision.ReviewedByUserId = CurrentUserId();
         revision.ReviewedUtc = DateTime.UtcNow.ToString("o");
@@ -279,8 +296,15 @@ public class EnrichmentAdminController : ControllerBase
     public async Task<IActionResult> Keep(int id)
     {
         var revision = await LoadAiRevisionAsync(id);
-        if (revision == null) return NotFound();
-        if (revision.Status != "Applied") return BadRequest("Only auto-applied suggestions can be kept.");
+        if (revision == null)
+        {
+            return NotFound();
+        }
+
+        if (revision.Status != "Applied")
+        {
+            return BadRequest("Only auto-applied suggestions can be kept.");
+        }
 
         revision.Status = "Approved";
         revision.ReviewedByUserId = CurrentUserId();
@@ -298,8 +322,15 @@ public class EnrichmentAdminController : ControllerBase
     public async Task<IActionResult> Reject(int id)
     {
         var revision = await LoadAiRevisionAsync(id);
-        if (revision == null) return NotFound();
-        if (revision.Status != "Pending") return BadRequest("Only pending suggestions can be rejected.");
+        if (revision == null)
+        {
+            return NotFound();
+        }
+
+        if (revision.Status != "Pending")
+        {
+            return BadRequest("Only pending suggestions can be rejected.");
+        }
 
         revision.Status = "Rejected";
         revision.ReviewedByUserId = CurrentUserId();
@@ -317,16 +348,35 @@ public class EnrichmentAdminController : ControllerBase
     public async Task<IActionResult> Revert(int id)
     {
         var revision = await LoadAiRevisionAsync(id);
-        if (revision == null) return NotFound();
-        if (revision.Status != "Applied") return BadRequest("Only auto-applied suggestions can be reverted.");
-        if (string.IsNullOrWhiteSpace(revision.PreviousJson)) return BadRequest("No prior value stored to revert to.");
+        if (revision == null)
+        {
+            return NotFound();
+        }
+
+        if (revision.Status != "Applied")
+        {
+            return BadRequest("Only auto-applied suggestions can be reverted.");
+        }
+
+        if (string.IsNullOrWhiteSpace(revision.PreviousJson))
+        {
+            return BadRequest("No prior value stored to revert to.");
+        }
 
         var row = await _context.Locations
             .Include(location => location.LocationGroups)
             .FirstOrDefaultAsync(location => location.Rowid == revision.EntityId);
-        if (row == null) return NotFound($"Location {revision.EntityId} no longer exists.");
+        if (row == null)
+        {
+            return NotFound($"Location {revision.EntityId} no longer exists.");
+        }
+
         var previous = JsonSerializer.Deserialize<Atlas.Location>(revision.PreviousJson, JsonOptions);
-        if (previous == null) return BadRequest("Stored prior value is unreadable.");
+        if (previous == null)
+        {
+            return BadRequest("Stored prior value is unreadable.");
+        }
+
         var proposed = JsonSerializer.Deserialize<Atlas.Location>(revision.ProposedJson, JsonOptions);
 
         var before = Snapshot(row);
@@ -360,13 +410,28 @@ public class EnrichmentAdminController : ControllerBase
         var row = await _context.Locations
             .Include(location => location.LocationGroups)
             .FirstOrDefaultAsync(location => location.Rowid == revision.EntityId);
-        if (row == null) return false;
+        if (row == null)
+        {
+            return false;
+        }
+
         var proposed = JsonSerializer.Deserialize<Atlas.Location>(revision.ProposedJson, JsonOptions);
-        if (proposed == null) return false;
+        if (proposed == null)
+        {
+            return false;
+        }
 
         var before = Snapshot(row);
-        if (!string.IsNullOrWhiteSpace(proposed.Wiki)) row.Wiki = proposed.Wiki;
-        if (!string.IsNullOrWhiteSpace(proposed.Description)) row.Description = proposed.Description;
+        if (!string.IsNullOrWhiteSpace(proposed.Wiki))
+        {
+            row.Wiki = proposed.Wiki;
+        }
+
+        if (!string.IsNullOrWhiteSpace(proposed.Description))
+        {
+            row.Description = proposed.Description;
+        }
+
         var requestedGroups = (proposed.Groups ?? [])
             .Where(group => group.GroupId > 0)
             .GroupBy(group => group.GroupId)
@@ -400,11 +465,16 @@ public class EnrichmentAdminController : ControllerBase
     {
         var proposal = JsonSerializer.Deserialize<GroupDiscoveryProposal>(revision.ProposedJson, JsonOptions);
         if (proposal?.Group is null || string.IsNullOrWhiteSpace(proposal.Group.Name))
+        {
             return false;
+        }
+
         var normalizedName = NormalizeIdentity(proposal.Group.Name);
         var existingNames = await _context.Groups.AsNoTracking().Select(group => group.Name).ToListAsync();
         if (existingNames.Any(name => NormalizeIdentity(name) == normalizedName))
+        {
             return false;
+        }
 
         var now = DateTime.UtcNow.ToString("o");
         var group = new _2b2tAtlas.Server.Models.Group
@@ -436,7 +506,11 @@ public class EnrichmentAdminController : ControllerBase
     private static string? NormalizeOptional(string? value, int maximumLength)
     {
         var normalized = value?.Trim();
-        if (string.IsNullOrWhiteSpace(normalized)) return null;
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
         return normalized.Length <= maximumLength ? normalized : normalized[..maximumLength];
     }
 

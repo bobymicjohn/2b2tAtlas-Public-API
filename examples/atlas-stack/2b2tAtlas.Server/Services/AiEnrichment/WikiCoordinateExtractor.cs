@@ -37,7 +37,9 @@ public static partial class WikiCoordinateExtractor
     public static IReadOnlyList<WikiCoordinate> Extract(string? wikitext)
     {
         if (string.IsNullOrWhiteSpace(wikitext))
+        {
             return [];
+        }
 
         var found = new HashSet<WikiCoordinate>();
         foreach (var pattern in new[] { InfoboxPattern(), CoordTemplatePattern(), LabeledPattern() })
@@ -45,7 +47,9 @@ public static partial class WikiCoordinateExtractor
             foreach (Match match in pattern.Matches(wikitext))
             {
                 if (TryParse(match.Groups[1].Value, out var x) && TryParse(match.Groups[2].Value, out var z))
+                {
                     found.Add(new WikiCoordinate(x, z));
+                }
             }
         }
         return found.ToArray();
@@ -57,7 +61,9 @@ public static partial class WikiCoordinateExtractor
         result = 0;
         var cleaned = value.Replace(",", string.Empty);
         if (!long.TryParse(cleaned, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out result))
+        {
             return false;
+        }
         // Reject coordinates beyond the ~30M world border (with margin) to drop stray numbers.
         return result is >= -35_000_000 and <= 35_000_000;
     }

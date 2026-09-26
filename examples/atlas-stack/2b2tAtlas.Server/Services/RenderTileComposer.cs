@@ -48,7 +48,10 @@ public static partial class RenderTileComposer
                     Y = int.Parse(item.Match.Groups[2].Value),
                 })
                 .ToList();
-            if (tiles.Count == 0) continue;
+            if (tiles.Count == 0)
+            {
+                continue;
+            }
 
             var minX = tiles.Min(tile => tile.X);
             var minY = tiles.Min(tile => tile.Y);

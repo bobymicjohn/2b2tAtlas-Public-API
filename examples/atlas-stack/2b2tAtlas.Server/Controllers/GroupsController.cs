@@ -62,7 +62,11 @@ public class GroupsController : ControllerBase
     public async Task<ActionResult<Atlas.Group>> GetGroup(int id)
     {
         var row = await _context.Groups.AsNoTracking().FirstOrDefaultAsync(group => group.Id == id);
-        if (row == null) return NotFound();
+        if (row == null)
+        {
+            return NotFound();
+        }
+
         var locations = await _context.LocationGroups.AsNoTracking()
             .Where(link => link.GroupId == id)
             .Join(_context.Locations.AsNoTracking(), link => link.LocationRowid, location => location.Rowid,
@@ -118,8 +122,14 @@ public class GroupsController : ControllerBase
     public async Task<ActionResult<Atlas.Group>> CreateGroup([FromBody] Atlas.Group dto)
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Name))
+        {
             return BadRequest("Name is required");
-        if (ValidateUrls(dto) is { } urlError) return BadRequest(urlError);
+        }
+
+        if (ValidateUrls(dto) is { } urlError)
+        {
+            return BadRequest(urlError);
+        }
 
         var row = new ServerGroup();
         ApplyDto(dto, row);
@@ -128,7 +138,10 @@ public class GroupsController : ControllerBase
         _context.Groups.Add(row);
         await _context.SaveChangesAsync();
         await _audit.LogAsync("group.create", "Group", row.Id, CurrentUserId(), CurrentUsername(), $"Created group '{row.Name}'");
-        return CreatedAtAction(nameof(GetGroup), new { id = row.Id }, MapToDto(row));
+        return CreatedAtAction(nameof(GetGroup), new
+        {
+            id = row.Id
+        }, MapToDto(row));
     }
 
     /// <summary>Replaces the editable metadata for an existing group and records the mutation.</summary>
@@ -139,11 +152,27 @@ public class GroupsController : ControllerBase
     [Authorize(Policy = Permissions.GroupsManage)]
     public async Task<ActionResult<Atlas.Group>> UpdateGroup(int id, [FromBody] Atlas.Group dto)
     {
-        if (dto == null) return BadRequest("Request body is required");
-        if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Name is required");
-        if (ValidateUrls(dto) is { } urlError) return BadRequest(urlError);
+        if (dto == null)
+        {
+            return BadRequest("Request body is required");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+        {
+            return BadRequest("Name is required");
+        }
+
+        if (ValidateUrls(dto) is { } urlError)
+        {
+            return BadRequest(urlError);
+        }
+
         var row = await _context.Groups.FindAsync(id);
-        if (row == null) return NotFound();
+        if (row == null)
+        {
+            return NotFound();
+        }
+
         ApplyDto(dto, row);
         row.ModifiedUtc = DateTime.UtcNow.ToString("o");
         await _context.SaveChangesAsync();
@@ -159,7 +188,11 @@ public class GroupsController : ControllerBase
     public async Task<IActionResult> DeleteGroup(int id)
     {
         var row = await _context.Groups.FindAsync(id);
-        if (row == null) return NotFound();
+        if (row == null)
+        {
+            return NotFound();
+        }
+
         var name = row.Name;
         var locationLinks = await _context.LocationGroups.Where(link => link.GroupId == id).ToListAsync();
         var highwayLinks = await _context.HighwayGroups.Where(link => link.GroupId == id).ToListAsync();
@@ -231,9 +264,15 @@ public class GroupsController : ControllerBase
             ("Logo source URL", dto.LogoSourceUrl),
         })
         {
-            if (string.IsNullOrWhiteSpace(value)) continue;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
             if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+            {
                 return $"{label} must be an absolute HTTP or HTTPS URL.";
+            }
         }
         return null;
     }

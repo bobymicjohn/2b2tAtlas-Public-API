@@ -45,7 +45,10 @@ public static partial class ChunkBoundsInspector
                 cancellationToken.ThrowIfCancellationRequested();
                 var match = RegionNamePattern().Match(Path.GetFileName(path));
                 if (!match.Success)
+                {
                     continue;
+                }
+
                 RejectReparsePoint(path);
                 var regionX = ParseCoordinate(match.Groups[1].Value);
                 var regionZ = ParseCoordinate(match.Groups[2].Value);
@@ -69,7 +72,10 @@ public static partial class ChunkBoundsInspector
                 cancellationToken.ThrowIfCancellationRequested();
                 var match = LegacyChunkNamePattern().Match(Path.GetFileName(path));
                 if (!match.Success)
+                {
                     continue;
+                }
+
                 RejectReparsePoint(path);
                 var expected = (X: ParseBase36(match.Groups[1].Value), Z: ParseBase36(match.Groups[2].Value));
                 try
@@ -88,7 +94,10 @@ public static partial class ChunkBoundsInspector
         }
 
         if (chunks.Count == 0)
+        {
             throw new InputValidationException("Dimension contains no readable occupied chunks.");
+        }
+
         var nativeTiles = chunks
             .Select(value => (X: FloorDivide(value.X, 16), Z: FloorDivide(value.Z, 16)))
             .Distinct()
@@ -97,7 +106,10 @@ public static partial class ChunkBoundsInspector
             .ToArray();
         using var inventory = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         foreach (var tile in nativeTiles)
+        {
             inventory.AppendData(Encoding.ASCII.GetBytes($"{tile.X},{tile.Z}\n"));
+        }
+
         return new WorldBounds(
             chunks.Min(value => value.X),
             chunks.Min(value => value.Z),
@@ -129,7 +141,9 @@ public static partial class ChunkBoundsInspector
             path, FileMode.Open, FileAccess.Read, FileShare.Read,
             64 * 1024, FileOptions.Asynchronous | FileOptions.RandomAccess);
         if (region.Length < HeaderBytes)
+        {
             throw new InputValidationException($"Region file is smaller than its header: {path}");
+        }
         // Floor to whole sectors so a truncated final sector (partial download) drops only its own chunk.
         var sectorLength = checked((int)(region.Length / SectorBytes));
         var header = new byte[SectorBytes];
@@ -142,7 +156,9 @@ public static partial class ChunkBoundsInspector
             var sectorOffset = header[offset] << 16 | header[offset + 1] << 8 | header[offset + 2];
             var sectorCount = header[offset + 3];
             if (sectorOffset == 0 && sectorCount == 0)
+            {
                 continue;
+            }
             // Out-of-range allocations mean corruption/truncation: skip the slot, do not read it.
             if (sectorOffset < 2 || sectorCount == 0 || sectorOffset + sectorCount > sectorLength)
             {
@@ -150,8 +166,12 @@ public static partial class ChunkBoundsInspector
                 continue;
             }
             for (var sector = sectorOffset; sector < sectorOffset + sectorCount; sector++)
+            {
                 if (!occupiedSectors.Add(sector))
+                {
                     throw new InputSecurityException($"Region header contains overlapping chunk allocations: {path}");
+                }
+            }
 
             var localX = index % 32;
             var localZ = index / 32;
@@ -189,17 +209,25 @@ public static partial class ChunkBoundsInspector
         var external = (chunkHeader[4] & 0x80) != 0;
         var compression = (byte)(chunkHeader[4] & 0x7f);
         if (storedLength < 1 || storedLength > sectorCount * SectorBytes - 4)
+        {
             throw new InputValidationException($"Region chunk length exceeds its allocation: {path}");
+        }
 
         if (external)
         {
             var externalPath = Path.Combine(Path.GetDirectoryName(path)!, $"c.{expected.X}.{expected.Z}.mcc");
             if (!File.Exists(externalPath))
+            {
                 throw new InputValidationException($"External chunk payload is missing: {externalPath}");
+            }
+
             RejectReparsePoint(externalPath);
             await using var externalInput = new FileStream(externalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             if (externalInput.Length > limits.MaxChunkNbtBytes)
+            {
                 throw new InputSecurityException("External chunk payload exceeds the safety limit.");
+            }
+
             return await NbtSummaryReader.ReadChunkCoordinatesAsync(
                 externalInput, compression, limits.MaxChunkNbtBytes, cancellationToken);
         }
@@ -218,12 +246,20 @@ public static partial class ChunkBoundsInspector
         IngestLimits limits)
     {
         if (actual.X != expected.X || actual.Z != expected.Z)
+        {
             throw new InputSecurityException(
                 $"Chunk coordinate mismatch: storage says {expected.X},{expected.Z}; NBT says {actual.X},{actual.Z}.");
+        }
+
         if (!chunks.Add(expected))
+        {
             throw new InputSecurityException($"Duplicate chunk coordinate: {expected.X},{expected.Z}.");
+        }
+
         if (chunks.Count > limits.MaxChunkCount)
+        {
             throw new InputSecurityException("Dimension exceeds the configured occupied-chunk limit.");
+        }
     }
 
     private static int ParseCoordinate(string value) =>
@@ -242,7 +278,11 @@ public static partial class ChunkBoundsInspector
     {
         var negative = value.StartsWith('-');
         var digits = negative ? value[1..] : value;
-        if (digits.Length == 0) throw new InputValidationException("Invalid legacy chunk coordinate.");
+        if (digits.Length == 0)
+        {
+            throw new InputValidationException("Invalid legacy chunk coordinate.");
+        }
+
         long result = 0;
         foreach (var character in digits)
         {
@@ -250,17 +290,26 @@ public static partial class ChunkBoundsInspector
                 : character is >= 'a' and <= 'z' ? character - 'a' + 10
                 : -1;
             if (digit is < 0 or >= 36)
+            {
                 throw new InputValidationException("Invalid legacy chunk coordinate.");
+            }
+
             result = checked(result * 36 + digit);
         }
-        if (negative) result = -result;
+        if (negative)
+        {
+            result = -result;
+        }
+
         return checked((int)result);
     }
 
     private static void RejectReparsePoint(string path)
     {
         if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+        {
             throw new InputSecurityException($"Chunk storage contains a reparse point: {path}");
+        }
     }
 
     [GeneratedRegex(@"^r\.(-?(?:0|[1-9][0-9]*))\.(-?(?:0|[1-9][0-9]*))\.(?:mca|mcr)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]

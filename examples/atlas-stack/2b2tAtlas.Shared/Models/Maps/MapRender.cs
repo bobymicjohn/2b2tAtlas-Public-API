@@ -9,7 +9,7 @@ namespace Atlas;
 /// </summary>
 public class MapRenderDto
 {
-    /// <summary>Gets or sets the render's persistent identifier.</summary>
+    /// <summary>Render's persistent identifier.</summary>
     public int Id { get; set; }
 
     /// <summary>Stable key for idempotent upsert by the ingestor (e.g. "overworld-1m-2026").</summary>

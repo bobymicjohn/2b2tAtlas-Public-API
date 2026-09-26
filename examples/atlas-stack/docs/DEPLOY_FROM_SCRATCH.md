@@ -14,7 +14,7 @@ Human catalog writes also require a verified pre-edit SQLite snapshot. Configure
 `Recovery__Root` with at least 10 GiB free and `Recovery__DatabasePath` to the live
 database. An unavailable recovery directory intentionally returns 503 for writes.
 
-The current production design targets Windows for the API, worker, renderer, and collector orchestration. The static client can be served by any HTTPS web host that supports SPA rewrites. Paths below are production defaults, not requirements; every stateful path can be moved if configuration and filesystem permissions are updated together.
+The current production design targets Windows for the API, worker, renderer, and collector orchestration. The static client can be served by any HTTPS web host that supports SPA rewrites. Paths below are examples; every stateful path can be moved if configuration and filesystem permissions are updated together.
 
 ## 1. Know the trust and storage boundaries
 
@@ -110,8 +110,6 @@ HostStaticClient=false
 JwtSettings__SecretKey=<cryptographically-random-secret-at-least-32-characters>
 Bootstrap__OwnerPassword=<independent-random-password-at-least-16-characters>
 Database__Path=C:\AtlasExample\Api\data\atlas.db
-Cors__AllowedOrigins__0=https://atlas.example
-Cors__AllowedOrigins__1=https://atlas.example
 IngestionWorker__ApiKeySha256=<lowercase-sha256-of-worker-key>
 IngestionWorker__IntakeRoot=D:\AtlasExample\Ingest\intake
 WdlArchive__Root=E:\AtlasExample\WorldDownloads
@@ -153,7 +151,7 @@ Invoke-RestMethod http://127.0.0.1:5297/openapi/v1.json
 .\scripts\test-atlas-mcp.ps1 -Endpoint http://127.0.0.1:5297/mcp
 ```
 
-Expose only the loopback listener through a reverse proxy or Cloudflare Tunnel. Public read routes and `/mcp` remain anonymous; write routes retain JWT/permission or worker-key enforcement. Confirm TLS, CORS for both site origins, Streamable HTTP POST/SSE forwarding on `/mcp`, request-size/time limits appropriate for chunked WDL uploads, range requests on WDL downloads, and that no filesystem path appears in public metadata.
+Expose only the loopback listener through a reverse proxy or Cloudflare Tunnel. Public read routes and `/mcp` remain anonymous; write routes retain JWT/permission or worker-key enforcement. The public API allows cross-origin requests without cookies; the sample `Cors` list does not restrict that policy. Confirm TLS, browser access from your site, Streamable HTTP POST/SSE forwarding on `/mcp`, request-size/time limits appropriate for chunked WDL uploads, range requests on WDL downloads, and that no filesystem path appears in public metadata.
 
 ## 5. Publish tiles and attachments
 
@@ -273,43 +271,26 @@ Create one isolated instance per account:
 
 Complete Microsoft device authentication interactively for each instance. Never copy `.accounts.json`, session tokens, saves, logs, or locks between instances or into Git. Start with one catalog/capture canary, verify its raw and footprint hashes, promote only reviewed high-confidence captures, and then use the sharded supervisor. The canonical state machine, rate limits, quarantine rules, compatibility profiles, recovery commands, and weekly scheduling gate are in `ARCHIVE_SYNC_AUTOMATION.md`.
 
-## 8. Build the static frontend and SEO graph
-
-The basic static package needs only the public API:
+## 8. Build the static frontend
 
 ```powershell
-.\scripts\build-namecheap-package.ps1 `
-  -ApiBaseUrl https://api.example `
-  -SiteBaseUrl https://atlas.example
+.\scripts\build-namecheap-package.ps1 -ApiBaseUrl https://api.example
 ```
 
-The production wrapper additionally fingerprints public locations, group records/relationships, evidence, and package-producing source. It generates a pending upload record and optional Pushover notification:
+Extract the ZIP contents directly into the web document root, including `.htaccess`.
+On Apache, enable `mod_rewrite` and the WebAssembly MIME type. On another host,
+configure the equivalent SPA fallback and return 404 for missing static assets.
+Keep the API URL public: a loopback address is only useful for local testing.
 
-```powershell
-.\scripts\invoke-atlas-seo-package.ps1 `
-  -ApiBaseUrl https://api.example `
-  -SiteBaseUrl https://atlas.example `
-  -StateRoot C:\AtlasExample\Seo `
-  -GroupEvidenceIndexPath C:\AtlasExample\Api\data\enrichment\2b2t-wiki-group-audit.json `
-  -Force -SkipNotification
-```
+This example packages the Blazor client. It does not generate the live site's
+entity pages, evidence graph, sitemap or SEO release receipts. The retained SEO
+wrapper expects a separate configured exporter and cannot be used unchanged with
+this packager. SEO arguments fail explicitly. Do not schedule that wrapper until
+you have supplied and tested the missing export step.
 
-The ZIP root is the web document root: extract its contents directly into `public_html` (or equivalent), including `.htaccess`. Do not add an extra enclosing folder. The generated release includes the WASM client, crawler-facing location/group/media/WDL entities, JSON-LD and JSONL catalogs, `llms.txt`, sitemap, robots rules, redirects, and package evidence.
-
-If using Apache, enable `mod_rewrite` and the MIME types required by Blazor WebAssembly. For another host, translate `.htaccess` behavior: real static files and entity pages win, known interactive client routes fall back to `index.html`, and unknown asset/entity URLs return real 404/410 responses rather than the SPA shell.
-
-Validate production after extraction:
-
-```powershell
-.\scripts\test-production.ps1
-.\scripts\test-seo-production.ps1 -SampleCount 25
-```
-
-The daily package task is optional and never uploads by itself:
-
-```powershell
-.\scripts\register-atlas-seo-package-task.ps1 -RepositoryRoot C:\Source\2b2tAtlas
-```
+After upload, open the site, follow a direct client route, check a missing asset,
+and verify browser requests reach the intended API and tile origins. Run any
+live probe script only after reviewing its URLs and pointing it at your host.
 
 ## 9. Enrichment and historical media
 
@@ -364,8 +345,8 @@ Before promoting a commit or package:
 5. Back up and integrity-check SQLite.
 6. Validate a staged API with a disposable working directory/database.
 7. Validate public locations, groups, highways, renders, attachments, warps, and WDL download metadata.
-8. Generate the SEO/static package and require its relationship/evidence gate to pass.
+8. Build and inspect the static package. If you added an SEO exporter, validate its relationship/evidence output separately.
 9. Deploy API, tiles/attachments, and static frontend as separate operations with separate rollback points.
-10. Run production and SEO probes, verify collector/worker health, and record commit/package hashes.
+10. Run probes against your configured deployment, verify collector/worker health, and record commit/package hashes.
 
-For component internals and incident recovery, continue with `DEPLOYMENT_TOPOLOGY.md`, `ADMIN_GUIDE.md`, `API.md`, `INGESTION_PIPELINE.md`, `INGESTION_SECURITY.md`, `WDL_WORKER_DEPLOYMENT.md`, and the reference documents under `docs/reference`.
+For component internals and incident recovery, continue with [runtime topology](reference/RUNTIME_TOPOLOGY.md), `ADMIN_GUIDE.md`, `API.md`, `INGESTION_PIPELINE.md`, `INGESTION_SECURITY.md`, `WDL_WORKER_DEPLOYMENT.md`, and the reference documents under `docs/reference`.

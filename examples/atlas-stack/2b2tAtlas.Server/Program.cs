@@ -116,7 +116,11 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, token) =>
     {
-        if (context.HttpContext.Response.HasStarted) return;
+        if (context.HttpContext.Response.HasStarted)
+        {
+            return;
+        }
+
         context.HttpContext.Response.ContentType = "application/json";
         await context.HttpContext.Response.WriteAsync(
             "{\"success\":false,\"message\":\"Too many requests. Please try again later.\"}",
@@ -236,7 +240,10 @@ if (Directory.Exists(blueMapOptions.OutputRoot))
                     context.Response.Headers.CacheControl = "no-store";
                     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
                     if (!HttpMethods.IsHead(context.Request.Method))
+                    {
                         await context.Response.WriteAsync(html, context.RequestAborted);
+                    }
+
                     return;
                 }
             }
@@ -286,7 +293,9 @@ app.MapControllers();
 app.MapRazorPages();
 app.MapMcp("/mcp").RequireRateLimiting("mcp").AllowAnonymous();
 if (hostStaticClient)
+{
     app.MapFallbackToFile("index.html");
+}
 
 // Ensure database is created and seeded
 using (var scope = app.Services.CreateScope())
@@ -305,15 +314,15 @@ using (var scope = app.Services.CreateScope())
     // Seed the canonical highway network (GAMEPLAN §14)
     if (app.Configuration.GetValue<bool>("Bootstrap:SeedHistoricalCatalog"))
     {
-    var groupSeeder = scope.ServiceProvider.GetRequiredService<GroupSeeder>();
-    await groupSeeder.SeedAsync();
+        var groupSeeder = scope.ServiceProvider.GetRequiredService<GroupSeeder>();
+        await groupSeeder.SeedAsync();
 
-    // Seed highways after groups so canonical routes can use stable builder-group IDs.
-    var highwaySeeder = scope.ServiceProvider.GetRequiredService<HighwaySeeder>();
-    await highwaySeeder.SeedAsync();
+        // Seed highways after groups so canonical routes can use stable builder-group IDs.
+        var highwaySeeder = scope.ServiceProvider.GetRequiredService<HighwaySeeder>();
+        await highwaySeeder.SeedAsync();
 
-    var historicalMediaSeeder = scope.ServiceProvider.GetRequiredService<HistoricalMediaSeeder>();
-    await historicalMediaSeeder.SeedAsync();
+        var historicalMediaSeeder = scope.ServiceProvider.GetRequiredService<HistoricalMediaSeeder>();
+        await historicalMediaSeeder.SeedAsync();
     }
 }
 
@@ -340,7 +349,10 @@ static string GetRateLimitClientKey(HttpContext context)
     if (!string.IsNullOrWhiteSpace(forwarded))
     {
         var first = forwarded.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
-        if (!string.IsNullOrWhiteSpace(first)) return first;
+        if (!string.IsNullOrWhiteSpace(first))
+        {
+            return first;
+        }
     }
 
     return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";

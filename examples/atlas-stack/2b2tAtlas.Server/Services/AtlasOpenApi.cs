@@ -37,13 +37,17 @@ public static class AtlasOpenApi
                 {
                     ["Bearer"] = new OpenApiSecurityScheme
                     {
-                        Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT",
                         Description = "Atlas JWT; each operation also enforces its required permission."
                     },
                     ["AtlasWorkerKey"] = new OpenApiSecurityScheme
                     {
-                        Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Header,
-                        Name = "X-Atlas-Worker-Key", Description = "Private ingestion worker credential."
+                        Type = SecuritySchemeType.ApiKey,
+                        In = ParameterLocation.Header,
+                        Name = "X-Atlas-Worker-Key",
+                        Description = "Private ingestion worker credential."
                     }
                 };
                 return Task.CompletedTask;
@@ -54,7 +58,11 @@ public static class AtlasOpenApi
                 var worker = metadata.OfType<AtlasWorkerKeyAttribute>().Any();
                 var auth = metadata.OfType<IAuthorizeData>().ToArray();
                 var bearer = auth.Length > 0 && !metadata.OfType<IAllowAnonymous>().Any();
-                if (!worker && !bearer) return Task.CompletedTask;
+                if (!worker && !bearer)
+                {
+                    return Task.CompletedTask;
+                }
+
                 operation.Security = [new OpenApiSecurityRequirement
                 {
                     [new OpenApiSecuritySchemeReference(worker ? "AtlasWorkerKey" : "Bearer", context.Document)] = []
@@ -66,11 +74,17 @@ public static class AtlasOpenApi
                     operation.Responses.TryAdd("403", new OpenApiResponse { Description = "Authenticated caller lacks the required permission." });
                     var policies = auth.Select(a => a.Policy).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().ToArray();
                     if (policies.Length > 0)
+                    {
                         operation.Description = (operation.Description + "\n\nRequired permission(s): " + string.Join(", ", policies) + ".").Trim();
+                    }
+
                     if (context.Description.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor action &&
                         context.Description.HttpMethod is not "GET" and not "HEAD" &&
                         AtlasWriteProtection.RequiresOwner(context.Description.HttpMethod!, action.ControllerName, action.ActionName))
+                    {
                         operation.Description += " Only the database-verified owner atlas-owner may perform this mutation; role overrides cannot delegate it.";
+                    }
+
                     if (context.Description.HttpMethod is not "GET" and not "HEAD")
                     {
                         operation.Responses.TryAdd("429", new OpenApiResponse { Description = "Persistent human edit quota reached." });
@@ -100,7 +114,10 @@ public static class AtlasOpenApi
         app.Use(async (context, next) =>
         {
             if (context.Request.Path.StartsWithSegments("/openapi"))
+            {
                 context.Response.Headers.CacheControl = "private, no-store";
+            }
+
             await next(context);
         });
         app.MapOpenApi("/openapi/{documentName:regex(^v1$)}.json").AllowAnonymous();

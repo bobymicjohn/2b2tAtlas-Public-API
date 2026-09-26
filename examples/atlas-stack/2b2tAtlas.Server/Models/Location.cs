@@ -17,15 +17,15 @@ namespace _2b2tAtlas.Server.Models;
 /// </remarks>
 public partial class Location
 {
-    /// <summary>Gets or sets the database-generated SQLite row identifier.</summary>
+    /// <summary>Database-generated SQLite row identifier.</summary>
     [Key]
     public int Rowid { get; set; }
 
-    /// <summary>Gets or sets the stable cross-API UUID retained independently of the database rowid.</summary>
+    /// <summary>Stable cross-API UUID retained independently of the database rowid.</summary>
     [Required]
     public string LocationUuid { get; set; }
 
-    /// <summary>Gets or sets the public name used in the Atlas directory and map.</summary>
+    /// <summary>Public name used in the Atlas directory and map.</summary>
     [Required]
     public string Name { get; set; }
 
@@ -35,25 +35,25 @@ public partial class Location
     /// <summary>Gets or sets legacy free-form classification text used by search and compatibility clients.</summary>
     public string Tags { get; set; }
 
-    /// <summary>Gets or sets the optional public 2b2t wiki reference.</summary>
+    /// <summary>Optional public 2b2t wiki reference.</summary>
     public string Wiki { get; set; }
 
-    /// <summary>Gets or sets the optional public video reference.</summary>
+    /// <summary>Optional public video reference.</summary>
     public string VideoUrl { get; set; }
 
-    /// <summary>Gets or sets the modern dimension code: 0 Overworld, 1 Nether, or 2 End.</summary>
+    /// <summary>Modern dimension code: 0 Overworld, 1 Nether, or 2 End.</summary>
     public int Dimension { get; set; }
 
-    /// <summary>Gets or sets the native-dimension Minecraft block X coordinate.</summary>
+    /// <summary>Native-dimension Minecraft block X coordinate.</summary>
     public int X { get; set; }
 
     /// <summary>Gets or sets the Minecraft block elevation.</summary>
     public int Y { get; set; }
 
-    /// <summary>Gets or sets the native-dimension Minecraft block Z coordinate.</summary>
+    /// <summary>Native-dimension Minecraft block Z coordinate.</summary>
     public int Z { get; set; }
 
-    /// <summary>Gets or sets the persisted UTC creation timestamp in round-trip text form.</summary>
+    /// <summary>Persisted UTC creation timestamp in round-trip text form.</summary>
     [Required]
     public string DateAddedUtc { get; set; }
 
@@ -61,11 +61,11 @@ public partial class Location
     [Required]
     public string ModifiedUtc { get; set; } = DateTime.UtcNow.ToString("o");
 
-    /// <summary>Gets or sets the public HTTPS metadata links owned by this location.</summary>
+    /// <summary>Public HTTPS metadata links owned by this location.</summary>
     [InverseProperty("LocationRow")]
     public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 
-    /// <summary>Gets or sets the tile-pyramid captures anchored to this location.</summary>
+    /// <summary>Tile-pyramid captures anchored to this location.</summary>
     [InverseProperty("LocationRow")]
     public virtual ICollection<Render> Renders { get; set; } = new List<Render>();
 

@@ -19,16 +19,36 @@ public static partial class ArchiveWarpResolver
     private static readonly IReadOnlyDictionary<string, string> IterationAliases =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["i"] = "1", ["one"] = "1", ["first"] = "1",
-            ["ii"] = "2", ["two"] = "2", ["second"] = "2",
-            ["iii"] = "3", ["three"] = "3", ["third"] = "3",
-            ["iv"] = "4", ["four"] = "4", ["fourth"] = "4",
-            ["v"] = "5", ["five"] = "5", ["fifth"] = "5",
-            ["vi"] = "6", ["six"] = "6", ["sixth"] = "6",
-            ["vii"] = "7", ["seven"] = "7", ["seventh"] = "7",
-            ["viii"] = "8", ["eight"] = "8", ["eighth"] = "8",
-            ["ix"] = "9", ["nine"] = "9", ["ninth"] = "9",
-            ["x"] = "10", ["ten"] = "10", ["tenth"] = "10",
+            ["i"] = "1",
+            ["one"] = "1",
+            ["first"] = "1",
+            ["ii"] = "2",
+            ["two"] = "2",
+            ["second"] = "2",
+            ["iii"] = "3",
+            ["three"] = "3",
+            ["third"] = "3",
+            ["iv"] = "4",
+            ["four"] = "4",
+            ["fourth"] = "4",
+            ["v"] = "5",
+            ["five"] = "5",
+            ["fifth"] = "5",
+            ["vi"] = "6",
+            ["six"] = "6",
+            ["sixth"] = "6",
+            ["vii"] = "7",
+            ["seven"] = "7",
+            ["seventh"] = "7",
+            ["viii"] = "8",
+            ["eight"] = "8",
+            ["eighth"] = "8",
+            ["ix"] = "9",
+            ["nine"] = "9",
+            ["ninth"] = "9",
+            ["x"] = "10",
+            ["ten"] = "10",
+            ["tenth"] = "10",
         };
 
     /// <summary>Infers the one Archive warp associated with an uploaded WDL.</summary>
@@ -39,17 +59,23 @@ public static partial class ArchiveWarpResolver
         string? operatorWarpName = null)
     {
         if (TryClean(operatorWarpName, out var explicitName))
+        {
             return new ArchiveWarpCandidate(explicitName, "operator", 1, true);
+        }
 
         if (evidence?.IsArchiveSource == true && TryClean(evidence.DownloadName, out var reportName))
+        {
             return new ArchiveWarpCandidate(reportName, "archive-download-report", 0.99, true);
+        }
 
         var archiveAttributed = evidence?.IsArchiveSource == true || IsArchiveAttribution(declaredSource);
         if (archiveAttributed && TryClean(Path.GetFileNameWithoutExtension(originalFileName), out var fileName))
         {
             var withoutCaptureTimestamp = WorldToolsEpochSuffix().Replace(fileName, string.Empty).Trim(' ', '-', '_');
             if (TryClean(withoutCaptureTimestamp, out var cleaned))
+            {
                 return new ArchiveWarpCandidate(cleaned, "archive-filename", evidence?.IsArchiveSource == true ? 0.94 : 0.9, true);
+            }
         }
 
         return null;
@@ -58,7 +84,11 @@ public static partial class ArchiveWarpResolver
     /// <summary>Normalizes a warp for uniqueness and identity comparisons without erasing meaningful dates.</summary>
     public static string Normalize(string? value)
     {
-        if (!TryClean(value, out var cleaned)) return string.Empty;
+        if (!TryClean(value, out var cleaned))
+        {
+            return string.Empty;
+        }
+
         return Whitespace().Replace(NonAlphanumeric().Replace(cleaned.ToLowerInvariant(), " "), " ").Trim();
     }
 
@@ -79,11 +109,19 @@ public static partial class ArchiveWarpResolver
     /// </summary>
     public static string Identity(string? value)
     {
-        if (!TryClean(value, out var cleaned)) return string.Empty;
+        if (!TryClean(value, out var cleaned))
+        {
+            return string.Empty;
+        }
+
         cleaned = ArchiveProvenanceSuffix().Replace(cleaned, string.Empty);
         cleaned = ExhibitCollectionPrefix().Replace(cleaned, string.Empty);
         var normalized = Normalize(DimensionQualifier().Replace(cleaned, string.Empty));
-        if (normalized.Length == 0) return string.Empty;
+        if (normalized.Length == 0)
+        {
+            return string.Empty;
+        }
+
         normalized = ArchiveOrderingPrefix().Replace(normalized, string.Empty);
         normalized = IsoDate().Replace(normalized, " ");
         normalized = QuarterDate().Replace(normalized, " ");
@@ -97,8 +135,16 @@ public static partial class ArchiveWarpResolver
     /// <summary>Builds a human-readable location name while retaining the warp's original Unicode and casing.</summary>
     public static string DisplayIdentity(string? value)
     {
-        if (!TryClean(value, out var cleaned)) return string.Empty;
-        if (TryParseMilestone(cleaned, out var milestone)) return milestone.DisplayName;
+        if (!TryClean(value, out var cleaned))
+        {
+            return string.Empty;
+        }
+
+        if (TryParseMilestone(cleaned, out var milestone))
+        {
+            return milestone.DisplayName;
+        }
+
         return DisplayRegularIdentity(cleaned);
     }
 
@@ -146,9 +192,16 @@ public static partial class ArchiveWarpResolver
     public static string CanonicalLocationIdentity(string? value)
     {
         if (TryClean(value, out var cleaned) && TryParseMilestone(cleaned, out var milestone))
+        {
             return milestone.CanonicalIdentity;
+        }
+
         var (core, iteration) = SplitIteration(Identity(value));
-        if (core.Length == 0) return string.Empty;
+        if (core.Length == 0)
+        {
+            return string.Empty;
+        }
+
         return iteration is null or "1" ? core : $"{core} {iteration}";
     }
 
@@ -158,7 +211,11 @@ public static partial class ArchiveWarpResolver
     /// </summary>
     public static string ExplicitExhibitCollection(string? value)
     {
-        if (!TryClean(value, out var cleaned)) return string.Empty;
+        if (!TryClean(value, out var cleaned))
+        {
+            return string.Empty;
+        }
+
         var match = ExhibitCollectionPrefix().Match(cleaned);
         return match.Success ? Normalize(match.Groups["collection"].Value) : string.Empty;
     }
@@ -174,7 +231,10 @@ public static partial class ArchiveWarpResolver
             !ArchiveProvenanceSuffix().IsMatch(cleaned) ||
             !string.Equals(ExplicitExhibitCollection(cleaned), "sky", StringComparison.Ordinal) ||
             string.Equals(CanonicalLocationIdentity(cleaned), "ceiling", StringComparison.Ordinal))
+        {
             return null;
+        }
+
         return SkyMasonsCutawayTopY;
     }
 
@@ -188,7 +248,11 @@ public static partial class ArchiveWarpResolver
             var label = CleanMilestoneLabel(pair.Groups["rest"].Value, out var dimension);
             var x = ParseMilestoneNumber(pair.Groups["x"].Value);
             var z = ParseMilestoneNumber(pair.Groups["z"].Value);
-            if (x is null || z is null) return false;
+            if (x is null || z is null)
+            {
+                return false;
+            }
+
             var coordinate = $"{FormatMilestoneAxis('X', x.Value)} / {FormatMilestoneAxis('Z', z.Value)}";
             milestone = BuildMilestone(dimension, coordinate,
                 $"pair|{CanonicalNumber(x.Value)}|{CanonicalNumber(z.Value)}", label);
@@ -196,9 +260,17 @@ public static partial class ArchiveWarpResolver
         }
 
         var axis = AxisMilestone().Match(withoutDimensionSuffix);
-        if (!axis.Success) return false;
+        if (!axis.Success)
+        {
+            return false;
+        }
+
         var number = ParseMilestoneNumber(axis.Groups["value"].Value);
-        if (number is null) return false;
+        if (number is null)
+        {
+            return false;
+        }
+
         var axisName = char.ToUpperInvariant(axis.Groups["axis"].Value[0]);
         var axisLabel = CleanMilestoneLabel(axis.Groups["rest"].Value, out var axisDimension);
         milestone = BuildMilestone(axisDimension, FormatMilestoneAxis(axisName, number.Value),
@@ -239,7 +311,10 @@ public static partial class ArchiveWarpResolver
         var sign = millions < 0 ? "-" : "+";
         var absolute = Math.Abs(millions);
         if (absolute < 1)
+        {
             return $"{sign}{axis} {(absolute * 1000).ToString("0.###", CultureInfo.InvariantCulture)}k";
+        }
+
         return $"{sign}{axis} {absolute.ToString("0.###", CultureInfo.InvariantCulture)}M";
     }
 
@@ -249,25 +324,48 @@ public static partial class ArchiveWarpResolver
 
     private static (string Core, string? Iteration) SplitIteration(string identity)
     {
-        if (identity.Length == 0) return (string.Empty, null);
+        if (identity.Length == 0)
+        {
+            return (string.Empty, null);
+        }
+
         var tokens = identity.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (tokens.Length < 2) return (identity, null);
+        if (tokens.Length < 2)
+        {
+            return (identity, null);
+        }
+
         var final = tokens[^1];
         string? iteration = null;
         if (uint.TryParse(final, out var numeric) && numeric is > 0 and <= 999)
+        {
             iteration = numeric.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
         else if (IterationAliases.TryGetValue(final, out var alias))
+        {
             iteration = alias;
+        }
         else if (TryParseRomanIteration(final, out var roman))
+        {
             iteration = roman.ToString(CultureInfo.InvariantCulture);
-        if (iteration is null) return (identity, null);
+        }
+
+        if (iteration is null)
+        {
+            return (identity, null);
+        }
+
         return (string.Join(' ', tokens[..^1]), iteration);
     }
 
     private static bool TryParseRomanIteration(string value, out int result)
     {
         result = 0;
-        if (!RomanNumeral().IsMatch(value)) return false;
+        if (!RomanNumeral().IsMatch(value))
+        {
+            return false;
+        }
+
         var previous = 0;
         for (var index = value.Length - 1; index >= 0; index--)
         {
@@ -292,13 +390,29 @@ public static partial class ArchiveWarpResolver
     private static bool TryClean(string? value, out string cleaned)
     {
         cleaned = string.Empty;
-        if (string.IsNullOrWhiteSpace(value)) return false;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
         var candidate = value.Trim();
-        if (candidate.StartsWith("/warp ", StringComparison.OrdinalIgnoreCase)) candidate = candidate[6..].Trim();
-        if (candidate.Length is < 2 or > 240 || candidate.Any(char.IsControl)) return false;
+        if (candidate.StartsWith("/warp ", StringComparison.OrdinalIgnoreCase))
+        {
+            candidate = candidate[6..].Trim();
+        }
+
+        if (candidate.Length is < 2 or > 240 || candidate.Any(char.IsControl))
+        {
+            return false;
+        }
+
         if (candidate.Equals("world", StringComparison.OrdinalIgnoreCase) ||
             candidate.Equals("wdl", StringComparison.OrdinalIgnoreCase) ||
-            candidate.Equals("download", StringComparison.OrdinalIgnoreCase)) return false;
+            candidate.Equals("download", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
         cleaned = candidate;
         return true;
     }

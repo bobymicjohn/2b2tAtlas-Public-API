@@ -17,10 +17,13 @@ builder.Services.AddScoped<ContextMenuService>();
 
 var configuredApiBase = builder.Configuration["ApiBaseUrl"];
 var apiBase = string.IsNullOrWhiteSpace(configuredApiBase)
-	? new Uri(builder.HostEnvironment.BaseAddress)
-	: new Uri(configuredApiBase.TrimEnd('/') + "/", UriKind.Absolute);
+    ? new Uri(builder.HostEnvironment.BaseAddress)
+    : new Uri(configuredApiBase.TrimEnd('/') + "/", UriKind.Absolute);
 if (!apiBase.IsLoopback && apiBase.Scheme != Uri.UriSchemeHttps)
-	throw new InvalidOperationException("ApiBaseUrl must use HTTPS unless it is loopback.");
+{
+    throw new InvalidOperationException("ApiBaseUrl must use HTTPS unless it is loopback.");
+}
+
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = apiBase });
 
 builder.Services.AddBlazoredLocalStorage();

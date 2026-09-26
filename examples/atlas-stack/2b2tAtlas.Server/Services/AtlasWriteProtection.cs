@@ -29,20 +29,29 @@ public sealed class AtlasWriteProtection(RequestDelegate next)
         if (action == null || HttpMethods.IsGet(http.Request.Method) || HttpMethods.IsHead(http.Request.Method) ||
             HttpMethods.IsOptions(http.Request.Method) || endpoint!.Metadata.GetMetadata<IAllowAnonymous>() != null ||
             http.User.Identity?.IsAuthenticated != true)
-        { await next(http); return; }
+        {
+            await next(http);
+            return;
+        }
 
         var owner = AtlasSessionValidator.IsOwner(http.User);
         if (!owner && RequiresOwner(http.Request.Method, action.ControllerName, action.ActionName))
         {
             http.Response.StatusCode = 403;
-            await http.Response.WriteAsJsonAsync(new { message = "Only atlas-owner can perform this operation." });
+            await http.Response.WriteAsJsonAsync(new
+            {
+                message = "Only atlas-owner can perform this operation."
+            });
             return;
         }
         // These authenticated actions do not mutate catalog records. Upload bytes have
         // their own existing size/session bounds; session creation/completion is guarded.
         if (action.ControllerName == "Auth" ||
             (action.ControllerName == "IngestionJobs" && action.ActionName is "UploadChunk" or "MatchPreview"))
-        { await next(http); return; }
+        {
+            await next(http);
+            return;
+        }
 
         try
         {
@@ -53,7 +62,10 @@ public sealed class AtlasWriteProtection(RequestDelegate next)
             {
                 http.Response.StatusCode = 429;
                 http.Response.Headers.RetryAfter = "3600";
-                await http.Response.WriteAsJsonAsync(new { message = "Atlas edit limit reached. Please wait or ask atlas-owner to review the activity." });
+                await http.Response.WriteAsJsonAsync(new
+                {
+                    message = "Atlas edit limit reached. Please wait or ask atlas-owner to review the activity."
+                });
                 return;
             }
         }
@@ -61,7 +73,10 @@ public sealed class AtlasWriteProtection(RequestDelegate next)
         {
             logger.LogError(ex, "Recovery checkpoint failed; refusing human mutation");
             http.Response.StatusCode = 503;
-            await http.Response.WriteAsJsonAsync(new { message = "A recovery checkpoint could not be verified. Editing is paused until backup storage is available." });
+            await http.Response.WriteAsJsonAsync(new
+            {
+                message = "A recovery checkpoint could not be verified. Editing is paused until backup storage is available."
+            });
             return;
         }
         await next(http);

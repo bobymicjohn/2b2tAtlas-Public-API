@@ -54,7 +54,10 @@ public static class PublicationService
         ValidateDimension(dimension);
         var plan = await JobStore.ReadJsonAsync<RenderPlan>(paths.RenderPlan, cancellationToken);
         if (!plan.Dimensions.Any(value => value.Key == dimension))
+        {
             throw new InputValidationException($"Dimension is not in the render plan: {dimension}");
+        }
+
         await AtlasTileAdapter.VerifyReceiptAsync(
             paths, jobId, dimension, tileRootRelativePath, limits, cancellationToken);
 
@@ -76,12 +79,19 @@ public static class PublicationService
         var coordinateScheme = AtlasTileScheme.Parse(adaptation.Scheme).CoordinateScheme;
         var before = TilePublisher.Verify(tileRoot, limits, coordinateScheme);
         if (Path.GetPathRoot(tileRoot)!.Equals(Path.GetPathRoot(destinationPath), StringComparison.OrdinalIgnoreCase))
+        {
             TilePublisher.PublishAtomically(tileRoot, destinationPath);
+        }
         else
+        {
             await CopyVerifiedAtomicallyAsync(tileRoot, destinationPath, before, limits, cancellationToken);
+        }
+
         var after = TilePublisher.Verify(destinationPath, limits, coordinateScheme);
         if (!TilePublisher.ReportsMatch(before, after))
+        {
             throw new InputSecurityException("Published tile inventory changed during atomic publication.");
+        }
 
         var receipt = new PublicationReceipt(
             jobId.ToLowerInvariant(),
@@ -102,7 +112,10 @@ public static class PublicationService
         CancellationToken cancellationToken)
     {
         if (Directory.Exists(destination) || File.Exists(destination))
+        {
             throw new InputValidationException($"Published path already exists: {destination}");
+        }
+
         var staging = destination + "." + Guid.NewGuid().ToString("N") + ".partial";
         try
         {
@@ -119,12 +132,18 @@ public static class PublicationService
             cancellationToken.ThrowIfCancellationRequested();
             var copied = TilePublisher.Verify(staging, limits, expected.CoordinateScheme);
             if (!TilePublisher.ReportsMatch(expected, copied))
+            {
                 throw new InputSecurityException("Cross-volume publication failed tile inventory verification.");
+            }
+
             TilePublisher.PublishAtomically(staging, destination);
         }
         finally
         {
-            if (Directory.Exists(staging)) Directory.Delete(staging, recursive: true);
+            if (Directory.Exists(staging))
+            {
+                Directory.Delete(staging, recursive: true);
+            }
         }
     }
 
@@ -160,7 +179,10 @@ public static class PublicationService
         var current = TilePublisher.Verify(
             receipt.Destination, limits, receipt.Report.CoordinateScheme);
         if (!TilePublisher.ReportsMatch(current, receipt.Report))
+        {
             throw new InputSecurityException("Published tile inventory no longer matches its receipt.");
+        }
+
         return receipt;
     }
 
@@ -182,15 +204,23 @@ public static class PublicationService
     {
         var normalized = value.Replace('\\', '/').Trim();
         if (normalized is "" or ".")
+        {
             return ".";
+        }
+
         if (Path.IsPathRooted(normalized) || normalized.Split('/').Any(part => part is "" or "." or ".."))
+        {
             throw new InputValidationException("tile-root must be a safe relative directory path.");
+        }
+
         return normalized;
     }
 
     private static void ValidateDimension(string dimension)
     {
         if (dimension is not ("overworld" or "nether" or "end"))
+        {
             throw new InputValidationException("Dimension must be overworld, nether, or end.");
+        }
     }
 }

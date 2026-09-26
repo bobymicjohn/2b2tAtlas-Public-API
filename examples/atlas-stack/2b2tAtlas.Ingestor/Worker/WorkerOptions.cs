@@ -63,31 +63,60 @@ public sealed class WorkerOptions
     private void Validate()
     {
         if (SchemaVersion != 1)
+        {
             throw new InputValidationException("Worker schemaVersion must be 1.");
+        }
+
         if (!Uri.TryCreate(ApiBase, UriKind.Absolute, out var api) ||
             !api.IsLoopback && api.Scheme != Uri.UriSchemeHttps)
+        {
             throw new InputValidationException("Worker apiBase must use HTTPS unless it is loopback.");
+        }
+
         if (string.IsNullOrWhiteSpace(ApiKeyEnvironment) || ApiKeyEnvironment.Length > 100)
+        {
             throw new InputValidationException("Worker apiKeyEnvironment is invalid.");
+        }
+
         if (PollSeconds is < 5 or > 300)
+        {
             throw new InputValidationException("Worker pollSeconds must be between 5 and 300.");
+        }
+
         if (TileScheme != "atlas-overworld-sparse-v1")
+        {
             throw new InputValidationException("The worker requires atlas-overworld-sparse-v1 for location renders.");
+        }
+
         if (!Directory.Exists(FullIntakeRoot))
+        {
             throw new InputValidationException("Worker intakeRoot does not exist.");
+        }
+
         if (!Directory.Exists(FullArchiveRoot))
+        {
             throw new InputValidationException("Worker archiveRoot does not exist.");
+        }
+
         if (!File.Exists(FullRendererProfile))
+        {
             throw new InputValidationException("Worker rendererProfile does not exist.");
+        }
+
         Directory.CreateDirectory(FullWorkRoot);
         Directory.CreateDirectory(FullPublishRoot);
         if (Overlaps(FullIntakeRoot, FullWorkRoot) ||
             Overlaps(FullIntakeRoot, FullPublishRoot) ||
             Overlaps(FullWorkRoot, FullPublishRoot))
+        {
             throw new InputValidationException("Worker intake, work, and publish roots must not overlap.");
+        }
+
         if (!Uri.TryCreate(PublicTileRoot.TrimEnd('/') + "/", UriKind.Absolute, out var tileRoot) ||
             tileRoot.Scheme != Uri.UriSchemeHttps || !string.IsNullOrEmpty(tileRoot.Query) || !string.IsNullOrEmpty(tileRoot.Fragment))
+        {
             throw new InputValidationException("Worker publicTileRoot must be an HTTPS URL without a query or fragment.");
+        }
     }
 
     private static bool Overlaps(string first, string second) =>
@@ -96,7 +125,10 @@ public sealed class WorkerOptions
     private static bool IsWithin(string candidate, string root)
     {
         if (!string.Equals(Path.GetPathRoot(candidate), Path.GetPathRoot(root), StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
+
         var relative = Path.GetRelativePath(root, candidate);
         return relative == "." ||
             !relative.Equals("..", StringComparison.Ordinal) &&

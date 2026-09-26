@@ -26,12 +26,10 @@ are individual lodge entries within a base, not five unrelated whole bases.
 Do not repeat the retired Sky-prefix consolidation: an Archive collection prefix
 alone does not justify merging locations.
 
-`scripts/clarify-isle-lodges.py` applies this reviewed metadata correction with an
-online SQLite backup, expected-state checks, one transaction and audit records.
-It requires explicit database and private backup-directory arguments. Existing
-text changes cause it to stop for review. Keep its backup and change receipt
-outside Git. Use the record restore tool with that verified backup if rollback
-is needed; preview the affected records first.
+The one-time metadata repair used the original installation's record IDs and
+expected values. It is not part of the public setup. On another installation,
+review the affected records through Admin and retain a verified backup before
+editing. Equal bounds alone still do not establish that two saves are the same.
 
 ## Collector guard
 

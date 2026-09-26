@@ -1,10 +1,6 @@
-# Glossary And Code Ownership Map
+# Glossary and code map
 
-> **AI-Generated documentation.**
-
-## Scope
-
-This file defines overloaded terms and points retrieval to the code that decides behavior. Paths are repository-relative to `2b2tAtlas.New`.
+Some Atlas names refer to different things in the map, database and worker. These definitions and source paths should help you find the right place to make a change. Paths are relative to `examples/atlas-stack`.
 
 ## Glossary
 
@@ -64,10 +60,6 @@ Minecraft block coordinates in the record's own dimension. Overworld/Nether disp
 ### Sparse Coordinate Scheme
 
 A named, certified transform from chunk-backed renderer output into Atlas `z/y/x` URLs. `atlas-sparse-v1` is the API completion contract; dimension-specific adapter profiles define the actual zoom/origin mapping.
-
-### Production, Operational, Optional, Future
-
-Status terms defined in `docs/RAG_INDEX.md`. In particular, optional BlackBrain behavior is never an Atlas availability dependency.
 
 ## Server Ownership
 
@@ -145,8 +137,10 @@ Status terms defined in `docs/RAG_INDEX.md`. In particular, optional BlackBrain 
 | Sanitized status summary | `scripts/get-atlas-bluemap-status.ps1`, `GET /api/admin/bluemap` |
 | Canonical operational contract | `docs/BLUEMAP_PIPELINE.md` |
 
-## Documentation Ownership
+## Further reading
 
-Use `docs/API.md` for concise API reference, `docs/DEPLOYMENT_TOPOLOGY.md` for host operations, `docs/INGESTION_PIPELINE.md` for commands/limits, `docs/BLUEMAP_PIPELINE.md` for the downstream 3D derivative, `docs/ARCHIVE_SYNC_AUTOMATION.md` for the headless Archive acquisition boundary, `docs/INGESTION_SECURITY.md` for threat review, `docs/INGESTION_CHECKLIST.md` for per-archive gates, `docs/MAP_GUIDE.md` for user workflow, and `docs/BLACKBRAIN_INTEGRATION.md` for optional enrichment design.
-
-`docs/ROADMAP.md` owns future intent and current corpus maturity statements. Dated `docs/RELEASE_READINESS.md` evidence must not override newer source or production baselines.
+Use the [API guide](../API.md) for requests, [installation guide](../DEPLOY_FROM_SCRATCH.md)
+for setup, [ingestion guide](../INGESTION_PIPELINE.md) for worker commands,
+[BlueMap guide](../BLUEMAP_PIPELINE.md) for 3D renders, and
+[Archive guide](../ARCHIVE_SYNC_AUTOMATION.md) for collection and recovery.
+The [map guide](../MAP_GUIDE.md) covers the browser controls.

@@ -13,7 +13,10 @@ public static class PrimaryMapRenders
     private const string TileBase = "https://tiles.atlas.example/AtlasTiles";
 
     /// <summary>Gets the full-map primary render descriptors, ordered by dimension then picker order.</summary>
-    public static IReadOnlyList<RenderCatalogEntry> All { get; } =
+    public static IReadOnlyList<RenderCatalogEntry> All
+    {
+        get;
+    } =
     [
         // --- Overworld (0) — hosted AtlasTiles pyramids (day/night) ---
         Tiles("256k", "256k (2021)", 0, "256k", $"{TileBase}/Overworld/256k/{{dn}}/{{z}}/{{y}}/{{x}}.png"),
@@ -42,18 +45,18 @@ public static class PrimaryMapRenders
     private static RenderCatalogEntry Tiles(
         string slug, string name, int dimension, string scale, string urlTemplate,
         bool dayNight = true, int? maxNativeZoom = null, string coordinateScheme = "xyz-v1") => new()
-    {
-        Kind = "primary",
-        Id = slug,
-        Name = name,
-        Dimension = dimension,
-        Scale = scale,
-        TileUrlTemplate = urlTemplate,
-        HasDayNight = dayNight,
-        MaxNativeZoom = maxNativeZoom,
-        CoordinateScheme = coordinateScheme,
-        Source = "2b2t Atlas",
-    };
+        {
+            Kind = "primary",
+            Id = slug,
+            Name = name,
+            Dimension = dimension,
+            Scale = scale,
+            TileUrlTemplate = urlTemplate,
+            HasDayNight = dayNight,
+            MaxNativeZoom = maxNativeZoom,
+            CoordinateScheme = coordinateScheme,
+            Source = "2b2t Atlas",
+        };
 
     // 2b2t.place layers are resampled/proxied, not a plain {z}/{y}/{x} pyramid.
     private static RenderCatalogEntry Place(string slug, string name, int dimension, string scale) => new()

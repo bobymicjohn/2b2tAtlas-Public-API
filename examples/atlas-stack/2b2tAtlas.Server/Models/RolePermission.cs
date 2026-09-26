@@ -9,10 +9,10 @@ namespace _2b2tAtlas.Server.Models;
 /// </summary>
 public class RolePermission
 {
-    /// <summary>Gets or sets the database-generated grant identifier.</summary>
+    /// <summary>Database-generated grant identifier.</summary>
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the editable canonical role whose default bundle is being replaced.</summary>
+    /// <summary>Editable canonical role whose default bundle is being replaced.</summary>
     public string Role { get; set; } = string.Empty;
 
     /// <summary>Gets or sets one validated permission identifier granted by the role override.</summary>

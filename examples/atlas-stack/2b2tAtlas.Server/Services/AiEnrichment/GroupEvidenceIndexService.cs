@@ -70,7 +70,9 @@ public sealed class GroupEvidenceIndexService
     {
         var index = Load();
         if (index is null)
+        {
             return [];
+        }
 
         var existingIds = (location.Groups ?? []).Select(item => item.GroupId).ToHashSet();
         var groupsById = knownGroups.ToDictionary(group => group.Id);
@@ -83,16 +85,26 @@ public sealed class GroupEvidenceIndexService
         foreach (var article in index.Articles)
         {
             if (article.AtlasGroups.Count != 1)
+            {
                 continue;
+            }
 
             var indexedGroup = article.AtlasGroups[0];
             ServerGroup? group = null;
             if (indexedGroup.Id > 0)
+            {
                 groupsById.TryGetValue(indexedGroup.Id, out group);
+            }
+
             if (group is null && !string.IsNullOrWhiteSpace(indexedGroup.Name))
+            {
                 groupsByName.TryGetValue(Normalize(indexedGroup.Name), out group);
+            }
+
             if (group is null || (!includeExisting && existingIds.Contains(group.Id)))
+            {
                 continue;
+            }
 
             foreach (var match in article.ExactAtlasBuildMatches.Where(match => match.Rowid == location.Rowid))
             {
@@ -101,13 +113,17 @@ public sealed class GroupEvidenceIndexService
                 var titleIdentity = evidence.Contains("building-group title equals location", StringComparer.OrdinalIgnoreCase);
                 var section = evidence.Contains("base/build section", StringComparer.OrdinalIgnoreCase);
                 if (!infobox && !titleIdentity && !section)
+                {
                     continue;
+                }
 
                 var iterationEquivalent = evidence.Contains(
                     "trailing Roman/Arabic iteration equivalence", StringComparer.OrdinalIgnoreCase);
                 var confidence = infobox ? 0.97 : titleIdentity ? 0.88 : 0.84;
                 if (iterationEquivalent)
+                {
                     confidence -= 0.03;
+                }
                 // A group article whose title equals a location can still describe the organization rather
                 // than an owned build (reviewed examples: The Last Templar and Wingston). Only an explicit
                 // infobox base declaration clears the automatic gate.
@@ -125,7 +141,9 @@ public sealed class GroupEvidenceIndexService
                 };
 
                 if (!suggestions.TryGetValue(group.Id, out var prior) || candidate.Confidence > prior.Confidence)
+                {
                     suggestions[group.Id] = candidate;
+                }
             }
         }
 
@@ -137,7 +155,9 @@ public sealed class GroupEvidenceIndexService
     {
         var index = Load();
         if (index is null)
+        {
             return new HashSet<GroupEvidenceCandidate>();
+        }
 
         var groupsById = knownGroups.ToDictionary(group => group.Id);
         var groupsByName = knownGroups
@@ -150,16 +170,27 @@ public sealed class GroupEvidenceIndexService
             var indexedGroup = article.AtlasGroups[0];
             ServerGroup? group = null;
             if (indexedGroup.Id > 0)
+            {
                 groupsById.TryGetValue(indexedGroup.Id, out group);
+            }
+
             if (group is null && !string.IsNullOrWhiteSpace(indexedGroup.Name))
+            {
                 groupsByName.TryGetValue(Normalize(indexedGroup.Name), out group);
+            }
+
             if (group is null)
+            {
                 continue;
+            }
 
             foreach (var match in article.ExactAtlasBuildMatches)
             {
                 if (match.Rowid <= 0 || !HasExplicitEvidence(match.Evidence))
+                {
                     continue;
+                }
+
                 pairs.Add(new GroupEvidenceCandidate(match.Rowid, group.Id));
             }
         }
@@ -175,7 +206,9 @@ public sealed class GroupEvidenceIndexService
     {
         var index = Load();
         if (index is null)
+        {
             return [];
+        }
 
         var knownNames = knownGroups.Select(group => Normalize(group.Name)).ToHashSet();
         var denied = _options.GroupDiscoveryDenyList.Select(Normalize).ToHashSet();
@@ -230,9 +263,14 @@ public sealed class GroupEvidenceIndexService
 
             var writeUtc = File.GetLastWriteTimeUtc(_indexPath);
             if (_cached is not null && writeUtc == _cachedWriteUtc)
+            {
                 return IsFresh(_cached) ? _cached : null;
+            }
+
             if (_cached is null && writeUtc == _cachedWriteUtc && _cachedError is not null)
+            {
                 return null;
+            }
 
             try
             {
@@ -240,12 +278,18 @@ public sealed class GroupEvidenceIndexService
                     FileShare.ReadWrite | FileShare.Delete);
                 var index = JsonSerializer.Deserialize<GroupEvidenceIndex>(stream, JsonOptions);
                 if (index is null || index.SchemaVersion != 1 || index.Articles.Count == 0)
+                {
                     throw new InvalidDataException("The group evidence index is empty or has an unsupported schema.");
+                }
+
                 _cachedWriteUtc = writeUtc;
                 _cached = index;
                 _cachedError = null;
                 if (!IsFresh(index))
+                {
                     return null;
+                }
+
                 return index;
             }
             catch (Exception exception) when (exception is IOException or JsonException or InvalidDataException)
@@ -263,7 +307,10 @@ public sealed class GroupEvidenceIndexService
     {
         var maxAge = TimeSpan.FromDays(Math.Clamp(_options.GroupEvidenceMaxAgeDays, 1, 90));
         if (DateTime.UtcNow - index.GeneratedUtc <= maxAge)
+        {
             return true;
+        }
+
         _cachedError = $"Group evidence index is stale ({index.GeneratedUtc:O}); refresh it before applying attributions.";
         return false;
     }

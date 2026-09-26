@@ -10,35 +10,35 @@ namespace _2b2tAtlas.Server.Models;
 
 public partial class User
 {
-    /// <summary>Gets or sets the database-generated account identifier used in JWT subject claims.</summary>
+    /// <summary>Database-generated account identifier used in JWT subject claims.</summary>
     [Key]
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the unique Atlas login and public display name.</summary>
+    /// <summary>Unique Atlas login and public display name.</summary>
     [Required]
     public string Username { get; set; } = null!;
 
-    /// <summary>Gets or sets the unique Discord handle used as a login identity.</summary>
+    /// <summary>Unique Discord handle used as a login identity.</summary>
     public string? DiscordHandle { get; set; }
 
     /// <summary>Gets or sets the BCrypt credential digest; API projections must never expose this value.</summary>
     [Required]
     public string PasswordHash { get; set; } = null!;
 
-    /// <summary>Gets or sets the canonical role identifier used to resolve effective permission claims.</summary>
+    /// <summary>Canonical role identifier used to resolve effective permission claims.</summary>
     [Required]
     public string Role { get; set; } = null!;
 
-    /// <summary>Gets or sets whether authentication is permitted, stored as 1 or 0.</summary>
+    /// <summary>Whether authentication is permitted, stored as 1 or 0.</summary>
     public int IsActive { get; set; }
 
-    /// <summary>Gets or sets the legacy administrator compatibility flag, stored as 1 or 0 and derived from role assignment.</summary>
+    /// <summary>Legacy administrator compatibility flag, stored as 1 or 0 and derived from role assignment.</summary>
     public int IsAdmin { get; set; }
 
     /// <summary>Gets or sets the UTC account creation timestamp in round-trip text form.</summary>
     [Required]
     public string CreatedAt { get; set; } = null!;
 
-    /// <summary>Gets or sets the most recent successful login UTC timestamp text.</summary>
+    /// <summary>Most recent successful login UTC timestamp text.</summary>
     public string? LastLoginAt { get; set; }
 }

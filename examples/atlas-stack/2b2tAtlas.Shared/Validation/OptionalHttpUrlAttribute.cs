@@ -11,9 +11,21 @@ public sealed class OptionalHttpUrlAttribute : ValidationAttribute
     /// <returns><see langword="true"/> for null, blank, or valid HTTP/HTTPS URL strings; otherwise, <see langword="false"/>.</returns>
     public override bool IsValid(object? value)
     {
-        if (value is null) return true;
-        if (value is not string text) return false;
-        if (string.IsNullOrWhiteSpace(text)) return true;
+        if (value is null)
+        {
+            return true;
+        }
+
+        if (value is not string text)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return true;
+        }
+
         return Uri.TryCreate(text, UriKind.Absolute, out var uri) &&
                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) &&
                !string.IsNullOrWhiteSpace(uri.Host) &&

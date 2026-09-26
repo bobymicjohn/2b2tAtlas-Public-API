@@ -86,7 +86,7 @@ public class LocationsController : ControllerBase
                 .OrderByDescending(job => job.Id)
                 .ToListAsync();
             var legacySourceJobsByRender = legacySourceJobs
-                .Where(IsPublicRenderSourceJob)
+                .Where(PublicWorldDownloadRules.HasRenderSource)
                 .GroupBy(job => job.RenderId!.Value)
                 .ToDictionary(group => group.Key, group => group.First());
             var allWarps = await _context.Warps
@@ -142,41 +142,41 @@ public class LocationsController : ControllerBase
                         var blueMap = _blueMap?.Find(r.Id);
                         return new Atlas.Locations.Render
                         {
-                        Id = r.Id,
-                        ApiUrl = PublicAtlasUrls.RenderApi(r.Id),
-                        LocationRowid = r.LocationRowid,
-                        Name = r.Name,
-                        Description = r.Description,
-                        Source = r.Source,
-                        ArchiveWarpId = r.ArchiveWarpId,
-                        ArchiveWarp = r.ArchiveWarpId is int warpId
+                            Id = r.Id,
+                            ApiUrl = PublicAtlasUrls.RenderApi(r.Id),
+                            LocationRowid = r.LocationRowid,
+                            Name = r.Name,
+                            Description = r.Description,
+                            Source = r.Source,
+                            ArchiveWarpId = r.ArchiveWarpId,
+                            ArchiveWarp = r.ArchiveWarpId is int warpId
                             ? locationWarpsById.GetValueOrDefault(warpId)
                             : null,
-                        ArchiveWarps = r.ArchiveWarpId is int archiveWarpId &&
+                            ArchiveWarps = r.ArchiveWarpId is int archiveWarpId &&
                             locationWarpsById.TryGetValue(archiveWarpId, out var archiveWarp)
                                 ? [archiveWarp]
                                 : [],
-                        Dimension = r.Dimension,
-                        Scale = r.Scale,
-                        TilesPath = r.TilesPath,
-                        HasDayNight = r.HasDayNight == 1,
-                        PreviewImagePath = r.PreviewImagePath,
-                        WorldDownloadDate = r.WorldDownloadDate,
-                        WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, loc.Name, sourceJob.ArchiveSha256),
-                        WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(r.Id),
-                        WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
-                        WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),
-                        WorldDownloadSource = sourceJob?.Source,
-                        BlueMapUrl = blueMap?.PublicUrl,
-                        BlueMapPath = blueMap?.RelativeUrl,
-                        BlueMapProfileVersion = blueMap?.RendererProfileVersion,
-                        MinX = r.MinX,
-                        MinZ = r.MinZ,
-                        MaxXExclusive = r.MaxXExclusive,
-                        MaxZExclusive = r.MaxZExclusive,
-                        MaxNativeZoom = r.MaxNativeZoom,
-                        CoordinateScheme = r.CoordinateScheme,
-                        DateAddedUtc = r.DateAddedUtc
+                            Dimension = r.Dimension,
+                            Scale = r.Scale,
+                            TilesPath = r.TilesPath,
+                            HasDayNight = r.HasDayNight == 1,
+                            PreviewImagePath = r.PreviewImagePath,
+                            WorldDownloadDate = r.WorldDownloadDate,
+                            WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, loc.Name, sourceJob.ArchiveSha256),
+                            WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(r.Id),
+                            WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
+                            WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),
+                            WorldDownloadSource = sourceJob?.Source,
+                            BlueMapUrl = blueMap?.PublicUrl,
+                            BlueMapPath = blueMap?.RelativeUrl,
+                            BlueMapProfileVersion = blueMap?.RendererProfileVersion,
+                            MinX = r.MinX,
+                            MinZ = r.MinZ,
+                            MaxXExclusive = r.MaxXExclusive,
+                            MaxZExclusive = r.MaxZExclusive,
+                            MaxNativeZoom = r.MaxNativeZoom,
+                            CoordinateScheme = r.CoordinateScheme,
+                            DateAddedUtc = r.DateAddedUtc
                         };
                     }).ToList() ?? new List<Atlas.Locations.Render>()
                 };
@@ -234,7 +234,7 @@ public class LocationsController : ControllerBase
                 .OrderByDescending(job => job.Id)
                 .ToListAsync();
             var legacySourceJobsByRender = legacySourceJobs
-                .Where(IsPublicRenderSourceJob)
+                .Where(PublicWorldDownloadRules.HasRenderSource)
                 .GroupBy(job => job.RenderId!.Value)
                 .ToDictionary(group => group.Key, group => group.First());
 
@@ -268,41 +268,41 @@ public class LocationsController : ControllerBase
                     var blueMap = _blueMap?.Find(r.Id);
                     return new Atlas.Locations.Render
                     {
-                    Id = r.Id,
-                    ApiUrl = PublicAtlasUrls.RenderApi(r.Id),
-                    LocationRowid = r.LocationRowid,
-                    Name = r.Name,
-                    Description = r.Description,
-                    Source = r.Source,
-                    ArchiveWarpId = r.ArchiveWarpId,
-                    ArchiveWarp = r.ArchiveWarpId is int warpId
+                        Id = r.Id,
+                        ApiUrl = PublicAtlasUrls.RenderApi(r.Id),
+                        LocationRowid = r.LocationRowid,
+                        Name = r.Name,
+                        Description = r.Description,
+                        Source = r.Source,
+                        ArchiveWarpId = r.ArchiveWarpId,
+                        ArchiveWarp = r.ArchiveWarpId is int warpId
                         ? publicWarpsById.GetValueOrDefault(warpId)
                         : null,
-                    ArchiveWarps = r.ArchiveWarpId is int archiveWarpId &&
+                        ArchiveWarps = r.ArchiveWarpId is int archiveWarpId &&
                         publicWarpsById.TryGetValue(archiveWarpId, out var archiveWarp)
                             ? [archiveWarp]
                             : [],
-                    Dimension = r.Dimension,
-                    Scale = r.Scale,
-                    TilesPath = r.TilesPath,
-                    HasDayNight = r.HasDayNight == 1,
-                    PreviewImagePath = r.PreviewImagePath,
-                    WorldDownloadDate = r.WorldDownloadDate,
-                    WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, dbLocation.Name, sourceJob.ArchiveSha256),
-                    WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(r.Id),
-                    WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
-                    WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),
-                    WorldDownloadSource = sourceJob?.Source,
-                    BlueMapUrl = blueMap?.PublicUrl,
-                    BlueMapPath = blueMap?.RelativeUrl,
-                    BlueMapProfileVersion = blueMap?.RendererProfileVersion,
-                    MinX = r.MinX,
-                    MinZ = r.MinZ,
-                    MaxXExclusive = r.MaxXExclusive,
-                    MaxZExclusive = r.MaxZExclusive,
-                    MaxNativeZoom = r.MaxNativeZoom,
-                    CoordinateScheme = r.CoordinateScheme,
-                    DateAddedUtc = r.DateAddedUtc
+                        Dimension = r.Dimension,
+                        Scale = r.Scale,
+                        TilesPath = r.TilesPath,
+                        HasDayNight = r.HasDayNight == 1,
+                        PreviewImagePath = r.PreviewImagePath,
+                        WorldDownloadDate = r.WorldDownloadDate,
+                        WorldDownloadUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownload(r.Id, dbLocation.Name, sourceJob.ArchiveSha256),
+                        WorldDownloadMetadataUrl = sourceJob is null ? null : PublicAtlasUrls.RenderWorldDownloadMetadata(r.Id),
+                        WorldDownloadScope = sourceJob is null ? null : "preserved-render-source",
+                        WorldDownloadSha256 = sourceJob?.ArchiveSha256?.ToLowerInvariant(),
+                        WorldDownloadSource = sourceJob?.Source,
+                        BlueMapUrl = blueMap?.PublicUrl,
+                        BlueMapPath = blueMap?.RelativeUrl,
+                        BlueMapProfileVersion = blueMap?.RendererProfileVersion,
+                        MinX = r.MinX,
+                        MinZ = r.MinZ,
+                        MaxXExclusive = r.MaxXExclusive,
+                        MaxZExclusive = r.MaxZExclusive,
+                        MaxNativeZoom = r.MaxNativeZoom,
+                        CoordinateScheme = r.CoordinateScheme,
+                        DateAddedUtc = r.DateAddedUtc
                     };
                 }).ToList() ?? new List<Atlas.Locations.Render>()
             };
@@ -350,7 +350,9 @@ public class LocationsController : ControllerBase
             await _context.SaveChangesAsync();
 
             if (location.Groups is { Count: > 0 })
+            {
                 await ReplaceLocationGroupsAsync(dbLocation.Rowid, location.Groups, now);
+            }
 
             // Create the warps
             if (location.Warps?.Any() == true)
@@ -402,7 +404,10 @@ public class LocationsController : ControllerBase
             await _audit.LogAsync("location.create", "Location", dbLocation.Rowid, CurrentUserId(), CurrentUsername(),
                 $"Created '{dbLocation.Name}'");
 
-            return CreatedAtAction(nameof(GetLocation), new { id = location.Rowid }, location);
+            return CreatedAtAction(nameof(GetLocation), new
+            {
+                id = location.Rowid
+            }, location);
         }
         catch (Exception ex)
         {
@@ -486,7 +491,9 @@ public class LocationsController : ControllerBase
             }
 
             if (location.Groups is not null)
+            {
                 await ReplaceLocationGroupsAsync(id, location.Groups, dbLocation.ModifiedUtc);
+            }
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -517,7 +524,9 @@ public class LocationsController : ControllerBase
         try
         {
             if (attachments.Count > AttachmentLinkValidator.MaximumAttachmentsPerLocation)
+            {
                 return BadRequest($"A location cannot have more than {AttachmentLinkValidator.MaximumAttachmentsPerLocation} attachments.");
+            }
 
             var validatedAttachments = new List<(string FileName, string Url, string MediaType, string? Thumbnail, string? Source, string? Caption, string? Attribution)>();
             var seenUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -526,14 +535,26 @@ public class LocationsController : ControllerBase
                 var attachment = attachments[index];
                 var fileName = attachment.FileName?.Trim();
                 if (string.IsNullOrWhiteSpace(fileName) || fileName.Length > 255)
+                {
                     return BadRequest($"Attachment {index + 1} must have a name between 1 and 255 characters.");
+                }
+
                 if (!AttachmentLinkValidator.TryNormalizeHttps(attachment.Path, out var url, out var error))
+                {
                     return BadRequest($"Attachment {index + 1}: {error}");
+                }
+
                 if (!seenUrls.Add(url))
+                {
                     return BadRequest($"Attachment {index + 1} duplicates an existing URL.");
+                }
+
                 if (!TryOptionalHttps(attachment.ThumbnailPath, out var thumbnail, out error) ||
                     !TryOptionalHttps(attachment.SourceUrl, out var source, out error))
+                {
                     return BadRequest($"Attachment {index + 1}: {error}");
+                }
+
                 var mediaType = NormalizeMediaType(attachment.MediaType, url);
                 var caption = NormalizeOptional(attachment.Caption, 500);
                 var attribution = NormalizeOptional(attachment.Attribution, 500);
@@ -580,11 +601,17 @@ public class LocationsController : ControllerBase
             await _audit.LogAsync("location.attachments", "Location", id, CurrentUserId(), CurrentUsername(),
                 $"Updated attachments ({validatedAttachments.Count})");
 
-            return Ok(new { message = $"Successfully updated {validatedAttachments.Count} attachments for location {id}" });
+            return Ok(new
+            {
+                message = $"Successfully updated {validatedAttachments.Count} attachments for location {id}"
+            });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = $"Internal server error: {ex.Message}" });
+            return StatusCode(500, new
+            {
+                error = $"Internal server error: {ex.Message}"
+            });
         }
     }
 
@@ -660,29 +687,19 @@ public class LocationsController : ControllerBase
         Name = warp.Name,
         TimeAdded = DateTime.TryParse(warp.TimeAdded, out var parsedDate) ? parsedDate : DateTime.Now,
         ArchiveSha256 = warp.ArchiveSha256,
-        WorldDownloadUrl = HasPublicWorldDownload(warp) ? PublicAtlasUrls.WorldDownload(
+        WorldDownloadUrl = PublicWorldDownloadRules.HasArchiveSource(warp) ? PublicAtlasUrls.WorldDownload(
             warp.Id,
             ArchiveWarpResolver.IsSinglePlayerConcept(warp.Name)
                 ? $"{locationName ?? "2b2t-location"} singleplayer concept"
                 : locationName, warp.ArchiveSha256) : null,
-        WorldDownloadMetadataUrl = HasPublicWorldDownload(warp) ? PublicAtlasUrls.WorldDownloadMetadata(warp.Id) : null,
-        WorldDownloadScope = HasPublicWorldDownload(warp) ? "bounded-footprint" : null,
+        WorldDownloadMetadataUrl = PublicWorldDownloadRules.HasArchiveSource(warp) ? PublicAtlasUrls.WorldDownloadMetadata(warp.Id) : null,
+        WorldDownloadScope = PublicWorldDownloadRules.HasArchiveSource(warp) ? "bounded-footprint" : null,
         WorldDownloadDate = warp.WorldDownloadDate,
         Source = warp.Source,
         ArchiveX = warp.ArchiveX,
         ArchiveY = warp.ArchiveY,
         ArchiveZ = warp.ArchiveZ,
     };
-
-    private static bool HasPublicWorldDownload(_2b2tAtlas.Server.Models.Warp warp) =>
-        warp.ArchiveSha256 is { Length: 64 } sha && sha.All(Uri.IsHexDigit) &&
-        warp.Source?.StartsWith("The Archive automated sync", StringComparison.OrdinalIgnoreCase) == true;
-
-    private static bool IsPublicRenderSourceJob(IngestionJob job) =>
-        job.RenderId.HasValue && job.WarpId is null &&
-        job.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) &&
-        job.ArchiveSha256 is { Length: 64 } sha && sha.All(Uri.IsHexDigit) &&
-        !string.IsNullOrWhiteSpace(job.Source);
 
     private static Atlas.Locations.Attachment MapAttachment(_2b2tAtlas.Server.Models.Attachment attachment) => new()
     {
@@ -703,10 +720,22 @@ public class LocationsController : ControllerBase
     {
         var allowed = new[] { "Image", "Video", "Wiki", "Link", "Timeline", "Article" };
         var match = allowed.FirstOrDefault(item => item.Equals(value?.Trim(), StringComparison.OrdinalIgnoreCase));
-        if (match is not null) return match;
-        if (url.Contains("wiki", StringComparison.OrdinalIgnoreCase)) return "Wiki";
+        if (match is not null)
+        {
+            return match;
+        }
+
+        if (url.Contains("wiki", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Wiki";
+        }
+
         if (url.Contains("youtube.com", StringComparison.OrdinalIgnoreCase) || url.Contains("youtu.be", StringComparison.OrdinalIgnoreCase) ||
-            url.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)) return "Video";
+            url.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Video";
+        }
+
         var path = Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.AbsolutePath : url;
         return new[] { ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif" }
             .Any(extension => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase)) ? "Image" : "Link";
@@ -716,8 +745,16 @@ public class LocationsController : ControllerBase
     {
         normalized = null;
         error = string.Empty;
-        if (string.IsNullOrWhiteSpace(value)) return true;
-        if (!AttachmentLinkValidator.TryNormalizeHttps(value, out var url, out error)) return false;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        if (!AttachmentLinkValidator.TryNormalizeHttps(value, out var url, out error))
+        {
+            return false;
+        }
+
         normalized = url;
         return true;
     }
@@ -725,7 +762,11 @@ public class LocationsController : ControllerBase
     private static string? NormalizeOptional(string? value, int maximumLength)
     {
         var normalized = value?.Trim();
-        if (string.IsNullOrWhiteSpace(normalized)) return null;
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
         return normalized.Length <= maximumLength ? normalized : normalized[..maximumLength];
     }
 

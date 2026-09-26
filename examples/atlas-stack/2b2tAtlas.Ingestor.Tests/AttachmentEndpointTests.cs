@@ -81,9 +81,18 @@ public sealed class AttachmentEndpointTests
     private sealed class AttachmentFixture : IAsyncDisposable
     {
         private readonly SqliteConnection _connection;
-        public AtlasContext Context { get; }
-        public LocationsController Controller { get; }
-        public int LocationId { get; }
+        public AtlasContext Context
+        {
+            get;
+        }
+        public LocationsController Controller
+        {
+            get;
+        }
+        public int LocationId
+        {
+            get;
+        }
 
         private AttachmentFixture(SqliteConnection connection, AtlasContext context,
             LocationsController controller, int locationId)

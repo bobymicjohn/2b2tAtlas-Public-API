@@ -25,7 +25,9 @@ public sealed class HistoricalMediaSeederTests
             await context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
             var locations = new[] { "First Base", "Second Base" }.Select(name => new ServerLocation
             {
-                Name = name, LocationUuid = Guid.NewGuid().ToString(), DateAddedUtc = DateTime.UtcNow.ToString("o"),
+                Name = name,
+                LocationUuid = Guid.NewGuid().ToString(),
+                DateAddedUtc = DateTime.UtcNow.ToString("o"),
             }).ToArray();
             context.Locations.AddRange(locations);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);

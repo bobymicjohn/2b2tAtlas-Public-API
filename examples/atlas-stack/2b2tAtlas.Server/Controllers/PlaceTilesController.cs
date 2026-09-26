@@ -42,14 +42,28 @@ public class PlaceTilesController : ControllerBase
     [HttpGet("{layer}/{lod:int}/{dim:int}/{sx:int}/{sy:int}/{file}")]
     public async Task<IActionResult> Get(string layer, int lod, int dim, int sx, int sy, string file, CancellationToken ct)
     {
-        if (!AllowedLayers.Contains(layer)) return BadRequest("Unknown layer.");
-        if (lod < 0 || lod > 10) return BadRequest("LOD out of range.");
-        if (dim < 0 || dim > 2) return BadRequest("Dimension out of range.");
+        if (!AllowedLayers.Contains(layer))
+        {
+            return BadRequest("Unknown layer.");
+        }
+
+        if (lod < 0 || lod > 10)
+        {
+            return BadRequest("LOD out of range.");
+        }
+
+        if (dim < 0 || dim > 2)
+        {
+            return BadRequest("Dimension out of range.");
+        }
+
         var tileMatch = string.IsNullOrEmpty(file) ? null : TileFile.Match(file);
         if (tileMatch is not { Success: true } ||
             !int.TryParse(tileMatch.Groups["tx"].Value, out var tx) ||
             !int.TryParse(tileMatch.Groups["ty"].Value, out var ty))
+        {
             return BadRequest("Bad tile name.");
+        }
 
         try
         {
@@ -66,7 +80,10 @@ public class PlaceTilesController : ControllerBase
                     : $"{AtlasCache}/{layer}/{sourceLod}/{dim}/{sourceSx}/{sourceSy}/{sourceFile}";
                 using var req = new HttpRequestMessage(HttpMethod.Get, url);
                 req.Headers.UserAgent.ParseAdd("2b2tAtlas/1.0 (+https://atlas.example)");
-                if (sourceLod != lod) req.Headers.TryAddWithoutValidation(ParentLookupHeader, "1");
+                if (sourceLod != lod)
+                {
+                    req.Headers.TryAddWithoutValidation(ParentLookupHeader, "1");
+                }
 
                 using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
                 if (resp.IsSuccessStatusCode)
@@ -83,7 +100,10 @@ public class PlaceTilesController : ControllerBase
                         Response.Headers["Cloudflare-CDN-Cache-Control"] = "public, max-age=900";
                     }
                     else
+                    {
                         Response.Headers.CacheControl = "public, max-age=86400, s-maxage=604800";
+                    }
+
                     Response.Headers["X-Atlas-Place-Lod"] = effectiveLod.ToString();
                     Response.Headers["X-Atlas-Place-Tx"] = effectiveTx.ToString();
                     Response.Headers["X-Atlas-Place-Ty"] = effectiveTy.ToString();
@@ -93,8 +113,16 @@ public class PlaceTilesController : ControllerBase
                     return File(bytes, contentType);
                 }
 
-                if (parentLookupOnly) break;
-                if (sourceLod == 10) break;
+                if (parentLookupOnly)
+                {
+                    break;
+                }
+
+                if (sourceLod == 10)
+                {
+                    break;
+                }
+
                 tx = FloorDivide(tx, 2);
                 ty = FloorDivide(ty, 2);
             }

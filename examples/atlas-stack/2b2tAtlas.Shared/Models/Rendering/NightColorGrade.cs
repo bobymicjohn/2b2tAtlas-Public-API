@@ -7,13 +7,13 @@ namespace Atlas;
 /// </summary>
 public sealed class NightColorGradeOptions
 {
-    /// <summary>Gets or sets whether colour-preserving night grading is enabled.</summary>
+    /// <summary>Whether colour-preserving night grading is enabled.</summary>
     public bool Enabled { get; set; } = true;
 
-    /// <summary>Gets or sets the multiplier applied to daytime chroma, from 0 (gray) to 2.</summary>
+    /// <summary>Multiplier applied to daytime chroma, from 0 (gray) to 2.</summary>
     public double Saturation { get; set; } = 1.2;
 
-    /// <summary>Gets or sets the multiplier applied to uNmINeD night luminance.</summary>
+    /// <summary>Multiplier applied to uNmINeD night luminance.</summary>
     public double Lightness { get; set; } = 1.15;
 }
 

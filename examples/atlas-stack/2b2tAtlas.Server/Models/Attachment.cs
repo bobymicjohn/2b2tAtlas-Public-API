@@ -15,40 +15,40 @@ namespace _2b2tAtlas.Server.Models;
 [Index("LocationRowid", Name = "IX_Attachments_LocationRowid")]
 public partial class Attachment
 {
-    /// <summary>Gets or sets the database identifier for the attachment link.</summary>
+    /// <summary>Database identifier for the attachment link.</summary>
     [Key]
     public int Id { get; set; }
 
-    /// <summary>Gets or sets the owning location's SQLite row identifier.</summary>
+    /// <summary>Owning location's SQLite row identifier.</summary>
     public int LocationRowid { get; set; }
 
-    /// <summary>Gets or sets the operator-supplied display label for the linked resource.</summary>
+    /// <summary>Operator-supplied display label for the linked resource.</summary>
     [Required]
     public string FileName { get; set; }
 
-    /// <summary>Gets or sets the normalized absolute HTTPS URL validated at the API trust boundary.</summary>
+    /// <summary>Normalized absolute HTTPS URL validated at the API trust boundary.</summary>
     [Required]
     public string FilePath { get; set; }
 
-    /// <summary>Gets or sets the normalized media kind: Image, Video, Wiki, Link, Timeline, or Article.</summary>
+    /// <summary>Normalized media kind: Image, Video, Wiki, Link, Timeline, or Article.</summary>
     public string MediaType { get; set; }
 
     /// <summary>Gets or sets an optional lightweight HTTPS preview image.</summary>
     public string ThumbnailPath { get; set; }
 
-    /// <summary>Gets or sets the original publication page retained for provenance.</summary>
+    /// <summary>Original publication page retained for provenance.</summary>
     public string SourceUrl { get; set; }
 
-    /// <summary>Gets or sets a concise public caption.</summary>
+    /// <summary>A concise public caption.</summary>
     public string Caption { get; set; }
 
     /// <summary>Gets or sets creator, archive, and license credit.</summary>
     public string Attribution { get; set; }
 
-    /// <summary>Gets or sets the persisted UTC creation timestamp text.</summary>
+    /// <summary>Persisted UTC creation timestamp text.</summary>
     public string DateAddedUtc { get; set; }
 
-    /// <summary>Gets or sets the required location navigation for this link.</summary>
+    /// <summary>Required location navigation for this link.</summary>
     [ForeignKey("LocationRowid")]
     [InverseProperty("Attachments")]
     public virtual Location LocationRow { get; set; }

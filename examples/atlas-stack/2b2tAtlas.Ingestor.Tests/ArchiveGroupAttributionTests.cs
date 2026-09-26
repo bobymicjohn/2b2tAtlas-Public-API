@@ -26,7 +26,8 @@ public sealed class ArchiveGroupAttributionTests
         await db.SaveChangesAsync(ct);
         var options = Microsoft.Extensions.Options.Options.Create(new _2b2tAtlas.Server.Services.AiEnrichment.AiEnrichmentOptions
         {
-            Enabled = enabled, GameModeLockPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))
+            Enabled = enabled,
+            GameModeLockPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))
         });
         // Any attempt to call the wiki/model/index fails this test: these paths must not need them.
         var ai = new _2b2tAtlas.Server.Services.AiEnrichment.AiEnrichmentService(null!, null!, options,

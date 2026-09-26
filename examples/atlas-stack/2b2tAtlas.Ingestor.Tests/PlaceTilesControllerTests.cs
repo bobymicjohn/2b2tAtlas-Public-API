@@ -67,14 +67,17 @@ public sealed class PlaceTilesControllerTests
         {
             Requests.Add(request.RequestUri!.ToString());
             if (Requests.Count == 1)
+            {
                 return Task.FromResult(new HttpResponseMessage((HttpStatusCode)521));
+            }
+
             var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent([1, 2, 3])
                 {
-                    Content = new ByteArrayContent([1, 2, 3])
-                    {
-                        Headers = { ContentType = new("image/webp") },
-                    },
-                };
+                    Headers = { ContentType = new("image/webp") },
+                },
+            };
             if (useGrandparentHeaders)
             {
                 response.Headers.Add("X-Atlas-Place-Lod", "6");

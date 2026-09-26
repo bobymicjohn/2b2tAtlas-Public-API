@@ -25,7 +25,10 @@ public static class DownloadFileNames
             if (char.IsLetterOrDigit(character))
             {
                 if (needsSeparator && slug.Length > 0 && slug[^1] != '-')
+                {
                     slug.Append('-');
+                }
+
                 slug.Append(character);
                 needsSeparator = false;
             }
@@ -35,12 +38,16 @@ public static class DownloadFileNames
             }
 
             if (slug.Length >= MaxLocationSlugLength)
+            {
                 break;
+            }
         }
 
         var safeName = slug.ToString().Trim('-');
         if (string.IsNullOrWhiteSpace(safeName))
+        {
             safeName = "location";
+        }
 
         return $"2b2tAtlas-{safeName}-{identityType}-{identityId}.zip";
     }

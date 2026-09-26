@@ -97,23 +97,37 @@ public sealed class LocationsControllerMetadataTests
         await context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
         var location = new _2b2tAtlas.Server.Models.Location
         {
-            LocationUuid = Guid.NewGuid().ToString(), Name = "Shared Base", Dimension = 0,
-            X = 1, Y = 64, Z = 2, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+            LocationUuid = Guid.NewGuid().ToString(),
+            Name = "Shared Base",
+            Dimension = 0,
+            X = 1,
+            Y = 64,
+            Z = 2,
+            DateAddedUtc = DateTime.UtcNow.ToString("o"),
         };
         context.Locations.Add(location);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         context.Renders.AddRange(
             new _2b2tAtlas.Server.Models.Render
             {
-                LocationRowid = location.Rowid, Name = "Canonical", Dimension = 0, Scale = "1",
-                TilesPath = "https://example.test/canonical/{z}/{y}/{x}.png", IsPublic = 1,
+                LocationRowid = location.Rowid,
+                Name = "Canonical",
+                Dimension = 0,
+                Scale = "1",
+                TilesPath = "https://example.test/canonical/{z}/{y}/{x}.png",
+                IsPublic = 1,
                 DateAddedUtc = DateTime.UtcNow.ToString("o"),
             },
             new _2b2tAtlas.Server.Models.Render
             {
-                LocationRowid = location.Rowid, Name = "Equivalent", Dimension = 0, Scale = "1",
-                TilesPath = "https://example.test/equivalent/{z}/{y}/{x}.png", IsPublic = 0,
-                EquivalentToRenderId = 1, DateAddedUtc = DateTime.UtcNow.ToString("o"),
+                LocationRowid = location.Rowid,
+                Name = "Equivalent",
+                Dimension = 0,
+                Scale = "1",
+                TilesPath = "https://example.test/equivalent/{z}/{y}/{x}.png",
+                IsPublic = 0,
+                EquivalentToRenderId = 1,
+                DateAddedUtc = DateTime.UtcNow.ToString("o"),
             });
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var controller = new LocationsController(context, new AuditService(context))

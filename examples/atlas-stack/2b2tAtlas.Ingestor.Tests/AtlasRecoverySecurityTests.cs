@@ -50,7 +50,8 @@ public sealed class AtlasRecoverySecurityTests
         archivist.IsActive = 0;
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         Assert.Null(await validator.ValidateAsync(token, TestContext.Current.CancellationToken));
-        archivist.IsActive = 1; archivist.PasswordHash = "changed-password-digest";
+        archivist.IsActive = 1;
+        archivist.PasswordHash = "changed-password-digest";
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         Assert.Null(await validator.ValidateAsync(token, TestContext.Current.CancellationToken));
         Assert.NotNull(await validator.ValidateAsync(Principal(archivist), TestContext.Current.CancellationToken));
@@ -98,35 +99,57 @@ public sealed class AtlasRecoverySecurityTests
         Directory.CreateDirectory(root);
         var livePath = Path.Combine(root, "live.db");
         var backupRoot = Path.Combine(root, "backups");
-        var config = Config(new() { ["Recovery:DatabasePath"] = livePath, ["Recovery:Root"] = backupRoot });
+        var config = Config(new()
+        {
+            ["Recovery:DatabasePath"] = livePath,
+            ["Recovery:Root"] = backupRoot
+        });
         try
         {
             using (var db = new SqliteConnection($"Data Source={livePath};Pooling=False"))
             {
-                db.Open(); using var command = db.CreateCommand();
+                db.Open();
+                using var command = db.CreateCommand();
                 command.CommandText = "CREATE TABLE Records(Id INTEGER PRIMARY KEY, Value TEXT); INSERT INTO Records VALUES(1,'preserved render reference');";
                 command.ExecuteNonQuery();
             }
             var recovery = new AtlasRecoveryStore(config);
             for (var i = 0; i < 10; i++)
+            {
                 Assert.True(await recovery.BeforeWriteAsync(2, false, "PUT Locations.Put", TestContext.Current.CancellationToken));
+            }
+
             Assert.False(await new AtlasRecoveryStore(config).BeforeWriteAsync(2, false, "PUT Locations.Put", TestContext.Current.CancellationToken));
             Assert.True(await recovery.BeforeWriteAsync(1, true, "owner edit", TestContext.Current.CancellationToken));
             using (var db = new SqliteConnection($"Data Source={livePath};Pooling=False"))
             {
-                db.Open(); using var command = db.CreateCommand(); command.CommandText = "DELETE FROM Records"; command.ExecuteNonQuery();
+                db.Open();
+                using var command = db.CreateCommand();
+                command.CommandText = "DELETE FROM Records";
+                command.ExecuteNonQuery();
             }
             var record = JsonSerializer.Deserialize<AtlasRecoveryStore.Admission>(File.ReadLines(
                 Directory.GetFiles(backupRoot, "admissions.jsonl", SearchOption.AllDirectories).Single()).First())!;
-            using (var stream = File.OpenRead(record.Snapshot)) Assert.Equal(record.Sha256, Convert.ToHexString(SHA256.HashData(stream)));
-            var restoredPath = Path.Combine(root, "restored.db"); File.Copy(record.Snapshot, restoredPath);
+            using (var stream = File.OpenRead(record.Snapshot))
+            {
+                Assert.Equal(record.Sha256, Convert.ToHexString(SHA256.HashData(stream)));
+            }
+
+            var restoredPath = Path.Combine(root, "restored.db");
+            File.Copy(record.Snapshot, restoredPath);
             using (var restored = new SqliteConnection($"Data Source={restoredPath};Pooling=False"))
             {
-                restored.Open(); using var query = restored.CreateCommand(); query.CommandText = "SELECT Value FROM Records WHERE Id=1";
+                restored.Open();
+                using var query = restored.CreateCommand();
+                query.CommandText = "SELECT Value FROM Records WHERE Id=1";
                 Assert.Equal("preserved render reference", query.ExecuteScalar());
             }
             // Corrupt/missing source cannot silently permit an edit without protection.
-            var broken = Config(new() { ["Recovery:DatabasePath"] = Path.Combine(root, "missing.db"), ["Recovery:Root"] = backupRoot });
+            var broken = Config(new()
+            {
+                ["Recovery:DatabasePath"] = Path.Combine(root, "missing.db"),
+                ["Recovery:Root"] = backupRoot
+            });
             await Assert.ThrowsAsync<SqliteException>(() => new AtlasRecoveryStore(broken).BeforeWriteAsync(1, true, "owner edit", TestContext.Current.CancellationToken));
         }
         finally { Directory.Delete(root, recursive: true); }
@@ -145,11 +168,20 @@ public sealed class AtlasRecoverySecurityTests
 
     private static IConfiguration Config(Dictionary<string, string?>? values = null)
     {
-        values ??= new(); values["JwtSettings:SecretKey"] = Key;
+        values ??= new();
+        values["JwtSettings:SecretKey"] = Key;
         return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
     }
     private static _2b2tAtlas.Server.Models.User Account(int id, string name, string role, int super = 0) => new()
-    { Id = id, Username = name, Role = role, IsSuperAdmin = super, IsActive = 1, PasswordHash = "fixture-digest", CreatedAt = DateTime.UtcNow.ToString("o") };
+    {
+        Id = id,
+        Username = name,
+        Role = role,
+        IsSuperAdmin = super,
+        IsActive = 1,
+        PasswordHash = "fixture-digest",
+        CreatedAt = DateTime.UtcNow.ToString("o")
+    };
     private static ClaimsPrincipal Principal(_2b2tAtlas.Server.Models.User user) => new(new ClaimsIdentity([
         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim("atlas_session", AtlasSessionValidator.Stamp(user, Key)),
         new Claim("superadmin", "true"), new Claim("atlas_owner", "true"), new Claim("perm", Permissions.LocationsDelete)], "Bearer"));

@@ -42,25 +42,45 @@ public class LegacyApiController : ControllerBase
         [FromQuery] string? search)
     {
         SetLegacyCors();
-        if (rows is <= 0) return BadRequest("rows must be greater than zero.");
-        if (rows is > 10000) return BadRequest("rows cannot exceed 10000.");
+        if (rows is <= 0)
+        {
+            return BadRequest("rows must be greater than zero.");
+        }
+
+        if (rows is > 10000)
+        {
+            return BadRequest("rows cannot exceed 10000.");
+        }
+
         if (dimension is not null and not (0 or 1 or -1))
+        {
             return BadRequest("dimension must be 0 (Overworld), 1 (End), or -1 (Nether).");
+        }
 
         var query = _context.Locations.AsNoTracking();
         if (dimension.HasValue)
         {
-            var modernDimension = dimension.Value switch { 1 => 2, -1 => 1, _ => 0 };
+            var modernDimension = dimension.Value switch
+            {
+                1 => 2,
+                -1 => 1,
+                _ => 0
+            };
             query = query.Where(location => location.Dimension == modernDimension);
         }
         if (!string.IsNullOrEmpty(search))
+        {
             query = query.Where(location => EF.Functions.Like(location.Name, $"%{search}%"));
+        }
 
         var locations = await query.ToListAsync();
         locations = x.HasValue && z.HasValue
             ? locations.OrderBy(location => DistanceSquared(location, x.Value, z.Value)).ToList()
             : locations.OrderBy(location => location.DateAddedUtc, StringComparer.Ordinal).ToList();
-        if (rows.HasValue) locations = locations.Take(rows.Value).ToList();
+        if (rows.HasValue)
+        {
+            locations = locations.Take(rows.Value).ToList();
+        }
 
         var rowIds = locations.Select(location => location.Rowid).ToList();
         var warpRows = await _context.Warps.AsNoTracking()
@@ -99,7 +119,10 @@ public class LegacyApiController : ControllerBase
     public async Task<ActionResult<object>> GetLocationCount()
     {
         SetLegacyCors();
-        return Ok(new { locationCount = await _context.Locations.CountAsync() });
+        return Ok(new
+        {
+            locationCount = await _context.Locations.CountAsync()
+        });
     }
 
     /// <summary>Rejects the retired anonymous legacy warp-write route.</summary>

@@ -23,15 +23,28 @@ public static partial class YoutubeCreators
     /// <summary>Extract a case-sensitive video identity from a supported YouTube URL.</summary>
     public static string? VideoId(string? value)
     {
-        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")) return null;
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+        {
+            return null;
+        }
+
         var host = uri.Host.ToLowerInvariant();
         string? id = null;
-        if (host is "youtu.be" or "www.youtu.be") id = uri.AbsolutePath.Trim('/');
+        if (host is "youtu.be" or "www.youtu.be")
+        {
+            id = uri.AbsolutePath.Trim('/');
+        }
         else if (host is "youtube.com" or "www.youtube.com" or "m.youtube.com" or "music.youtube.com" or "www.youtube-nocookie.com" or "youtube-nocookie.com")
         {
             var parts = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 2 && parts[0] is "shorts" or "embed" or "live") id = parts[1];
-            else if (uri.AbsolutePath == "/watch") id = QueryValue(uri, "v");
+            if (parts.Length == 2 && parts[0] is "shorts" or "embed" or "live")
+            {
+                id = parts[1];
+            }
+            else if (uri.AbsolutePath == "/watch")
+            {
+                id = QueryValue(uri, "v");
+            }
         }
         return id is not null && VideoIdPattern().IsMatch(id) ? id : null;
     }
@@ -39,19 +52,40 @@ public static partial class YoutubeCreators
     /// <summary>Format a linked chapter's start time without implying video duration.</summary>
     public static string? StartTime(string? value)
     {
-        if (VideoId(value) is null || !Uri.TryCreate(value, UriKind.Absolute, out var uri)) return null;
+        if (VideoId(value) is null || !Uri.TryCreate(value, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
         var raw = QueryValue(uri, "t") ?? QueryValue(uri, "start");
-        if (raw is null) return null;
+        if (raw is null)
+        {
+            return null;
+        }
+
         long seconds;
         if (!long.TryParse(raw, out seconds))
         {
             var match = TimePattern().Match(raw);
-            if (!match.Success) return null;
+            if (!match.Success)
+            {
+                return null;
+            }
+
             seconds = 0;
             for (var i = 1; i <= 3; i++)
-                if (long.TryParse(match.Groups[i].Value, out var part)) seconds += part * (i == 1 ? 3600 : i == 2 ? 60 : 1);
+            {
+                if (long.TryParse(match.Groups[i].Value, out var part))
+                {
+                    seconds += part * (i == 1 ? 3600 : i == 2 ? 60 : 1);
+                }
+            }
         }
-        if (seconds <= 0 || seconds > 604800) return null;
+        if (seconds <= 0 || seconds > 604800)
+        {
+            return null;
+        }
+
         return seconds >= 3600 ? $"{seconds / 3600}:{seconds / 60 % 60:00}:{seconds % 60:00}" : $"{seconds / 60}:{seconds % 60:00}";
     }
 

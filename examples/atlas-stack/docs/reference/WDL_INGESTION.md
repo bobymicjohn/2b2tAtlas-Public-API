@@ -1,14 +1,10 @@
-# WDL Ingestion Stages, Worker Protocol, Security, And Publication
+# WDL ingestion and publication
 
-> **AI-Generated documentation.**
-
-## Scope
-
-This file is the retrieval summary for WDL flow. Commands and limits remain authoritative in `docs/INGESTION_PIPELINE.md`; threat detail is in `docs/INGESTION_SECURITY.md`; operator gates are in `docs/INGESTION_CHECKLIST.md`.
+A WDL goes through inspection, rendering and verification before it appears on the map. See [pipeline commands](../INGESTION_PIPELINE.md) and [archive safety](../INGESTION_SECURITY.md) for the full checks.
 
 ## Production Support Boundary
 
-**Production:** reviewed Overworld, Nether, and End WDLs have certified sparse coordinate schemes. The current corpus baseline in `docs/ROADMAP.md` is 212 location renders with source archives retained by SHA-256.
+The adapters support reviewed Overworld, Nether and End world downloads. Sources are retained by SHA-256. The size of a particular installation's catalog is not a compatibility requirement.
 
 All three canonical dimensions are certified. Unknown custom/museum dimensions are not certified and are never guessed as Overworld.
 

@@ -29,12 +29,17 @@ public static class WdlArchiveStore
         CancellationToken cancellationToken)
     {
         var source = Path.GetFullPath(sourcePath);
-        if (!File.Exists(source)) throw new FileNotFoundException("WDL source archive was not found.", source);
+        if (!File.Exists(source))
+        {
+            throw new FileNotFoundException("WDL source archive was not found.", source);
+        }
 
         var digest = await ComputeSha256Async(source, cancellationToken);
         if (!string.IsNullOrWhiteSpace(expectedSha256) &&
             !digest.Equals(NormalizeDigest(expectedSha256), StringComparison.Ordinal))
+        {
             throw new InvalidDataException("WDL archive SHA-256 does not match the expected digest.");
+        }
 
         var destination = ObjectPath(root, digest);
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -46,10 +51,16 @@ public static class WdlArchiveStore
                     OperatingSystem.IsWindows()
                         ? StringComparison.OrdinalIgnoreCase
                         : StringComparison.Ordinal))
+            {
                 return (digest, destination, false);
+            }
+
             var existing = await ComputeSha256Async(destination, cancellationToken);
             if (!existing.Equals(digest, StringComparison.Ordinal))
+            {
                 throw new InvalidDataException("Content-addressed WDL archive object has an invalid digest.");
+            }
+
             return (digest, destination, false);
         }
 
@@ -58,18 +69,29 @@ public static class WdlArchiveStore
         {
             await using (var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, 1_048_576, true))
             await using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1_048_576, true))
+            {
                 await input.CopyToAsync(output, cancellationToken);
+            }
 
             var copied = await ComputeSha256Async(temporary, cancellationToken);
             if (!copied.Equals(digest, StringComparison.Ordinal))
+            {
                 throw new InvalidDataException("Archived WDL copy failed SHA-256 verification.");
-            try { File.Move(temporary, destination); }
+            }
+
+            try
+            {
+                File.Move(temporary, destination);
+            }
             catch (IOException) when (File.Exists(destination)) { File.Delete(temporary); }
             return (digest, destination, true);
         }
         finally
         {
-            if (File.Exists(temporary)) File.Delete(temporary);
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
         }
     }
 
@@ -85,12 +107,19 @@ public static class WdlArchiveStore
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
         if (File.Exists(destination))
         {
-            if (string.Equals(await ComputeSha256Async(destination, cancellationToken), digest, StringComparison.Ordinal)) return;
+            if (string.Equals(await ComputeSha256Async(destination, cancellationToken), digest, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             throw new InvalidDataException("Local WDL materialization path contains different bytes.");
         }
 
         var source = ObjectPath(root, digest);
-        if (!File.Exists(source)) throw new FileNotFoundException("Archived WDL object is missing.", source);
+        if (!File.Exists(source))
+        {
+            throw new FileNotFoundException("Archived WDL object is missing.", source);
+        }
 
         var temporary = destination + "." + Guid.NewGuid().ToString("N") + ".partial";
         try
@@ -99,14 +128,23 @@ public static class WdlArchiveStore
             // scratch SSD against the trusted content-addressed identity.
             await using (var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, 1_048_576, true))
             await using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1_048_576, true))
+            {
                 await input.CopyToAsync(output, cancellationToken);
+            }
+
             if (!string.Equals(await ComputeSha256Async(temporary, cancellationToken), digest, StringComparison.Ordinal))
+            {
                 throw new InvalidDataException("Materialized WDL failed SHA-256 verification.");
+            }
+
             File.Move(temporary, destination);
         }
         finally
         {
-            if (File.Exists(temporary)) File.Delete(temporary);
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
         }
     }
 
@@ -121,7 +159,11 @@ public static class WdlArchiveStore
         while (true)
         {
             var read = await stream.ReadAsync(buffer, cancellationToken);
-            if (read == 0) break;
+            if (read == 0)
+            {
+                break;
+            }
+
             hash.AppendData(buffer, 0, read);
         }
         return Convert.ToHexStringLower(hash.GetHashAndReset());
@@ -131,7 +173,10 @@ public static class WdlArchiveStore
     {
         var digest = value.Trim().ToLowerInvariant();
         if (digest.Length != 64 || digest.Any(character => !Uri.IsHexDigit(character)))
+        {
             throw new ArgumentException("SHA-256 digest must contain exactly 64 hexadecimal characters.", nameof(value));
+        }
+
         return digest;
     }
 }

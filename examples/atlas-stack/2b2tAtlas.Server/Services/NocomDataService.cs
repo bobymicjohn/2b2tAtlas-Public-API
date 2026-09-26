@@ -22,11 +22,16 @@ public sealed class NocomDataService
     ];
     private readonly NocomPeriod[] _periods;
     private readonly NocomHighwayPeriod[] _highways;
-    public NocomDataset Dataset { get; }
+    public NocomDataset Dataset
+    {
+        get;
+    }
 
     public NocomDataService() : this(
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "nocom-world-pulse-manifest.json")),
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "nocom-highway-observations.json"))) { }
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "nocom-highway-observations.json")))
+    {
+    }
 
     public NocomDataService(string manifestJson, string highwayJson)
     {
@@ -38,7 +43,11 @@ public sealed class NocomDataService
             var dimension = Dimension(frame.GetProperty("dimension").GetString()!);
             var start = frame.GetProperty("periodStartUtc").GetDateTimeOffset();
             var key = frame.GetProperty("key").GetString()!;
-            if (key != start.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)) throw new InvalidDataException("Nocom period key mismatch.");
+            if (key != start.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
+            {
+                throw new InvalidDataException("Nocom period key mismatch.");
+            }
+
             return new NocomPeriod(key, dimension, AtlasDimension(dimension), SourceDimension(dimension), start, start.AddDays(30),
                 frame.GetProperty("rows").GetInt64(), frame.GetProperty("observations").GetInt64(),
                 new NocomBlockBounds(frame.GetProperty("minChunkX").GetInt64() * 16, frame.GetProperty("minChunkZ").GetInt64() * 16,
@@ -49,23 +58,46 @@ public sealed class NocomDataService
         if (_periods.Length != 39 || _periods.Sum(p => p.GroupedRows) != root.GetProperty("rowCount").GetInt64()
             || _periods.Any(p => p.GroupedRows < 0 || p.Observations < p.GroupedRows)
             || _periods.DistinctBy(p => (p.Dimension, p.Key)).Count() != _periods.Length)
+        {
             throw new InvalidDataException("Unexpected Nocom release inventory.");
+        }
 
         _highways = highway.RootElement.GetProperty("rows").EnumerateArray().Select(row =>
         {
             var sourceDimension = row.GetProperty("sourceDimension").GetInt32();
-            var dimension = sourceDimension switch { -1 => "nether", 0 => "overworld", _ => throw new InvalidDataException("Unsupported highway dimension.") };
-            var dx = row.GetProperty("directionX").GetInt32(); var dz = row.GetProperty("directionZ").GetInt32();
-            var direction = (dx, dz) switch { (0,-1) => "north", (1,-1) => "northeast", (1,0) => "east", (1,1) => "southeast",
-                (0,1) => "south", (-1,1) => "southwest", (-1,0) => "west", (-1,-1) => "northwest", _ => throw new InvalidDataException("Invalid highway direction.") };
+            var dimension = sourceDimension switch
+            {
+                -1 => "nether",
+                0 => "overworld",
+                _ => throw new InvalidDataException("Unsupported highway dimension.")
+            };
+            var dx = row.GetProperty("directionX").GetInt32();
+            var dz = row.GetProperty("directionZ").GetInt32();
+            var direction = (dx, dz) switch
+            {
+                (0, -1) => "north",
+                (1, -1) => "northeast",
+                (1, 0) => "east",
+                (1, 1) => "southeast",
+                (0, 1) => "south",
+                (-1, 1) => "southwest",
+                (-1, 0) => "west",
+                (-1, -1) => "northwest",
+                _ => throw new InvalidDataException("Invalid highway direction.")
+            };
             var start = DateTimeOffset.FromUnixTimeMilliseconds(row.GetProperty("bucket").GetInt64() * 2_592_000_000L);
             var observations = row.GetProperty("observations").GetInt64();
             if (observations < 0 || !_periods.Any(p => p.Dimension == dimension && p.PeriodStartUtc == start))
+            {
                 throw new InvalidDataException("Highway release period does not match World Pulse.");
+            }
+
             return new NocomHighwayPeriod(dimension, AtlasDimension(dimension), direction, dx, dz, start, start.AddDays(30), observations);
         }).OrderBy(p => p.PeriodStartUtc).ThenBy(p => p.Dimension).ThenBy(p => p.Direction).ToArray();
         if (_highways.Length != 272 || _highways.DistinctBy(p => (p.Dimension, p.Direction, p.PeriodStartUtc)).Count() != 272)
+        {
             throw new InvalidDataException("Unexpected highway release inventory.");
+        }
 
         var summaries = root.GetProperty("totals").EnumerateArray().Select(total =>
         {
@@ -79,7 +111,7 @@ public sealed class NocomDataService
         var source = root.GetProperty("source");
         Dataset = new NocomDataset("nocom-world-pulse-v1", "Nocom World Pulse historical observations", PageUrl, SourceUrl,
             TileBase + "manifest.json", "http://127.0.0.1:5297/api/nocom/periods", "http://127.0.0.1:5297/api/nocom/highways",
-            root.GetProperty("generatedAtUtc").GetDateTimeOffset(), new DateOnly(2021,7,15),
+            root.GetProperty("generatedAtUtc").GetDateTimeOffset(), new DateOnly(2021, 7, 15),
             _periods.Sum(p => p.GroupedRows), _periods.Sum(p => p.Observations), _periods.Length, summaries,
             source.GetProperty("sha256").GetString()!, source.GetProperty("serverScope").GetString()!,
             highway.RootElement.GetProperty("sha256").GetString()!, highway.RootElement.GetProperty("sourceScope").GetString()!,
@@ -89,7 +121,11 @@ public sealed class NocomDataService
     public IReadOnlyList<NocomPeriod> Periods(string? dimension = null, DateOnly? from = null, DateOnly? to = null)
     {
         var normalized = dimension is null ? null : Dimension(dimension);
-        if (from > to) throw new ArgumentException("from must not be after to.");
+        if (from > to)
+        {
+            throw new ArgumentException("from must not be after to.");
+        }
+
         return _periods.Where(p => (normalized is null || p.Dimension == normalized)
             && (!from.HasValue || DateOnly.FromDateTime(p.PeriodEndExclusiveUtc.UtcDateTime) > from)
             && (!to.HasValue || DateOnly.FromDateTime(p.PeriodStartUtc.UtcDateTime) <= to)).ToArray();
@@ -98,14 +134,27 @@ public sealed class NocomDataService
     public IReadOnlyList<NocomHighwayPeriod> Highways(string dimension = "nether", string? direction = null)
     {
         var normalized = Dimension(dimension);
-        if (normalized == "end") return [];
+        if (normalized == "end")
+        {
+            return [];
+        }
+
         var dir = direction?.Trim().ToLowerInvariant();
-        if (dir is not null && !_highways.Any(p => p.Direction == dir)) throw new ArgumentException("Unknown compass direction; use north, northeast, east, southeast, south, southwest, west or northwest.");
+        if (dir is not null && !_highways.Any(p => p.Direction == dir))
+        {
+            throw new ArgumentException("Unknown compass direction; use north, northeast, east, southeast, south, southwest, west or northwest.");
+        }
+
         return _highways.Where(p => p.Dimension == normalized && (dir is null || p.Direction == dir)).ToArray();
     }
 
     private static string Dimension(string value) => value.Trim().ToLowerInvariant() switch
-    { "overworld" => "overworld", "nether" => "nether", "end" => "end", _ => throw new ArgumentException("dimension must be overworld, nether or end.") };
+    {
+        "overworld" => "overworld",
+        "nether" => "nether",
+        "end" => "end",
+        _ => throw new ArgumentException("dimension must be overworld, nether or end.")
+    };
     private static int AtlasDimension(string value) => value == "overworld" ? 0 : value == "nether" ? 1 : 2;
     private static int SourceDimension(string value) => value == "overworld" ? 0 : value == "nether" ? -1 : 1;
 }

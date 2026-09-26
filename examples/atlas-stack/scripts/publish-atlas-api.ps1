@@ -19,6 +19,6 @@ dotnet publish $project -c Release -r win-x64 --self-contained true -o $OutputDi
 if ($LASTEXITCODE -ne 0) { throw 'Atlas API publish failed.' }
 
 Write-Host "Atlas API package: $OutputDirectory"
-Write-Host 'Deploy app files separately from C:\AtlasExample\Api\data and launch with working directory C:\AtlasExample\Api\data.'
-Write-Host 'Set HostStaticClient=false for the example host API-only process; Namecheap owns the frontend.'
+Write-Host 'Keep persistent data outside the app package. Set Database__Path to the database file before startup.'
+Write-Host 'Set HostStaticClient=false when a separate host serves the frontend.'
 Write-Host 'Set production secrets through the task/service environment; do not edit them into appsettings.json.'

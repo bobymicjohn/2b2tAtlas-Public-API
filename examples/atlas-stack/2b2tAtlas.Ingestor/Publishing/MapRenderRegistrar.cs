@@ -33,10 +33,15 @@ public static class MapRenderRegistrar
         CancellationToken cancellationToken = default)
     {
         if (!apiBase.IsLoopback && apiBase.Scheme != Uri.UriSchemeHttps)
+        {
             throw new InputSecurityException("Registration API must use HTTPS except on localhost.");
+        }
+
         var token = Environment.GetEnvironmentVariable(tokenEnvironmentVariable);
         if (string.IsNullOrWhiteSpace(token))
+        {
             throw new InputValidationException($"Registration token environment variable is not set: {tokenEnvironmentVariable}");
+        }
 
         var dto = new MapRenderDto
         {
