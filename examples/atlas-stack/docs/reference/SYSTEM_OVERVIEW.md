@@ -17,9 +17,9 @@ downloads so that opening a public page never runs a renderer.
 | `tools/AtlasArchiveCoverage` | Fabric companion that tracks received and saved terrain |
 | `scripts` | Collection, recovery, BlueMap, backups and research helpers |
 
-Start at `Client/Pages/Home.razor` for the directory, `Client/Pages/Map.razor`
-for the map page, or `Client/wwwroot/js/atlas-map.js` for coordinates and layers.
-Those paths are inside `2b2tAtlas.Client`. The API starts in
+Start at `2b2tAtlas.Client/Pages/Home.razor` for the directory,
+`2b2tAtlas.Client/Pages/Map.razor` for the map page, or
+`2b2tAtlas.Client/wwwroot/js/atlas-map.js` for coordinates and layers. The API starts in
 `2b2tAtlas.Server/Program.cs`; the worker starts in `2b2tAtlas.Ingestor/Program.cs`.
 The [code map](GLOSSARY_OWNERSHIP.md) lists the individual components.
 
