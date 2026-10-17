@@ -64,6 +64,15 @@ files and run `python scripts/check-private-code.py` plus
 range with `python scripts/check-private-code.py --base origin/main --head HEAD`
 before pushing. These checks do not publish or enable GitHub Actions.
 
+Registry metadata is published locally with the official `mcp-publisher` CLI.
+Verify its release checksum, increment `server.json` to a previously unpublished
+version, and keep its description within 100 characters. After the checks above,
+run `mcp-publisher validate server.json`, authenticate with
+`mcp-publisher login github`, and run `mcp-publisher publish server.json`.
+Verify the official latest registry entry against the committed manifest.
+Published versions are immutable; metadata-only updates still need a new version.
+Do not enable the retained GitHub Actions publication workflow.
+
 In the pull request, describe the change and the checks you ran.
 
 ## Documentation style

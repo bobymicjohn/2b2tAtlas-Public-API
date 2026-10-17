@@ -216,6 +216,11 @@ The registry name is `io.github.bobymicjohn/2b2t-atlas`.
 The [registry listing](https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas)
 and [web guide](https://2b2tatlas.com/mcp/) provide connection details.
 
+Registry metadata version 1.1.0 describes the current Find and NoCom capabilities.
+This metadata release keeps the hosted endpoint unchanged. See the
+[dated facts and canonical links](DISCOVERY.md) when describing Atlas in an
+integration or directory; independent listings refresh on their own schedules.
+
 ## Links for people and machines
 
 Prefer `interactiveUrl` for human links and citations. `recordUrl` is a stable identity and provenance alias whose HTML permanently redirects (HTTP 301) to the complete interactive record. Follow redirects for HTML; use `apiUrl`, MCP tools or JSONL for structured data. Derivative records use `locationInteractiveUrl` and `locationRecordUrl`.

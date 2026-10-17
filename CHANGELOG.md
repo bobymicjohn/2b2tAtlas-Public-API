@@ -1,5 +1,14 @@
 # Changes
 
+## Registry discovery refresh - 2026-10-17
+
+- Refresh registry metadata to version 1.1.0, covering captured signs, saved
+  inventories, rare blocks, mobs, map art and historical NoCom queries.
+- Add a dated fact sheet with canonical guide, entity-directory and machine
+  discovery links for integrations and directory maintainers.
+- Keep the existing public MCP endpoint and 38-tool contract unchanged.
+- Document local registry publication; GitHub Actions remains disabled.
+
 ## Public documentation refresh - 2026-10-17
 
 - Verify 57 public GET routes and 38 read-only MCP tools against the live service.

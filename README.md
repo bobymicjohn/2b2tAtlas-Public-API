@@ -19,6 +19,7 @@ You can make requests from a browser, a command line, or your own code.
 - [Unified Find, inventories and saved objects](docs/FIND.md)
 - [Nocom data](docs/NOCOM.md)
 - [MCP setup and tools](docs/MCP.md)
+- [Current facts and canonical links for integrations](docs/DISCOVERY.md)
 - [Changelog](CHANGELOG.md)
 - [Full Atlas stack source](examples/atlas-stack/README.md) - UI, API, ingestion, collectors and rendering, with local setup and example configuration.
 
