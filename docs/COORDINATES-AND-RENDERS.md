@@ -57,6 +57,11 @@ Do not try every possible tile URL; many tiles are intentionally absent.
 7. Include the day/night variant in the cache key so the two images stay distinct.
 8. Link an overlay or tooltip back to the render's `apiUrl` and location's canonical page.
 
+`/api/locations/map` provides compact location/search/tile metadata without full
+attachments or download/3D provenance. Use the detail endpoint for those fields.
+`/api/find/source-options` provides compact source-selector metadata; full source
+coverage is at `/api/find/sources`. Honor cache headers and reuse catalog reads.
+
 ## Multiple historical renders
 
 One location can have multiple WDL snapshots. Keep each render's ID,
@@ -85,8 +90,9 @@ These are preserved historical alternatives, not default terrain layers.
 ## BlueMap 3D views
 
 Open the render's `blueMapUrl` when the user selects 3D. It is a browser viewer,
-not a 2D tile template. Its starting position follows the location marker, which
-may differ from the center of the saved terrain. Keep the render's date and
+not a 2D tile template. Its initial view uses the capture's saved warp when
+available, or a fallback inside the saved area. A shared camera overrides that
+landing. Keep the render's date and
 dimension visible and use 2D when no 3D link is available.
 
 See [the BlueMap guide](BLUEMAP-3D.md) for discovery and embedding.

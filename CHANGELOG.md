@@ -1,5 +1,17 @@
 # Changes
 
+## Public documentation refresh - 2026-10-17
+
+- Verify 57 public GET routes and 38 read-only MCP tools against the live service.
+- Document Unified Find, all result pages, source selection, inventories, saved
+  object galleries and previews, daily NoCom data and date-range maps.
+- Add complete parameter/response and tool-example catalogs, refresh human versus
+  machine URLs, and correct retrieval metadata and bulk-data links.
+- Label the bundled September 26 application as a historical source snapshot;
+  its code and historical validation results are unchanged.
+- Run local documentation, public-export and private-code checks before publishing.
+
+
 ## Code and documentation cleanup - 2026-09-26
 
 Simplified the API examples, setup guides and stack documentation. Expanded

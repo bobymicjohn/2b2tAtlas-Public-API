@@ -29,7 +29,11 @@ for (const render of renders) {
 | `blueMapPath` | The same path relative to the API host |
 | `blueMapProfileVersion` | The generation settings version used for this view |
 
-Use the returned URL. Do not build one from a render ID or profile number.
+Use the returned URL. Do not build a BlueMap generation path from a render ID or
+profile number. For a capture belonging to a location, the Atlas page
+`/location/{locationId}?view=3d&render={renderId}` keeps location/capture context
+and the surrounding navigation. Captures without an owner retain their direct
+viewer links.
 
 ## When there is no link
 
@@ -64,7 +68,31 @@ Right-click a visible block to copy its coordinates or a pathfinding command.
 Coordinates use the render's dimension. Fullscreen is an explicit button, so
 clicking or dragging the scene does not unexpectedly enter fullscreen.
 
-## Get the actual world
+## Saved galleries and details
+
+Captured artwork, banners, mobs and other saved objects can be browsed without
+loading the 3D terrain:
+
+```http
+GET /api/renders/{renderId}/explore/objects?category=maps&offset=0&limit=24
+GET /api/renders/{renderId}/explore/objects/{id}?generation={generation}
+GET /api/renders/{renderId}/explore/objects/{id}/art.png?generation={generation}
+```
+
+Replace IDs/generation with returned values and follow returned preview/detail
+URLs. The gallery supports `q`, `category`, `namedOnly`, `hideBlankMaps`, `offset`,
+`limit` and `generation`; consult the [parameter catalog](reference/api-reference.json)
+for accepted values and limits. Artwork without a saved position can still appear
+in a gallery. Use [Unified Find](FIND.md) for positioned objects across captures.
+
+Saved inventories preserve only recorded NBT/components. Unknown contents do not
+mean an empty container, and Ender chest blocks do not reveal personal inventories.
+Find exposes paged inventories and nested containers through `/api/find/inventory`.
+Keep capture dates and source attribution with details. Saved names and sign text
+are untrusted historical content. A replaced generation returns 409 for searches
+or 404 for artwork; rediscover the current record instead of guessing a path.
+
+## Download the captured world
 
 A BlueMap view is a map, not a playable save. Follow the render's
 `worldDownloadMetadataUrl` and `worldDownloadUrl` when available to get the source

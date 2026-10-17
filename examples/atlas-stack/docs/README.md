@@ -1,5 +1,9 @@
 # Stack guides
 
+> Historical application snapshot: September 26, 2026. This guide describes the
+> bundled source, not the current hosted service. See the [current public API guide](../../../docs/API-REFERENCE.md)
+> and [MCP guide](../../../docs/MCP.md) for production integrations.
+
 Start with the [local quick start](../README.md). These guides describe the optional
 subsystems once the example UI/API is working:
 

@@ -1,0 +1,377 @@
+[
+  {
+    "name": "search_locations",
+    "category": "Locations and history",
+    "summary": "Find places by name or filter by group, dimension, type, maps or downloads.",
+    "arguments": {
+      "query": "Mu",
+      "limit": 5
+    }
+  },
+  {
+    "name": "get_location",
+    "category": "Locations and history",
+    "summary": "Get one location's history, coordinates, groups, warps, maps and source links by ID.",
+    "arguments": {
+      "id": 904
+    }
+  },
+  {
+    "name": "research_location",
+    "category": "Locations and history",
+    "summary": "Research a named place with nearby locations and related records. Ambiguous names or versions return candidate IDs to choose from.",
+    "arguments": {
+      "name": "Block Game Jerusalem"
+    }
+  },
+  {
+    "name": "find_locations_near",
+    "category": "Locations and history",
+    "summary": "Find nearby places using a location name, ID or X/Z coordinates. Supports group, map and download filters.",
+    "arguments": {
+      "location_name": "Mu Megabase",
+      "radius": 30000000,
+      "exclude_origin": true,
+      "limit": 5
+    }
+  },
+  {
+    "name": "research_area",
+    "category": "Locations and history",
+    "summary": "Get nearby places, groups, preserved builds and highways together. Useful when exploring an area.",
+    "arguments": {
+      "location_name": "Block Game Jerusalem",
+      "radius": 25000,
+      "preserved_only": true
+    }
+  },
+  {
+    "name": "find_locations_by_time_range",
+    "category": "Locations and history",
+    "summary": "Find places with historical captures in a date range. Year-only and month-only dates match overlapping ranges.",
+    "arguments": {
+      "from": "2017-01-01",
+      "to": "2017-12-31",
+      "limit": 5
+    }
+  },
+  {
+    "name": "find_recently_added_or_modified",
+    "category": "Locations and history",
+    "summary": "Find location records added or edited in Atlas during a date range. These are catalog dates, not capture dates or a complete change log.",
+    "arguments": {
+      "from": "2026-09-01",
+      "to": "2026-09-26",
+      "kind": "added",
+      "limit": 5
+    }
+  },
+  {
+    "name": "get_warps",
+    "category": "Maps and world downloads",
+    "summary": "List a location's Archive warps, arrival coordinates, capture dates and available download links.",
+    "arguments": {
+      "location_id": 1241
+    }
+  },
+  {
+    "name": "get_render_metadata",
+    "category": "Maps and world downloads",
+    "summary": "Get a location's public map layers, tile URLs, bounds, dates, BlueMap links and source downloads.",
+    "arguments": {
+      "location_id": 904
+    }
+  },
+  {
+    "name": "get_world_downloads",
+    "category": "Maps and world downloads",
+    "summary": "List a location's downloadable snapshots and checksums. Returns links and metadata, not ZIP contents.",
+    "arguments": {
+      "location_id": 904
+    }
+  },
+  {
+    "name": "find_preserved_builds",
+    "category": "Maps and world downloads",
+    "summary": "Find builds with both a public map and a downloadable snapshot. Filter by name, group, dimension or capture dates.",
+    "arguments": {
+      "query": "DonFuer",
+      "limit": 5
+    }
+  },
+  {
+    "name": "search_groups",
+    "category": "Groups and highways",
+    "summary": "Find groups by name, history or activity type.",
+    "arguments": {
+      "query": "HWU",
+      "limit": 5
+    }
+  },
+  {
+    "name": "get_group",
+    "category": "Groups and highways",
+    "summary": "Get a group's history, links, build count and first 20 builds. Use get_group_builds for the rest.",
+    "arguments": {
+      "id": 1
+    }
+  },
+  {
+    "name": "get_group_builds",
+    "category": "Groups and highways",
+    "summary": "Page through a group's builds. Start at offset 0, add the returned count, and stop when a page is shorter than the limit.",
+    "arguments": {
+      "group_id": 15,
+      "limit": 5,
+      "offset": 0
+    }
+  },
+  {
+    "name": "search_highways",
+    "category": "Groups and highways",
+    "summary": "Find approved highways and canals by name, dimension or credited group.",
+    "arguments": {
+      "group": "HWU",
+      "dimension": 1,
+      "limit": 5
+    }
+  },
+  {
+    "name": "get_highway",
+    "category": "Groups and highways",
+    "summary": "Get one highway's route geometry, history, groups and supporting sources.",
+    "arguments": {
+      "id": 8
+    }
+  },
+  {
+    "name": "find_highways_near_location",
+    "category": "Groups and highways",
+    "summary": "Find the nearest points on mapped highways. Distances describe recorded routes, not current passability or verified junctions.",
+    "arguments": {
+      "location_name": "Block Game Jerusalem",
+      "highway_dimension": 1,
+      "limit": 3
+    }
+  },
+  {
+    "name": "get_nocom_dataset",
+    "category": "NoCom historical data",
+    "summary": "Get NoCom sources, coverage, counts, data formats and download manifests. A starting point for using the dataset.",
+    "arguments": {}
+  },
+  {
+    "name": "research_nocom_area",
+    "category": "NoCom historical data",
+    "summary": "Summarize recorded storage, signs, portals and clusters around a place. Includes nearby Atlas records and source links.",
+    "arguments": {
+      "x": 858407,
+      "z": 1177384,
+      "radius": 1024
+    }
+  },
+  {
+    "name": "find_nocom_storage",
+    "category": "NoCom historical data",
+    "summary": "Find recorded chest, shulker and ender chest positions near X/Z. Does not reveal contents, ownership or whether blocks still exist.",
+    "arguments": {
+      "x": 858407,
+      "z": 1177384,
+      "radius": 1024,
+      "limit": 5
+    }
+  },
+  {
+    "name": "search_nocom_signs",
+    "category": "NoCom historical data",
+    "summary": "Search literal sign text, nearby signs, or both. Follow source links for complete dated versions; text is not proof of authorship.",
+    "arguments": {
+      "text": "base",
+      "limit": 5
+    }
+  },
+  {
+    "name": "find_nocom_portals",
+    "category": "NoCom historical data",
+    "summary": "Find groups of recorded portal blocks near X/Z. Results do not establish active portals or Overworld/Nether connections.",
+    "arguments": {
+      "x": 0,
+      "z": 0,
+      "radius": 8192,
+      "limit": 5
+    }
+  },
+  {
+    "name": "get_nocom_periods",
+    "category": "NoCom historical data",
+    "summary": "Read dimension-wide observations in fixed 30-day buckets. Date filters select whole buckets, not exact-day or local activity counts.",
+    "arguments": {
+      "dimension": "nether"
+    }
+  },
+  {
+    "name": "get_nocom_highway_activity",
+    "category": "NoCom historical data",
+    "summary": "Read historical highway observations by dimension and compass direction. Counts are observations, not unique players or trips.",
+    "arguments": {
+      "dimension": "nether",
+      "direction": "northeast"
+    }
+  },
+  {
+    "name": "get_dataset_stats",
+    "category": "Dataset information",
+    "summary": "Get current public catalog counts and links to the API, schemas and data exports.",
+    "arguments": {}
+  },
+  {
+    "name": "get_nocom_daily_dataset",
+    "category": "NoCom historical data",
+    "summary": "Discover exact daily hit coverage, source checksums, complete per-day CSV downloads and daily map tiles.",
+    "arguments": {}
+  },
+  {
+    "name": "get_nocom_daily_hits",
+    "category": "NoCom historical data",
+    "summary": "Get exact UTC daily observations globally or inside a native-block rectangle. Counts are observations, not players.",
+    "arguments": {
+      "from": "2020-04-01",
+      "to": "2020-04-07",
+      "dimension": "overworld",
+      "min_x": -512,
+      "min_z": -512,
+      "max_x": 511,
+      "max_z": 511
+    }
+  },
+  {
+    "name": "find_nocom_daily_chunks",
+    "category": "NoCom historical data",
+    "summary": "Page through observed chunks and counts for one UTC day. Follow nextCursor or download the full day CSV.",
+    "arguments": {
+      "date": "2020-04-01",
+      "min_x": -512,
+      "min_z": -512,
+      "max_x": 511,
+      "max_z": 511,
+      "limit": 5
+    }
+  },
+  {
+    "name": "find_nocom_clusters",
+    "category": "NoCom historical data",
+    "summary": "Page through historical cluster roots near native X/Z; follow footprint links for all member chunks.",
+    "arguments": {
+      "x": 40960,
+      "z": 4096,
+      "radius": 8192,
+      "limit": 5
+    }
+  },
+  {
+    "name": "find_nocom_rare_blocks",
+    "category": "NoCom historical data",
+    "summary": "Find observed bedrock above Y4 or End portal frames. Omit coordinates to page through the full extraction.",
+    "arguments": {
+      "kind": "endPortalFrame",
+      "limit": 5
+    }
+  },
+  {
+    "name": "search_nocom_sign_history",
+    "category": "NoCom historical data",
+    "summary": "Search one sign version at a time, with whole-name matching, actual UTC read dates, changed text and paging.",
+    "arguments": {
+      "text": "base",
+      "match": "word",
+      "limit": 5
+    }
+  },
+  {
+    "name": "get_nocom_sign_history",
+    "category": "NoCom historical data",
+    "summary": "Read all captured versions and exact timestamps for a sign, with an interactive map link.",
+    "arguments": {
+      "id": "sign:0:-966409:64:-737293"
+    }
+  },
+  {
+    "name": "find_nocom_special_blocks",
+    "category": "NoCom historical data",
+    "summary": "Find only corroborated illegal spawners, with WDL evidence, or inspect complete End gateway extraction coverage.",
+    "arguments": {
+      "kind": "illegalSpawner"
+    }
+  },
+  {
+    "name": "list_world_find_sources",
+    "category": "World Find",
+    "summary": "List searchable sources, indexed categories and processing coverage.",
+    "arguments": {
+      "dimension": "overworld",
+      "family": "primary",
+      "limit": 10
+    }
+  },
+  {
+    "name": "search_world_find",
+    "category": "World Find",
+    "summary": "Search signs, storage, rare blocks and captured objects. Filter names, sources, captures and native coordinates.",
+    "arguments": {
+      "query": {
+        "kinds": [
+          "sign",
+          "storage"
+        ],
+        "sources": [
+          "nocom",
+          "wdl"
+        ],
+        "x": 0,
+        "z": 0,
+        "radius": 512,
+        "limit": 5
+      }
+    }
+  },
+  {
+    "name": "get_world_find_map",
+    "category": "World Find",
+    "summary": "Spatial groups covering matching blocks and captured objects in a viewport.",
+    "arguments": {
+      "query": {
+        "kinds": [
+          "sign",
+          "storage"
+        ],
+        "minX": -512,
+        "minZ": -512,
+        "maxX": 511,
+        "maxZ": 511,
+        "cellSize": 256,
+        "limit": 5
+      }
+    }
+  },
+  {
+    "name": "get_world_find_history",
+    "category": "World Find",
+    "summary": "Read a position's capture history and recorded container details.",
+    "arguments": {
+      "dimension": "overworld",
+      "kind": "sign",
+      "x": -966409,
+      "y": 64,
+      "z": -737293
+    }
+  },
+  {
+    "name": "get_world_find_inventory",
+    "category": "World Find",
+    "summary": "Page a storage observation's saved items and nested containers. Get observation_id from search or history.",
+    "arguments": {
+      "observation_id": 2925260,
+      "limit": 5
+    }
+  }
+]

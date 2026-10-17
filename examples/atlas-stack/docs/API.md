@@ -1,5 +1,9 @@
 # Use the local API
 
+> Historical application snapshot: September 26, 2026. This guide describes the
+> bundled source, not the current hosted service. See the [current public API guide](../../../docs/API-REFERENCE.md)
+> and [MCP guide](../../../docs/MCP.md) for production integrations.
+
 Start the app with [the local setup guide](../README.md), then open
 <http://127.0.0.1:5297/api/locations>. A new installation returns `[]`, an empty
 JSON list, until you add a location in Admin.

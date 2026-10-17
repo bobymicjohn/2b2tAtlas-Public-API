@@ -7,6 +7,10 @@ prove who owned a base.
 
 ## World Pulse: observation counts
 
+For exact calendar days, use the [daily product](#daily-world-pulse) below. These
+older period/highway endpoints keep their fixed-bucket contracts; their dates
+and totals must not be substituted for the complete daily dataset.
+
 | Endpoint | Content |
 |---|---|
 | [`/api/nocom`](https://api.blackportal.cloud/api/nocom) | Provenance, original source, hashes, caveats, dimension counts and tile links |
@@ -105,6 +109,64 @@ Start with `research_nocom_area` to gather evidence for a location name, ID, or
 coordinates. Its World Pulse totals cover the dimension, not just that area.
 
 ## Sources and bulk data
+
+Unified Find also searches public WDLs and primary-map captures alongside NoCom.
+See [Find](FIND.md) for source coverage, every result page, recorded inventories,
+saved objects, maps and capture history. The endpoints in this guide retain their
+separate legacy NoCom limits and data shapes.
+
+## Daily World Pulse
+
+The complete daily product comes from the full raw observation source, including
+recorded days in 2018. Discover coverage through `/api/nocom/hits`; do not infer
+daily coverage from the fixed period buckets above.
+
+```http
+GET /api/nocom/hits
+GET /api/nocom/hits/daily?from=2020-04-01&to=2020-04-02
+GET /api/nocom/hits/chunks?date=2020-04-01&minX=-1024&minZ=-1024&maxX=1023&maxZ=1023&limit=10
+GET /api/nocom/hits/tiles/manifest
+```
+
+Dates are inclusive UTC calendar dates. Global daily queries allow 366 days;
+bounded queries allow 31 days and rectangles no larger than 16,384 blocks per
+axis. Supply all four inclusive bounds together. Every intersecting 16x16 chunk
+counts in full. Chunk pages use a release-bound `nextCursor`, with up to 1,000
+rows. Keep dates, dimensions and bounds unchanged while paging.
+
+The tile manifest supplies daily and date-range templates. A combined range
+preserves the strongest daily rendered intensity and coverage union; its pixels
+are not summed hit counts. Use JSON/CSV for exact counts. Range maps permit up
+to 4,096 inclusive days. Follow returned URLs, signed tile coordinates and
+zoom bounds. HTTP 503 is temporary unavailability, not evidence of no observations.
+
+MCP equivalents are `get_nocom_daily_dataset`, `get_nocom_daily_hits` and
+`find_nocom_daily_chunks`. Missing days mean no observations in this release,
+not proof of inactivity. Counts are repeated loaded-chunk observations, not
+players, visits, exact player positions or ownership.
+
+## Sign history and special blocks
+
+`/api/nocom/find/sign-history` searches individual captured text versions with
+literal phrase, all-words or whole-word matching, UTC read-date filters and
+changed-text selection. Follow `nextOffset`; read a selected ID at
+`/api/nocom/find/sign-history/{id}` for all versions and recorded timestamps.
+These dates do not establish authorship, placement or continuous presence.
+MCP provides `search_nocom_sign_history` and `get_nocom_sign_history`.
+
+`/api/nocom/find/special` and `find_nocom_special_blocks` expose independently
+corroborated spawner evidence and End-gateway coverage. Ordinary or unverified
+spawners are excluded. `/api/nocom/find/rare` and `find_nocom_rare_blocks` expose
+the released above-floor bedrock and End portal-frame observations.
+`/api/nocom/find/clusters` and `find_nocom_clusters` page source cluster roots;
+footprint links retain their complete member chunks. Roots are not players or bases.
+
+Use the [full parameter reference](API-REFERENCE.md#nocom-and-popular-records)
+and [MCP guide](MCP.md) for current filters and limits. Keep `not_captured`, empty
+covered results and `verified_subset` distinct. Historical block evidence does
+not prove current survival or the state of another dimension.
+
+## Source releases
 
 Read `/api/nocom` for source links, hashes, coverage, and the `find` release
 descriptor. Its manifest links the files for bulk downloads and full histories.

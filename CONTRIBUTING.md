@@ -57,6 +57,13 @@ from a local environment using the documented commands.
 For endpoint or response-field changes, also check the
 [live OpenAPI schema](https://api.blackportal.cloud/openapi/v1.json).
 
+For the current public guides and machine-readable examples, run
+`python tests/test_documentation.py --live`. Before publishing, stage the reviewed
+files and run `python scripts/check-private-code.py` plus
+`python examples/atlas-stack/scripts/check-public-export.py`. Check the committed
+range with `python scripts/check-private-code.py --base origin/main --head HEAD`
+before pushing. These checks do not publish or enable GitHub Actions.
+
 In the pull request, describe the change and the checks you ran.
 
 ## Documentation style

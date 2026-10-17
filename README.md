@@ -2,8 +2,12 @@
 
 Use the [2b2tAtlas](https://2b2tatlas.com) catalog in your own map, mod or research
 tool. It includes historical locations, groups, highways, Archive warps, world
-downloads, dated renders and Nocom observations. This repository has small API
+downloads, dated renders, Unified Find, saved inventories/artwork and NoCom observations. This repository has small API
 examples and the [full Atlas application](examples/atlas-stack/README.md).
+
+Contract verified October 17, 2026: **57 public GET routes and 38 read-only MCP tools**.
+Use [the live website reference](https://2b2tatlas.com/api/) or the
+[complete route catalog](docs/reference/api-reference.json) for exact parameters.
 
 **Base URL:** `https://api.blackportal.cloud`. Public reads require no API key.
 You can make requests from a browser, a command line, or your own code.
@@ -12,6 +16,7 @@ You can make requests from a browser, a command line, or your own code.
 - [Live OpenAPI schema](https://api.blackportal.cloud/openapi/v1.json)
 - [Coordinates and render tiles](docs/COORDINATES-AND-RENDERS.md)
 - [BlueMap 3D views](docs/BLUEMAP-3D.md)
+- [Unified Find, inventories and saved objects](docs/FIND.md)
 - [Nocom data](docs/NOCOM.md)
 - [MCP setup and tools](docs/MCP.md)
 - [Changelog](CHANGELOG.md)
@@ -36,7 +41,9 @@ the complete catalog.
 ## Examples
 
 To run your own Atlas, see [examples/atlas-stack](examples/atlas-stack/README.md).
-That folder is an Unlicense application snapshot. The smaller API clients below
+That folder is the September 26, 2026 Unlicense application snapshot. It does not
+include subsequent production features; its guides describe that bundled version.
+The root documentation describes the current public service. The smaller API clients below
 remain standalone examples for consuming the public service.
 
 Run from the repository root:
@@ -64,7 +71,7 @@ fields, filters, caching, and errors.
 
 | Resource | Routes |
 | --- | --- |
-| Locations | `/api/locations`, `/api/locations/{id}` |
+| Locations | `/api/locations`, `/api/locations/map`, `/api/locations/{id}`, `/api/locations/aliases` |
 | Groups | `/api/groups`, `/api/groups/{id}` |
 | Highways | `/api/highways`, `/api/highways/{id}` |
 | Archive warps | `/api/warps`, `/api/warps/{id}` |
@@ -73,7 +80,10 @@ fields, filters, caching, and errors.
 | Preserved render-source WDL metadata and ZIP | `/api/renders/{id}/world-download`, `/api/renders/{id}/world-download.zip` |
 | Historical media | `/api/attachments`, `/api/attachments/{id}` |
 | Map layers | `/api/maprenders`, `/api/maprenders/catalog` |
-| Nocom | `/api/nocom`, `/api/nocom/periods`, `/api/nocom/highways` |
+| Unified Find | `/api/find`, `/api/find/map`, `/api/find/sources`, `/api/find/source-options`, `/api/find/history`, `/api/find/inventory`, `/api/find/objects/{renderId}/{objectId}` |
+| Saved galleries | `/api/renders/{renderId}/explore/objects`, `/api/renders/{renderId}/explore/objects/{id}` and its `/art.png` preview |
+| NoCom | `/api/nocom`, `/api/nocom/periods`, `/api/nocom/highways`, `/api/nocom/hits` and its daily/chunk/tile routes, `/api/nocom/find/*` |
+| Popularity | `/api/popularity?days=7`, `30` or `90` |
 
 ## Client behavior
 
@@ -110,12 +120,13 @@ Static exports are hosted on `2b2tatlas.com`:
 | [dataset.json](https://2b2tatlas.com/dataset.json) | Dataset metadata and catalog links |
 | [locations.jsonl](https://2b2tatlas.com/entities/locations.jsonl) | Location records |
 | [groups.jsonl](https://2b2tatlas.com/entities/groups.jsonl) | Groups and relationships |
+| [highways.jsonl](https://2b2tatlas.com/entities/highways.jsonl) | Approved highways and relationships |
 | [media.jsonl](https://2b2tatlas.com/entities/media.jsonl) | Historical media records |
 | [world-downloads.jsonl](https://2b2tatlas.com/entities/world-downloads.jsonl) | Available partial WDLs, checksums, and source links |
 | [llms.txt](https://2b2tatlas.com/llms.txt) | Data and documentation index |
 
 Use these exports for bulk imports. Keep entity IDs and canonical URLs with
-imported records. The [WDL catalog](https://2b2tatlas.com/entities/world-downloads/)
+imported records. The [WDL catalog](https://2b2tatlas.com/world-downloads/catalog/)
 also has an HTML view.
 
 ## Existing integration

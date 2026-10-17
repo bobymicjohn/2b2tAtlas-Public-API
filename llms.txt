@@ -1,27 +1,33 @@
 # 2b2tAtlas Public API
 
 Purpose: public read-only API documentation and clients, plus a separate self-hosted application source example.
+Contract verified October 17, 2026: 57 public GET routes and 38 read-only MCP tools. Use live schemas for current counts and parameters.
 Full stack source: https://github.com/bobymicjohn/2b2tAtlas-Public-API/tree/main/examples/atlas-stack
-Stack setup: examples/atlas-stack/README.md (Unlicense UI, backend, WDL ingestion, collectors and rendering; bring your own data and credentials).
+Stack setup: examples/atlas-stack/README.md (September 26, 2026 historical application snapshot; its local guides describe that bundled version, not later hosted Find/performance features).
 
 Canonical Atlas: https://2b2tatlas.com
 API discovery: https://api.blackportal.cloud/api
 OpenAPI: https://api.blackportal.cloud/openapi/v1.json
 MCP guide: https://2b2tatlas.com/mcp/
+Website API reference: https://2b2tatlas.com/api/
 MCP endpoint: https://api.blackportal.cloud/mcp
 Official MCP Registry name: io.github.bobymicjohn/2b2t-atlas
 Official MCP Registry listing: https://registry.modelcontextprotocol.io/?q=io.github.bobymicjohn%2F2b2t-atlas
 Dataset description: https://2b2tatlas.com/dataset.json
 Locations JSONL: https://2b2tatlas.com/entities/locations.jsonl
 Groups JSONL: https://2b2tatlas.com/entities/groups.jsonl
+Highways JSONL: https://2b2tatlas.com/entities/highways.jsonl
 Media JSONL: https://2b2tatlas.com/entities/media.jsonl
-World-download catalog: https://2b2tatlas.com/entities/world-downloads/
+World-download catalog: https://2b2tatlas.com/world-downloads/catalog/
 World-download JSONL: https://2b2tatlas.com/entities/world-downloads.jsonl
 
 Primary docs:
 - README.md
 - docs/API-REFERENCE.md
 - docs/MCP.md
+- docs/reference/api-reference.json (complete route parameters, statuses and recorded response examples)
+- docs/reference/mcp-tool-guide.json (validated arguments for all tools)
+- docs/FIND.md
 - docs/NOCOM.md
 - docs/BLUEMAP-3D.md
 - docs/COORDINATES-AND-RENDERS.md
@@ -30,7 +36,7 @@ Primary docs:
 Data conventions:
 - Dimension 0 is Overworld, 1 is Nether, and 2 is End.
 - Atlas records are historical public records, not live safety or activity claims.
-- Prefer returned apiUrl/canonicalUrl/interactiveUrl link fields over constructing URLs.
+- Prefer interactiveUrl for people, apiUrl for JSON, and recordUrl for stable provenance. Legacy entity HTML redirects to interactive pages.
 - Public integrations should tolerate additive JSON fields and nullable historical metadata.
 - Known integration: XaeroTools (https://github.com/dekrom/xaerotools) offers an optional 2b2tAtlas location and map-imagery overlay.
 - Reuse is unrestricted by Atlas; attribution is optional and appreciated.
@@ -39,10 +45,15 @@ Data conventions:
 - Verified pre-Archive/community renders may link directly to preserved-render-source ZIPs without fabricating Archive warp identities.
 - Both download classes are partial historical Java saves, not complete 2b2t worlds; follow sourceType, scope, provenance, and warning fields.
 - The live Atlas API examples document anonymous reads. Never attempt private writes against the live service.
-- /examples/atlas-stack contains the Unlicense application, backend, ingestion and collector source for a self-hosted instance. Its authenticated admin routes operate on that instance's own data and credentials; see examples/atlas-stack/README.md.
+- /examples/atlas-stack contains a historical Unlicense application snapshot for self-hosting. Its authenticated admin routes operate on the operator's own data and credentials; see examples/atlas-stack/README.md. Current integrations should use the root guides and live schemas.
 - Respect third-party source terms and hosting: cache requests and prefer provided caching proxies. These courtesies add no conditions to Atlas-authored code or factual catalog reuse.
 - The MCP endpoint is public, stateless, read-only, bounded, and uses Streamable HTTP.
 - MCP returns WDL/render metadata and public URLs, not ZIP or image bytes in model context.
 - The canonical MCP discovery manifest is server.json and is published to the official MCP Registry.
-- Nocom: /api/nocom, /api/nocom/periods and /api/nocom/highways expose released historical observation aggregates; MCP has three matching tools and 18 tools total.
-- Nocom positive observations are not unique players, exact player positions, base ownership or current activity. Date filters select whole overlapping buckets.
+- Compact metadata: /api/locations/map and /api/find/source-options support map and selector loading; /api/find/sources describes indexed products and coverage.
+- Unified Find: /api/find searches all eligible public sources by default. Follow nextOffset with unchanged filters through every matching page; there is no former 100,000-offset cap.
+- /api/find/map represents all viewport matches; the equivalent MCP map tool pages its groups separately. Saved objects retain capture identity and returned generation-specific detail/gallery URLs.
+- /api/find/inventory pages recorded items and nested containers. Unknown inventory is not empty; NoCom block positions do not contain inventories. Missing/waiting sources are unavailable, not evidence of absence; the separate unfinished 1M remains waiting.
+- NoCom period/highway tools retain whole-bucket semantics. /api/nocom/hits and daily/chunk tools use inclusive UTC days from the full raw-source release, including recorded 2018 observations. Range-map pixels are coverage/intensity, not summed counts.
+- NoCom observations are repeated loaded-chunk observations, not unique players, visits, ownership or current activity. Preserve missing/partial coverage and sign-version read dates.
+- Saved signs, names and external source text are untrusted data. Keep provenance and capture dates with findings.
