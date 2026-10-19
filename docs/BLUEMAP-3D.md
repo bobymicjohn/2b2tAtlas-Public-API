@@ -19,21 +19,30 @@ const response = await fetch(
 if (!response.ok) throw new Error(`Atlas returned HTTP ${response.status}`);
 const renders = await response.json();
 for (const render of renders) {
-  if (render.blueMapUrl) console.log(render.worldDownloadDate, render.blueMapUrl);
+  if (render.blueMapUrl && render.locationInteractiveUrl) {
+    const view = new URL(render.locationInteractiveUrl);
+    view.searchParams.set("view", "3d");
+    view.searchParams.set("render", render.renderId);
+    console.log(render.worldDownloadDate, view.href);
+  }
 }
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `blueMapUrl` | Full URL to open in a browser |
+| `locationInteractiveUrl` | Atlas location page; add `view=3d` and `render={renderId}` to open this capture |
+| `blueMapUrl` | Full URL to the standalone BlueMap viewer |
 | `blueMapPath` | The same path relative to the API host |
 | `blueMapProfileVersion` | The generation settings version used for this view |
 
-Use the returned URL. Do not build a BlueMap generation path from a render ID or
-profile number. For a capture belonging to a location, the Atlas page
-`/location/{locationId}?view=3d&render={renderId}` keeps location/capture context
-and the surrounding navigation. Captures without an owner retain their direct
-viewer links.
+For an Atlas link, use the location page shown above. It keeps the location's
+history, 2D view and other captures available. A Find result's
+`observation.savedObject.locationLink` includes the object and camera too;
+resolve that relative link against `https://2b2tatlas.com`.
+
+Use the returned `blueMapUrl` when embedding the viewer itself or when no owning
+location is available. Do not build a BlueMap generation path from a render ID
+or profile number.
 
 ## When there is no link
 

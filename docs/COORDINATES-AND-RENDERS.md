@@ -89,8 +89,10 @@ These are preserved historical alternatives, not default terrain layers.
 
 ## BlueMap 3D views
 
-Open the render's `blueMapUrl` when the user selects 3D. It is a browser viewer,
-not a 2D tile template. Its initial view uses the capture's saved warp when
+Prefer the capture's [location-based 3D link](BLUEMAP-3D.md#find-a-view) for Atlas
+navigation. The render's `blueMapUrl` opens the standalone browser viewer and
+can be used for embedding; it is not a 2D tile template. Its initial view uses
+the capture's saved warp when
 available, or a fallback inside the saved area. A shared camera overrides that
 landing. Keep the render's date and
 dimension visible and use 2D when no 3D link is available.

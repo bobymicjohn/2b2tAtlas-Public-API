@@ -1,7 +1,7 @@
 # 2b2tAtlas Public API
 
 Purpose: public read-only HTTP API and MCP reference, request examples, and a separate historical application source snapshot.
-Contract verified October 17, 2026: 57 public GET routes and 38 read-only MCP tools. Use live schemas for current counts and parameters.
+Live contract rechecked October 19, 2026: 57 public GET routes and 38 read-only MCP tools. Recorded response examples are dated October 17. Use live schemas for current counts and parameters.
 Full stack source: https://github.com/bobymicjohn/2b2tAtlas-Public-API/tree/main/examples/atlas-stack
 Stack setup: examples/atlas-stack/README.md (September 26, 2026 historical application snapshot; its local guides describe that bundled version, not later hosted Find/performance features).
 
@@ -24,6 +24,7 @@ World-download JSONL: https://2b2tatlas.com/entities/world-downloads.jsonl
 Primary docs:
 - README.md
 - docs/API-REFERENCE.md
+- docs/SOURCE-STATUS.md (current .NET 10 application versus the dated source snapshot)
 - docs/MCP.md
 - docs/reference/api-reference.json (complete route parameters, statuses and recorded response examples)
 - docs/reference/mcp-tool-guide.json (validated arguments for all tools)
@@ -50,7 +51,8 @@ Data conventions:
 - The MCP endpoint is public, stateless, read-only, bounded, and uses Streamable HTTP.
 - MCP returns WDL/render metadata and public URLs, not ZIP or image bytes in model context.
 - The canonical MCP discovery manifest is server.json and is published to the official MCP Registry.
-- Compact metadata: /api/locations/map and /api/find/source-options support map and selector loading; /api/find/sources describes indexed products and coverage.
+- Compact metadata: /api/locations/directory supplies directory rows and counts; /api/locations/map and /api/find/source-options support map and selector loading; /api/find/sources describes indexed products and coverage.
+- Find savedObject.locationLink opens the location-based 3D view with its object and camera. Resolve relative Atlas page links against https://2b2tatlas.com, not the API host. blueMapUrl is the standalone viewer for a render.
 - Unified Find: /api/find searches all eligible public sources by default. Follow nextOffset with unchanged filters through every matching page; there is no former 100,000-offset cap.
 - /api/find/map represents all viewport matches; the equivalent MCP map tool pages its groups separately. Saved objects retain capture identity and returned generation-specific detail/gallery URLs.
 - /api/find/inventory pages recorded items and nested containers. Unknown inventory is not empty; NoCom block positions do not contain inventories. Missing/waiting sources are unavailable, not evidence of absence; the separate unfinished 1M remains waiting.

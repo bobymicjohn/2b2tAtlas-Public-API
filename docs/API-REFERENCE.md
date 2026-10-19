@@ -5,8 +5,9 @@ account or API key.
 
 **Base URL:** `https://api.blackportal.cloud`
 
-Contract verified October 17, 2026: 57 public GET routes and 38 read-only MCP
-tools. The live OpenAPI schema and MCP discovery remain authoritative.
+Live contract rechecked October 19, 2026: 57 public GET routes and 38 read-only MCP
+tools. The live OpenAPI schema and MCP discovery remain authoritative. Bundled
+response examples were recorded on October 17; their values can change.
 
 The current release's [website reference](https://2b2tatlas.com/api) documents the public GET routes
 and MCP tools. Its checked date appears on the page. Its parameter
@@ -87,10 +88,16 @@ array-based paging works too.
 
 ```http
 GET /api/locations
+GET /api/locations/directory
 GET /api/locations/map
 GET /api/locations/{id}
 GET /api/locations/aliases
 ```
+
+`/api/locations/directory` returns compact directory rows with descriptions,
+groups, exact public warp/render/attachment counts and preferred actions. Use it
+for a directory or location picker, then load `/api/locations/{id}` for full
+history and media. Anonymous responses are cached on the server for 30 seconds.
 
 `/api/locations/map` is the lightweight map catalog: coordinates, full search text,
 group IDs/names/roles, warp names and capture dates, and public tile descriptors with bounds and dates. It omits
@@ -161,9 +168,12 @@ Renders include the location and source links, bounds, `tileUrlTemplate`,
 `locationId`, `dimension`, and `scale` (a case-insensitive stored scale label).
 Read [the coordinate guide](COORDINATES-AND-RENDERS.md) before placing tiles.
 
-When `blueMapUrl` is present, open it for an interactive 3D view. A missing link
-means that 3D is unavailable for this render; its 2D map or world download may
-still be available. See [BlueMap views](BLUEMAP-3D.md).
+When `blueMapUrl` is present, a standalone 3D viewer is available. To keep the
+location context, open the render's `locationInteractiveUrl` with `view=3d` and
+`render={renderId}` query parameters. Find objects supply their own
+`savedObject.locationLink`, which also preserves the selected object and camera.
+A missing `blueMapUrl` means that 3D is unavailable for this render; its 2D map
+or world download may still be available. See [BlueMap views](BLUEMAP-3D.md).
 
 ## Download a world
 

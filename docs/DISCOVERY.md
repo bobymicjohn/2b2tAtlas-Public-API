@@ -1,6 +1,6 @@
 # Atlas facts and canonical links
 
-Verified October 17, 2026. This reference is for integrations and directory
+Verified October 19, 2026. This reference is for integrations and directory
 maintainers describing the current hosted Atlas. Counts are a dated snapshot;
 use the discovery endpoints for a current inventory.
 
@@ -29,8 +29,9 @@ Registry description, within the 100-character limit:
 | Machine discovery | [Dataset](https://2b2tatlas.com/dataset.json) and [OpenAPI](https://api.blackportal.cloud/openapi/v1.json) |
 | MCP connection | `https://api.blackportal.cloud/mcp` (Streamable HTTP) |
 
-The verified catalog contained 2,249 locations, 134 groups, 107 highways and
-2,467 preserved render/download records. The public API advertised 57 GET
+The live catalog contained 2,253 locations, 209 groups, 107 highways and
+2,467 location render records. Render totals are not a count of independently
+verified downloadable worlds. The public API advertised 57 GET
 operations; MCP `tools/list` advertised 38 tools. Third-party counts reflect
 their retrieval dates and may lag.
 
@@ -44,3 +45,7 @@ Link to the guide for explanations, and to a specific canonical entity for a
 specific place, group or highway. Interactive filter URLs are for opening a task;
 there is no need to index every filter combination. Registry updates do not
 guarantee when independent directories refresh their descriptions or tool counts.
+
+The [source status](SOURCE-STATUS.md) distinguishes the maintained .NET 10
+application from the September 26 source example. External code indexes should
+keep the example's date and commit with their references.

@@ -7,6 +7,9 @@ $baseUrl = if ([string]::IsNullOrWhiteSpace($env:ATLAS_API_BASE_URL)) {
 $routes = @(
     '/api',
     '/openapi/v1.json',
+    '/api/locations/directory',
+    '/api/locations/map',
+    '/api/find/source-options',
     '/api/locations/5',
     '/api/groups/7',
     '/api/warps?locationId=5&limit=1',

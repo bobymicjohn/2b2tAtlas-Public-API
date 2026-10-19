@@ -3,7 +3,7 @@
 Unified Find searches indexed signs, storage, blocks and positioned saved objects
 across public NoCom observations, location world downloads and primary map saves.
 It describes historical captures, not the present server. No API key is required.
-Contract checked October 17, 2026.
+Live contract rechecked October 19, 2026.
 
 ## Start with source coverage
 

@@ -3,8 +3,10 @@
 > Historical application snapshot: September 26, 2026. This guide describes the
 > bundled source, not the current hosted service. See the [current public API guide](../../docs/API-REFERENCE.md)
 > and [MCP guide](../../docs/MCP.md) for production integrations.
+> [Source versions](../../docs/SOURCE-STATUS.md) explains the current application
+> and what has changed since this snapshot.
 
-This is the application behind 2b2tAtlas. It keeps the map, catalog, world
+This snapshot shows how 2b2tAtlas kept the map, catalog, world
 downloads and dated renders together. The UI is Blazor, the API is ASP.NET Core,
 and the database is SQLite. Collection and rendering run as separate jobs.
 

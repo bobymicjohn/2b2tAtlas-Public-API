@@ -33,7 +33,7 @@ every documented tool. Discover current schemas with `tools/list`.
 
 ## Choose a tool
 
-The October 17, 2026 verification found 38 read-only tools. Discover the deployed
+The October 19, 2026 verification found 38 read-only tools. Discover the deployed
 catalog through `tools/list`, including its exact
 parameters and limits. Start with `research_location` for a named place,
 `research_area` for nearby places, or `research_nocom_area` for NoCom evidence.

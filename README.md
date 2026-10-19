@@ -6,7 +6,8 @@ downloads, dated renders, Find, saved inventories, artwork and NoCom observation
 This repository contains the HTTP API reference, request examples and an
 [archived application snapshot](examples/atlas-stack/README.md).
 
-Contract verified October 17, 2026: **57 public GET routes and 38 read-only MCP tools**.
+Live contract rechecked October 19, 2026: **57 public GET routes and 38 read-only MCP tools**.
+Recorded response examples are dated October 17; values and counts can change.
 Use [the live website reference](https://2b2tatlas.com/api/) or the
 [complete route catalog](docs/reference/api-reference.json) for exact parameters.
 
@@ -22,6 +23,7 @@ You can make requests from a browser, a command line, or your own code.
 - [MCP setup and tools](docs/MCP.md)
 - [Current facts and canonical links for integrations](docs/DISCOVERY.md)
 - [Changelog](CHANGELOG.md)
+- [Source versions and the current application stack](docs/SOURCE-STATUS.md)
 - [Application source snapshot](examples/atlas-stack/README.md) - September 26, 2026 source and setup instructions.
 
 ## Try it
@@ -40,6 +42,10 @@ List responses are JSON arrays. Warps, renders, and attachments accept `limit`
 and `offset`; the default limit is 500 and the maximum is 1,000. Locations return
 the complete catalog.
 
+For a location picker or directory, use `/api/locations/directory`. It returns
+compact rows with names, groups, counts and preferred actions. Fetch
+`/api/locations/{id}` when someone opens a record for its full history and media.
+
 ## Request examples
 
 [examples/requests.http](examples/requests.http) contains ordinary HTTP requests
@@ -57,7 +63,7 @@ fields, filters, caching, and errors.
 
 | Resource | Routes |
 | --- | --- |
-| Locations | `/api/locations`, `/api/locations/map`, `/api/locations/{id}`, `/api/locations/aliases` |
+| Locations | `/api/locations`, `/api/locations/directory`, `/api/locations/map`, `/api/locations/{id}`, `/api/locations/aliases` |
 | Groups | `/api/groups`, `/api/groups/{id}` |
 | Highways | `/api/highways`, `/api/highways/{id}` |
 | Archive warps | `/api/warps`, `/api/warps/{id}` |
@@ -75,8 +81,10 @@ fields, filters, caching, and errors.
 
 - Cache catalog responses and honor HTTP cache headers. In Minecraft clients,
   perform HTTP requests and image decoding outside the render/tick thread.
-- Follow returned links such as `apiUrl`, `canonicalUrl`, `worldDownloadUrl`,
-  and `blueMapUrl`. BlueMap links are optional and belong to a specific render.
+- Use `interactiveUrl` for a location page, `apiUrl` for JSON, and
+  `worldDownloadUrl` for a saved world. For a Find object's 3D destination,
+  prefer `savedObject.locationLink`, resolved against `https://2b2tatlas.com`.
+  `blueMapUrl` opens the standalone viewer and is optional and render-specific.
 - Handle null fields and ignore unknown JSON properties.
 - Coordinates use the record's native dimension: `0` Overworld, `1` Nether,
   `2` End. Tile-template `{y}` is a tile row, not Minecraft elevation.

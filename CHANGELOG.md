@@ -1,5 +1,13 @@
 # Changes
 
+## Public reference check - 2026-10-19
+
+- Recheck all 57 public GET route contracts and the 38-tool MCP catalog against
+  the live service. Retain the recorded response examples' original date.
+- Document the compact directory endpoint and location-based 3D links.
+- Update the dated catalog counts and explain which code belongs to the
+  historical source snapshot versus the maintained .NET 10 application.
+
 ## Registry discovery refresh - 2026-10-17
 
 - Refresh registry metadata to version 1.1.0, covering captured signs, saved
