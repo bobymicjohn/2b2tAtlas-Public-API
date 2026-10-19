@@ -7,7 +7,7 @@ body:
     id: page
     attributes:
       label: File, section, or example
-      placeholder: examples/csharp/Program.cs
+      placeholder: docs/FIND.md or examples/requests.http
     validations:
       required: true
   - type: input
@@ -29,15 +29,14 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: language
+    id: surface
     attributes:
-      label: Environment
+      label: Reference
       options:
-        - C# / .NET
-        - Java / Fabric / Forge
-        - JavaScript / TypeScript
-        - Python
         - HTTP / OpenAPI
+        - MCP
+        - Website
+        - Archived application source
         - Other
     validations:
       required: true

@@ -1,8 +1,8 @@
 # Contributing
 
-This repository contains public API documentation, small API clients, and the
-[self-hosted Atlas stack](examples/atlas-stack/README.md). Pull requests can improve
-any of these. For application changes, follow the stack's own contribution guide.
+This repository contains public API documentation, HTTP request examples and an
+[archived Atlas application](examples/atlas-stack/README.md). For changes to that
+snapshot, follow its own contribution guide.
 
 Contribute original changes under the [Unlicense](LICENSE), and keep existing
 third-party notices intact. Source links are useful even when Atlas credit is optional.
@@ -11,7 +11,7 @@ third-party notices intact. Source links are useful even when Atlas credit is op
 
 1. Keep API consumer examples read-only against the public service. Test stack administration, ingestion and other mutations only against your own disposable instance; never against the live Atlas.
 2. Never commit tokens, passwords, session files, private coordinates, production collector state, or production configuration. Generalized collector source belongs in `examples/atlas-stack`, with synthetic fixtures and configurable paths.
-3. Test examples against the local fixture; use the live API to verify contract changes.
+3. Check request examples and contract changes against the live read-only API.
 4. Use a descriptive User-Agent where the language permits it and cache bulk data locally.
 5. Keep entity links and source-specific provenance when practical.
 6. Ignore unknown response fields and handle nullable historical fields.
@@ -19,39 +19,8 @@ third-party notices intact. Source links are useful even when Atlas credit is op
 
 ## Before opening a pull request
 
-With .NET 10, Node.js and Python installed, run the offline client checks:
-
-```sh
-python tests/test_examples.py
-```
-
-These build the C# example and run all three clients against a temporary local
-API. They cover normal reads, optional 3D fields, pagination, HTTP errors and
-unknown locations. The C# example separates its HTTP client and models from the
-walkthrough in `Program.cs` so you can reuse the pieces you need.
-
-Start the local fixture in a separate terminal:
-
-```sh
-python tests/mock_atlas_api.py
-```
-
-Set `ATLAS_API_BASE_URL=http://127.0.0.1:8765` in the terminal running the examples.
-Use `$env:ATLAS_API_BASE_URL = "http://127.0.0.1:8765"` in PowerShell or
-`export ATLAS_API_BASE_URL=http://127.0.0.1:8765` in bash.
-
-Run the examples you changed:
-
-```bash
-dotnet run --project examples/csharp -- "Mu Megabase"
-node examples/javascript/atlas-examples.mjs "Mu Megabase"
-python examples/python/atlas_examples.py "Mu Megabase"
-python examples/python/nocom_activity.py --dimension nether --direction northeast
-python examples/python/nocom_activity.py --dimension end
-python examples/python/location_media.py 5
-```
-
-Run `scripts/smoke-test.sh` locally against the fixture as well.
+Run `scripts/smoke-test.ps1` or `scripts/smoke-test.sh` for the public read checks.
+Check any requests you changed in `examples/requests.http`.
 GitHub Actions is disabled; do not add or run workflows. Build, test, and publish
 from a local environment using the documented commands.
 For endpoint or response-field changes, also check the
@@ -74,6 +43,10 @@ Published versions are immutable; metadata-only updates still need a new version
 Do not enable the retained GitHub Actions publication workflow.
 
 In the pull request, describe the change and the checks you ran.
+
+The maintained Atlas application uses .NET 10, EF Core for catalog data and
+Blazor WebAssembly with Radzen. Keep HTTP examples language-neutral. Do not add
+SDKs, client libraries or downloadable contributor tools without an explicit request.
 
 ## Documentation style
 

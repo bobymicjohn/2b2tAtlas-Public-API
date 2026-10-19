@@ -221,9 +221,8 @@ Older records may use null, and new types may be added.
 
 Open `path` for the item and `sourceUrl` for its source. Keep `caption` and
 `attribution` when reusing media. `thumbnailPath` is optional. Keep video URLs
-intact, including timestamps and case-sensitive IDs. The
-[Python media example](https://github.com/bobymicjohn/2b2tAtlas-Public-API/blob/main/examples/python/location_media.py) lists these fields
-and follows pagination without downloading the media.
+intact, including timestamps and case-sensitive IDs. Follow the response's
+pagination headers to read further pages; listing metadata does not download the media.
 
 ## Shared map layers
 

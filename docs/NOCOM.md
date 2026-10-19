@@ -44,17 +44,14 @@ MCP tools: `get_nocom_dataset`, `get_nocom_periods`,
 `get_nocom_highway_activity`. `get_dataset_stats` also links the Nocom dataset.
 All use the existing public endpoint `https://api.blackportal.cloud/mcp`.
 
-## Try the observation example
+## Read observations
 
-Run from the repository root with Python:
-
-```powershell
-python examples/python/nocom_activity.py --dimension nether --direction northeast
-python examples/python/nocom_activity.py --dimension end
+```http
+GET /api/nocom/highways?dimension=nether&direction=northeast
+GET /api/nocom/periods?dimension=end
 ```
 
-The End has period data but no released highway series. The example keeps those
-cases separate and supports `ATLAS_API_BASE_URL` for an offline fixture.
+The End has period data but no released highway series.
 
 ```javascript
 const response = await fetch(

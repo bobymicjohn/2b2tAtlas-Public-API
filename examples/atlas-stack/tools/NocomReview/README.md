@@ -19,10 +19,9 @@ terrain API. From the repository root:
 python scripts/serve-nocom-review.py --source F:\AtlasExample\AtlasTiles\Nocom\v1 --output D:\AtlasExample\Ingest\nocom-review\contrast-20260908-r2 --port 8772
 ```
 
-Open <http://127.0.0.1:8772/>. The server binds only to loopback. On example-host the
-bundled Python at
-`C:\Users\atlas-operator\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe`
-already has the required libraries; the older system Python does not have NumPy.
+Open <http://127.0.0.1:8772/>. The server binds only to loopback. This tool belongs
+to the historical application snapshot. Install its listed dependencies in your
+own environment before running it.
 
 Only requested candidate PNGs are generated, with at most four conversions in
 parallel. The source tree is read-only. Existing candidate generations are kept,

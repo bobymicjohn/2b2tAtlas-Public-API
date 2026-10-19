@@ -1,6 +1,6 @@
 # 2b2tAtlas Public API
 
-Purpose: public read-only API documentation and clients, plus a separate self-hosted application source example.
+Purpose: public read-only HTTP API and MCP reference, request examples, and a separate historical application source snapshot.
 Contract verified October 17, 2026: 57 public GET routes and 38 read-only MCP tools. Use live schemas for current counts and parameters.
 Full stack source: https://github.com/bobymicjohn/2b2tAtlas-Public-API/tree/main/examples/atlas-stack
 Stack setup: examples/atlas-stack/README.md (September 26, 2026 historical application snapshot; its local guides describe that bundled version, not later hosted Find/performance features).

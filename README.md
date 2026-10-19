@@ -2,8 +2,9 @@
 
 Use the [2b2tAtlas](https://2b2tatlas.com) catalog in your own map, mod or research
 tool. It includes historical locations, groups, highways, Archive warps, world
-downloads, dated renders, Unified Find, saved inventories/artwork and NoCom observations. This repository has small API
-examples and the [full Atlas application](examples/atlas-stack/README.md).
+downloads, dated renders, Find, saved inventories, artwork and NoCom observations.
+This repository contains the HTTP API reference, request examples and an
+[archived application snapshot](examples/atlas-stack/README.md).
 
 Contract verified October 17, 2026: **57 public GET routes and 38 read-only MCP tools**.
 Use [the live website reference](https://2b2tatlas.com/api/) or the
@@ -21,7 +22,7 @@ You can make requests from a browser, a command line, or your own code.
 - [MCP setup and tools](docs/MCP.md)
 - [Current facts and canonical links for integrations](docs/DISCOVERY.md)
 - [Changelog](CHANGELOG.md)
-- [Full Atlas stack source](examples/atlas-stack/README.md) - UI, API, ingestion, collectors and rendering, with local setup and example configuration.
+- [Application source snapshot](examples/atlas-stack/README.md) - September 26, 2026 source and setup instructions.
 
 ## Try it
 
@@ -39,31 +40,15 @@ List responses are JSON arrays. Warps, renders, and attachments accept `limit`
 and `offset`; the default limit is 500 and the maximum is 1,000. Locations return
 the complete catalog.
 
-## Examples
+## Request examples
 
-To run your own Atlas, see [examples/atlas-stack](examples/atlas-stack/README.md).
-That folder is the September 26, 2026 Unlicense application snapshot. It does not
-include subsequent production features; its guides describe that bundled version.
-The root documentation describes the current public service. The smaller API clients below
-remain standalone examples for consuming the public service.
+[examples/requests.http](examples/requests.http) contains ordinary HTTP requests
+for catalog records, Find, inventories and historical observations. Use the API
+from whatever language or HTTP tool you already use. No Atlas client package is required.
 
-Run from the repository root:
-
-```sh
-dotnet run --project examples/csharp -- "Mu Megabase"
-node examples/javascript/atlas-examples.mjs "Mu Megabase"
-python examples/python/atlas_examples.py "Mu Megabase"
-python examples/python/nocom_activity.py --dimension nether --direction northeast
-python examples/python/location_media.py 1254
-```
-
-The C# example uses .NET 10. The JavaScript and Python examples use their standard
-libraries. Each defaults to the public API; set `ATLAS_API_BASE_URL` to use a
-local fixture or development server.
-
-[examples/requests.http](examples/requests.http) contains REST Client requests.
-[examples/fabric](examples/fabric) contains an asynchronous Java HTTP client and
-Minecraft client-thread handoff example; it is not a complete mod.
+The [application snapshot](examples/atlas-stack/README.md) is separate from the
+current API reference. Its setup guides describe the September 26, 2026 source;
+they do not describe later production features or runtime changes.
 
 ## Endpoints
 
@@ -137,8 +122,8 @@ location overlay with source links and local copies of Atlas map imagery.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for example checks and pull requests.
-Report documentation errors and broken examples through
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local checks and pull requests.
+Report documentation errors and incorrect request examples through
 [issues](https://github.com/bobymicjohn/2b2tAtlas-Public-API/issues).
 
 ## License

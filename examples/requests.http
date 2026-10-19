@@ -59,3 +59,31 @@ Accept: application/json
 ### Combined primary/base render catalog
 GET {{api}}/api/maprenders/catalog
 Accept: application/json
+
+### Available Find sources and coverage
+GET {{api}}/api/find/sources
+Accept: application/json
+
+### Saved signs with a whole-word match
+GET {{api}}/api/find?dimension=overworld&kinds=sign&text=Mu&match=word&hideBlankSigns=true&limit=5
+Accept: application/json
+
+### Saved containers holding totems
+GET {{api}}/api/find?dimension=overworld&kinds=storage&text=totem_of_undying&contentsRecorded=true&hideEmpty=true&limit=5
+Accept: application/json
+
+### Named mobs in a saved capture
+GET {{api}}/api/find?dimension=overworld&kinds=mob&renderIds=19&namedOnly=true&limit=5
+Accept: application/json
+
+### Saved sign history at a position
+GET {{api}}/api/find/history?dimension=overworld&kind=sign&x=-126043&y=80&z=-77614
+Accept: application/json
+
+### Recorded Nether highway activity
+GET {{api}}/api/nocom/highways?dimension=nether&direction=northeast
+Accept: application/json
+
+### Released End observation periods
+GET {{api}}/api/nocom/periods?dimension=end
+Accept: application/json
