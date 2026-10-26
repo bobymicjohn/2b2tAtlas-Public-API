@@ -5,9 +5,9 @@ account or API key.
 
 **Base URL:** `https://api.blackportal.cloud`
 
-Live contract rechecked October 19, 2026: 57 public GET routes and 38 read-only MCP
+Checked October 26, 2026: 57 public GET routes and 38 read-only MCP
 tools. The live OpenAPI schema and MCP discovery remain authoritative. Bundled
-response examples were recorded on October 17; their values can change.
+response examples were recorded on October 19; their values can change.
 
 The current release's [website reference](https://2b2tatlas.com/api) documents the public GET routes
 and MCP tools. Its checked date appears on the page. Its parameter
@@ -265,6 +265,8 @@ GET /api/find/inventory?observationId=2925260&limit=10
 Find combines NoCom, public location WDLs and registered primary-map WDLs.
 Use `/api/find/source-options` for compact picker metadata; use `/api/find/sources`
 for record totals, indexed products and completion/coverage details.
+Add `renderId` to `/api/find/sources` to inspect one public capture. Unknown or
+unavailable captures return an empty list; omit it to list all visible sources.
 Repeat `kinds` and `sources` to select their union. `sources` accepts `all`,
 `nocom`, `wdl`, `primary`, or IDs from the sources endpoint. Repeated block captures
 at the same category/XYZ count as one position; saved objects retain their capture

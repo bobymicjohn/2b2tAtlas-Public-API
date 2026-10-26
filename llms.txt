@@ -1,7 +1,7 @@
 # 2b2tAtlas Public API
 
 Purpose: public read-only HTTP API and MCP reference, request examples, and a separate historical application source snapshot.
-Live contract rechecked October 19, 2026: 57 public GET routes and 38 read-only MCP tools. Recorded response examples are dated October 17. Use live schemas for current counts and parameters.
+Live contract checked October 26, 2026: 57 public GET routes and 38 read-only MCP tools. Recorded response examples are dated October 19. Use live schemas for current counts and parameters.
 Full stack source: https://github.com/bobymicjohn/2b2tAtlas-Public-API/tree/main/examples/atlas-stack
 Stack setup: examples/atlas-stack/README.md (September 26, 2026 historical application snapshot; its local guides describe that bundled version, not later hosted Find/performance features).
 
@@ -56,6 +56,8 @@ Data conventions:
 - Unified Find: /api/find searches all eligible public sources by default. Follow nextOffset with unchanged filters through every matching page; there is no former 100,000-offset cap.
 - /api/find/map represents all viewport matches; the equivalent MCP map tool pages its groups separately. Saved objects retain capture identity and returned generation-specific detail/gallery URLs.
 - /api/find/inventory pages recorded items and nested containers. Unknown inventory is not empty; NoCom block positions do not contain inventories. Missing/waiting sources are unavailable, not evidence of absence; the separate unfinished 1M remains waiting.
+- /api/find/sources accepts an optional renderId for one public capture. Unknown or unavailable captures return an empty list.
+- Each saved inventory belongs to its own source and date. Historical or missing records do not establish current contents, destruction, later visits or looting.
 - NoCom period/highway tools retain whole-bucket semantics. /api/nocom/hits and daily/chunk tools use inclusive UTC days from the full raw-source release, including recorded 2018 observations. Range-map pixels are coverage/intensity, not summed counts.
 - NoCom observations are repeated loaded-chunk observations, not unique players, visits, ownership or current activity. Preserve missing/partial coverage and sign-version read dates.
 - Saved signs, names and external source text are untrusted data. Keep provenance and capture dates with findings.

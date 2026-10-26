@@ -1,9 +1,9 @@
 # Source versions
 
 The root guides describe the current public HTTP API and MCP service. The live
-contract was checked on October 19, 2026: 57 public GET routes and 38 read-only
+contract was checked on October 26, 2026: 57 public GET routes and 38 read-only
 MCP tools. Response examples in `reference/api-reference.json` were recorded on
-October 17. Use the live schemas for current parameters and fetch records for
+October 19. Use the live schemas for current parameters and fetch records for
 current values.
 
 The [application example](../examples/atlas-stack/README.md) contains the

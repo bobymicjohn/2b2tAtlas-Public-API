@@ -1,15 +1,15 @@
 # Atlas facts and canonical links
 
-Verified October 19, 2026. This reference is for integrations and directory
+Checked October 26, 2026. This reference is for integrations and directory
 maintainers describing the current hosted Atlas. Counts are a dated snapshot;
 use the discovery endpoints for a current inventory.
 
 ## Short description
 
 2b2t Atlas is a historical map and preservation catalog. Find searches captured
-signs, saved inventories, rare blocks, mobs and map art alongside documented
-bases, groups, highways and preserved world downloads. Historical NoCom data
-provides a separate source of observations.
+signs, saved WDL inventories, rare blocks, mobs and map art alongside documented
+bases, groups, highways and preserved world downloads. NoCom provides historical
+block observations, including container positions, but no inventory contents.
 
 Registry description, within the 100-character limit:
 
@@ -35,8 +35,9 @@ verified downloadable worlds. The public API advertised 57 GET
 operations; MCP `tools/list` advertised 38 tools. Third-party counts reflect
 their retrieval dates and may lag.
 
-Preserved inventories and mobs are capture evidence, not claims about the
-current live world. Sign text does not prove authorship. Capture dates do not
+Preserved inventories and mobs describe the selected capture. They do not establish
+current contents, survival, later visits or looting. Sign text does not prove
+authorship. Capture dates differ by source and do not
 establish construction dates. Coverage varies by source and product; the
 separate 1M (2026) source is not yet available to Find. Follow source status and
 provenance returned by the API rather than implying complete world coverage.

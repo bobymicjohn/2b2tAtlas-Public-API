@@ -1,17 +1,18 @@
 # 2b2tAtlas Public API
 
-Use the [2b2tAtlas](https://2b2tatlas.com) catalog in your own map, mod or research
-tool. It includes historical locations, groups, highways, Archive warps, world
-downloads, dated renders, Find, saved inventories, artwork and NoCom observations.
-This repository contains the HTTP API reference, request examples and an
-[archived application snapshot](examples/atlas-stack/README.md).
+Use [Atlas](https://2b2tatlas.com) data in your own map, mod or research tool.
+Look up places, groups and highways, find a saved world, or search captured
+signs, inventories, mobs and map art. Public reads need no account or API key.
 
-Live contract rechecked October 19, 2026: **57 public GET routes and 38 read-only MCP tools**.
-Recorded response examples are dated October 17; values and counts can change.
+This repo has the API reference, HTTP examples and a
+[dated copy of the application source](examples/atlas-stack/README.md).
+
+Checked October 26, 2026: **57 public GET routes and 38 read-only MCP tools**.
+Recorded response examples are from October 19; values and counts can change.
 Use [the live website reference](https://2b2tatlas.com/api/) or the
 [complete route catalog](docs/reference/api-reference.json) for exact parameters.
 
-**Base URL:** `https://api.blackportal.cloud`. Public reads require no API key.
+**Base URL:** `https://api.blackportal.cloud`.
 You can make requests from a browser, a command line, or your own code.
 
 - [API reference](docs/API-REFERENCE.md)
@@ -92,6 +93,9 @@ fields, filters, caching, and errors.
   provenance, size, and SHA-256; ZIP downloads support HTTP ranges.
 - Historical coordinates and renders do not describe the current server state.
   Nocom observation counts are not unique-player counts.
+- Saved inventories come from WDL captures. NoCom records container positions,
+  not their contents. Neither an old capture nor a missing result tells you that
+  a chest was later emptied or looted.
 - Retain source URLs, captions, attribution, and evidence fields when copying
   records so the original material can be checked.
 

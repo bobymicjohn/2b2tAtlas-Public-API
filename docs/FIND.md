@@ -3,7 +3,7 @@
 Unified Find searches indexed signs, storage, blocks and positioned saved objects
 across public NoCom observations, location world downloads and primary map saves.
 It describes historical captures, not the present server. No API key is required.
-Live contract rechecked October 19, 2026.
+Checked against the live API on October 26, 2026.
 
 ## Start with source coverage
 
@@ -14,7 +14,9 @@ GET https://api.blackportal.cloud/api/find?dimension=overworld&kinds=sign&text=b
 ```
 
 `source-options` is compact selector metadata. `sources` adds indexed products,
-record totals and completion details. Omitting sources searches all indexed
+record totals and completion details. Add `renderId` to `/api/find/sources` to
+check one public capture. An unknown or unavailable capture returns an empty list.
+Omitting sources from a search searches all indexed
 public sources. Supply a family (`nocom`, `wdl`, `primary`, `all`) or returned IDs;
 repeat `sources` and `kinds` to select their union. A family plus its member does
 not double count it. Unknown, waiting or unavailable selections return 400,
@@ -45,6 +47,11 @@ four `minX`, `minZ`, `maxX`, `maxZ` bounds for an inclusive rectangle. `namedOnl
 requires a saved custom name; repeated `renderIds` select particular captures.
 
 ## Inventories and history
+
+Inventories come from saved WDL data. NoCom recorded container positions, not
+contents. Check each result's source and capture date; there is no single date
+that applies to all records. A saved inventory cannot tell you what is in a chest
+today, whether it still exists, or whether someone later looted it.
 
 `contentsRecorded=true` selects storage whose inventory was recorded, including
 saved empty inventories. `hideEmpty=true` requires saved items. Both exclude

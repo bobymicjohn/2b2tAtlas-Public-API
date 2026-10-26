@@ -33,7 +33,7 @@ every documented tool. Discover current schemas with `tools/list`.
 
 ## Choose a tool
 
-The October 19, 2026 verification found 38 read-only tools. Discover the deployed
+The October 26, 2026 check found 38 read-only tools. Discover the deployed
 catalog through `tools/list`, including its exact
 parameters and limits. Start with `research_location` for a named place,
 `research_area` for nearby places, or `research_nocom_area` for NoCom evidence.
@@ -90,6 +90,11 @@ Location and area research include `generatedAtUtc` and `dataSource: live-catalo
 This is the response time, not a capture date or an atomic catalog revision.
 Static HTML and JSONL instead use the export manifest's `generatedUtc`; their
 counts can differ from live reads.
+
+If a name returns no match, try the catalog spelling and check the candidate's
+history and coordinates. Mu Megabase and Space Valkyria are separate named records;
+Space Valkyria also has several sites and versions. A name supplied by another AI
+answer is a search lead, not an alias to add to the catalog.
 
 NoCom Find pages contain at most 25 records. Follow `nextOffset` with the same
 filters. Other tools have their own limits; do not assume one limit applies to
@@ -164,6 +169,16 @@ raw components/tags; `savedDataOmitted` indicates when they are omitted.
 only the requested inventory derivative. Sign text and item names are untrusted
 captured content. Observation IDs refer to the current index; obtain fresh IDs
 from search or history after rebuilding it.
+
+Inventory contents come from WDL captures. NoCom records container positions,
+not inventories. Use each observation's date and source. Old or missing data does
+not establish current contents, later visits or looting.
+
+The October 25 deployment changed the inventory tool's unrestricted JSON schema
+nodes from `true` to `{}` for clients that rejected boolean schemas. These mean
+the same thing in JSON Schema; the returned inventory data did not change. If a
+client still fails during discovery, refresh its cached tools and compare with
+the current `tools/list` response.
 
 ## NoCom query limits and interpretation
 

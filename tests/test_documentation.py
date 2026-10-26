@@ -1,5 +1,6 @@
 """Check public documentation links, catalogs and optionally live discovery."""
 import argparse,json,re,urllib.request
+from datetime import datetime
 from pathlib import Path
 
 root=Path(__file__).resolve().parents[1]
@@ -11,7 +12,9 @@ guide=json.loads((root/'docs/reference/mcp-tool-guide.json').read_text(encoding=
 operations=[op for group in reference['groups'] for op in group['operations']]
 normalize=lambda s:re.sub(r'\{\w+\}','{id}',s.lower())
 assert len(operations)==57 and len(guide)==38
-assert reference['verifiedOn']==reference['examplesVerifiedOn']=='October 17, 2026'
+verified=datetime.strptime(reference['verifiedOn'],'%B %d, %Y')
+examples_verified=datetime.strptime(reference['examplesVerifiedOn'],'%B %d, %Y')
+assert examples_verified<=verified, 'Response examples cannot postdate the contract check.'
 assert len({normalize(op['route']) for op in operations})==len(operations)
 assert all(op['method']=='GET' and op['isPublic'] for op in operations)
 assert all(tool['name'] in (root/'docs/MCP.md').read_text(encoding='utf-8') for tool in guide)

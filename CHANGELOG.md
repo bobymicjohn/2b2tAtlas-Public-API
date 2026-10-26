@@ -1,5 +1,16 @@
 # Changes
 
+## API reference update - 2026-10-26
+
+- Add the `renderId` filter for Find source coverage and refresh the recorded
+  response examples to the October 19 set.
+- Recheck all 57 public GET routes and the 38-tool MCP catalog against live
+  discovery. Keep the example dates separate from this contract check.
+- Explain which data records inventory contents, what capture dates mean, and
+  why missing results do not establish current conditions or looting.
+- Document the inventory schema compatibility fix deployed on October 25.
+  The API behavior and bundled September application snapshot are unchanged.
+
 ## Public reference check - 2026-10-19
 
 - Recheck all 57 public GET route contracts and the 38-tool MCP catalog against
