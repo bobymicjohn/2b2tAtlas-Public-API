@@ -1,6 +1,6 @@
 # Atlas facts and canonical links
 
-Checked October 26, 2026. This reference is for integrations and directory
+Contract checked November 10, 2026. This reference is for integrations and directory
 maintainers describing the current hosted Atlas. Counts are a dated snapshot;
 use the discovery endpoints for a current inventory.
 
@@ -29,9 +29,9 @@ Registry description, within the 100-character limit:
 | Machine discovery | [Dataset](https://2b2tatlas.com/dataset.json) and [OpenAPI](https://api.blackportal.cloud/openapi/v1.json) |
 | MCP connection | `https://api.blackportal.cloud/mcp` (Streamable HTTP) |
 
-The live catalog contained 2,253 locations, 209 groups, 107 highways and
+The October 19, 2026 catalog snapshot contained 2,253 locations, 209 groups, 107 highways and
 2,467 location render records. Render totals are not a count of independently
-verified downloadable worlds. The public API advertised 57 GET
+verified downloadable worlds. The November 10 public API advertised 60 GET
 operations; MCP `tools/list` advertised 38 tools. Third-party counts reflect
 their retrieval dates and may lag.
 

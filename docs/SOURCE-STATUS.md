@@ -1,10 +1,10 @@
 # Source versions
 
 The root guides describe the current public HTTP API and MCP service. The live
-contract was checked on October 26, 2026: 57 public GET routes and 38 read-only
+contract was checked on November 10, 2026: 60 public GET routes and 38 read-only
 MCP tools. Response examples in `reference/api-reference.json` were recorded on
-October 19. Use the live schemas for current parameters and fetch records for
-current values.
+October 19, except the three new Find routes with individually dated November 10
+examples. Use the live schemas for current parameters and fetch records for current values.
 
 The [application example](../examples/atlas-stack/README.md) contains the
 September 26, 2026 source snapshot. It is useful for studying that version or
@@ -30,6 +30,12 @@ remain separate from the public HTTP API. Using the API requires no Atlas SDK
 or downloaded client.
 
 ## Referencing the code
+
+The BlueMap controls example is pinned to
+[`95b3cbdc6501c460c0ed4346410d033fa03764eb`](https://github.com/bobymicjohn/2b2tAtlas-Public-API/commit/95b3cbdc6501c460c0ed4346410d033fa03764eb)
+(September 26, 2026), titled "Finish BlueMap controls and clean up public examples".
+Code-search and corpus references should keep that commit, snapshot date and
+source file together, and link here for the current API/source distinction.
 
 Link to a commit and file when discussing an implementation. Keep the snapshot
 date with copied examples, and do not describe historical source as the current

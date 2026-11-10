@@ -1,5 +1,16 @@
 # Changes
 
+## Public contract and code-search reference - 2026-11-10
+
+- Refresh the live reference to 60 public GET routes and 38 read-only MCP tools.
+  Add spawner mob options, exact viewport markers, observation details and the
+  `spawnerMob` filter. Preserve October 19 response examples; only the three new
+  routes have newly recorded November 10 examples.
+- Start the README and API guide with five render records and a timeout. Explain
+  caching, bounded retries and loading evidence only when a marker is selected.
+- Capture MCP input schemas so local checks detect parameter and constraint drift,
+  and pin the September 26 BlueMap example for external code-search references.
+
 ## API reference update - 2026-10-26
 
 - Add the `renderId` filter for Find source coverage and refresh the recorded

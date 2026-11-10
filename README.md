@@ -7,10 +7,13 @@ signs, inventories, mobs and map art. Public reads need no account or API key.
 This repo has the API reference, HTTP examples and a
 [dated copy of the application source](examples/atlas-stack/README.md).
 
-Checked October 26, 2026: **57 public GET routes and 38 read-only MCP tools**.
-Recorded response examples are from October 19; values and counts can change.
-Use [the live website reference](https://2b2tatlas.com/api/) or the
+Checked November 10, 2026: **60 public GET routes and 38 read-only MCP tools**.
+Most recorded response examples are from October 19; the three new Find routes
+have November 10 examples. Values and counts can change.
+Use [the live OpenAPI schema](https://api.blackportal.cloud/openapi/v1.json) or the
 [complete route catalog](docs/reference/api-reference.json) for exact parameters.
+The [website reference](https://2b2tatlas.com/api/) shows its own checked date;
+it can lag this repository until the next website deployment.
 
 **Base URL:** `https://api.blackportal.cloud`.
 You can make requests from a browser, a command line, or your own code.
@@ -29,14 +32,11 @@ You can make requests from a browser, a command line, or your own code.
 
 ## Try it
 
-Open [the location list](https://api.blackportal.cloud/api/locations) in a browser,
-or run one of these commands. On Windows PowerShell 5.1, use `curl.exe`.
+Open [five render records](https://api.blackportal.cloud/api/renders?limit=5) in a
+browser, or run this command. On Windows PowerShell 5.1, use `curl.exe`.
 
 ```sh
-curl --fail "https://api.blackportal.cloud/api/locations"
-curl --fail "https://api.blackportal.cloud/api/groups"
-curl --fail "https://api.blackportal.cloud/api/renders?limit=10"
-curl --fail "https://api.blackportal.cloud/api/nocom/highways?dimension=nether&direction=northeast"
+curl --fail --max-time 30 "https://api.blackportal.cloud/api/renders?limit=5"
 ```
 
 List responses are JSON arrays. Warps, renders, and attachments accept `limit`
@@ -73,7 +73,7 @@ fields, filters, caching, and errors.
 | Preserved render-source WDL metadata and ZIP | `/api/renders/{id}/world-download`, `/api/renders/{id}/world-download.zip` |
 | Historical media | `/api/attachments`, `/api/attachments/{id}` |
 | Map layers | `/api/maprenders`, `/api/maprenders/catalog` |
-| Unified Find | `/api/find`, `/api/find/map`, `/api/find/sources`, `/api/find/source-options`, `/api/find/history`, `/api/find/inventory`, `/api/find/objects/{renderId}/{objectId}` |
+| Unified Find | `/api/find`, `/api/find/map`, `/api/find/markers`, `/api/find/observations/{id}`, `/api/find/sources`, `/api/find/source-options`, `/api/find/spawner-mobs`, `/api/find/history`, `/api/find/inventory`, `/api/find/objects/{renderId}/{objectId}` |
 | Saved galleries | `/api/renders/{renderId}/explore/objects`, `/api/renders/{renderId}/explore/objects/{id}` and its `/art.png` preview |
 | NoCom | `/api/nocom`, `/api/nocom/periods`, `/api/nocom/highways`, `/api/nocom/hits` and its daily/chunk/tile routes, `/api/nocom/find/*` |
 | Popularity | `/api/popularity?days=7`, `30` or `90` |
@@ -82,6 +82,9 @@ fields, filters, caching, and errors.
 
 - Cache catalog responses and honor HTTP cache headers. In Minecraft clients,
   perform HTTP requests and image decoding outside the render/tick thread.
+- Set a request timeout, reuse results while fresh, and load detail records on
+  demand. On `429` or `503`, honor `Retry-After`; otherwise use bounded backoff.
+  An error or timeout is not an empty result.
 - Use `interactiveUrl` for a location page, `apiUrl` for JSON, and
   `worldDownloadUrl` for a saved world. For a Find object's 3D destination,
   prefer `savedObject.locationLink`, resolved against `https://2b2tatlas.com`.

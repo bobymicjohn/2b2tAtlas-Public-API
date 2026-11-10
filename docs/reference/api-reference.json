@@ -1,5 +1,5 @@
 {
-  "verifiedOn": "October 26, 2026",
+  "verifiedOn": "November 10, 2026",
   "groups": [
     {
       "name": "Map renders",
@@ -702,6 +702,13 @@
               "required": false,
               "type": "array of integers",
               "description": "Restrict results to 1–100 public location captures. Repeat renderIds for each capture."
+            },
+            {
+              "name": "SpawnerMob",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Optional captured spawner mob ID, for example minecraft:ghast or pig. Filters spawners only; other selected categories remain visible. Omitted includes all captured mob types. Discover currently indexed types with GET /api/find/spawner-mobs?dimension=overworld."
             }
           ],
           "responses": [
@@ -991,6 +998,13 @@
               "required": false,
               "type": "array of integers",
               "description": "Restrict results to 1–100 public location captures. Repeat renderIds for each capture."
+            },
+            {
+              "name": "SpawnerMob",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Optional captured spawner mob ID, for example minecraft:ghast or pig. Filters spawners only; other selected categories remain visible. Omitted includes all captured mob types. Discover currently indexed types with GET /api/find/spawner-mobs?dimension=overworld."
             }
           ],
           "responses": [
@@ -1706,6 +1720,453 @@
               "exampleNote": "Recorded response, shortened to one item per array. Values can change. The field list describes this example; use OpenAPI for the full schema."
             }
           ]
+        },
+        {
+          "method": "GET",
+          "route": "/api/find/spawner-mobs",
+          "summary": "Captured mob IDs available in public illegal spawners in one dimension.",
+          "isPublic": true,
+          "permission": "",
+          "canTry": true,
+          "parameters": [
+            {
+              "name": "dimension",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Native dimension: overworld (default), nether or end. Options are independent of current source, area and date filters."
+            }
+          ],
+          "responses": [
+            {
+              "status": 200,
+              "description": "OK",
+              "contentType": "application/json",
+              "example": "[\n  \"minecraft:ghast\",\n  \"minecraft:pig\"\n]",
+              "fields": [
+                {
+                  "path": "$",
+                  "type": "array"
+                },
+                {
+                  "path": "$[]",
+                  "type": "string"
+                }
+              ],
+              "exampleVerifiedOn": "November 10, 2026",
+              "exampleNote": "Recorded November 10, 2026 from a bounded public request. Values can change; field types describe this example, not the complete schema."
+            },
+            {
+              "status": 400,
+              "description": "Bad Request"
+            },
+            {
+              "status": 503,
+              "description": "Service Unavailable"
+            }
+          ],
+          "tryPath": "/api/find/spawner-mobs?dimension=overworld",
+          "description": "Independent of current source, area and date filters. Includes only searchable public records; missing types do not prove absence from 2b2t."
+        },
+        {
+          "method": "GET",
+          "route": "/api/find/markers",
+          "summary": "All exact viewport positions in a compact payload, without evidence or a marker limit.",
+          "isPublic": true,
+          "permission": "",
+          "canTry": true,
+          "parameters": [
+            {
+              "name": "Dimension",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Native dimension: overworld (default), nether or end."
+            },
+            {
+              "name": "Kind",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Single category, default sign. Ignored when kinds is supplied."
+            },
+            {
+              "name": "Kinds",
+              "in": "query",
+              "required": false,
+              "type": "string[]",
+              "description": "Categories: sign, storage, portal, bedrock, spawner, endPortalFrame, petrifiedOakSlab, mob, mapArt, banner, itemFrame, object. The last five use positioned objects from location captures and retain capture-specific identities. Rare blocks follow the illegal-block policy. Storage excludes ender chests."
+            },
+            {
+              "name": "Source",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Single source ID or family (all, nocom, wdl, primary), default all. Explicit sources need searchable coverage. Ignored when sources is supplied."
+            },
+            {
+              "name": "Sources",
+              "in": "query",
+              "required": false,
+              "type": "string[]",
+              "description": "1–100 public source IDs or families: all, nocom, wdl, primary. Omitted searches all. Empty arrays, unknown IDs and explicitly selected sources without searchable coverage are invalid. Discover IDs and coverage with list_world_find_sources."
+            },
+            {
+              "name": "Text",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Up to 100 characters of sign text, saved item IDs or names, or object names. Matching uses Unicode NFKC, removes Minecraft color codes, collapses whitespace and ignores case. Categories without searchable text remain visible."
+            },
+            {
+              "name": "Match",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "phrase (default) is a literal substring; word matches one whole word; allWords requires every word within one captured version. Use word for Mu to exclude Maximus."
+            },
+            {
+              "name": "ChangedSigns",
+              "in": "query",
+              "required": false,
+              "type": "boolean",
+              "description": "Require differing captured sign text at the same position within selected sources. Other categories remain visible."
+            },
+            {
+              "name": "HideBlankSigns",
+              "in": "query",
+              "required": false,
+              "type": "boolean",
+              "description": "Only signs with saved text after whitespace and Minecraft formatting are removed. Blank or uncaptured text is excluded; other categories remain visible. Defaults to false."
+            },
+            {
+              "name": "ContentsRecorded",
+              "in": "query",
+              "required": false,
+              "type": "boolean",
+              "description": "Only storage with a recorded inventory, including saved empty lists. Excludes unknown inventories and NoCom storage; other categories remain visible."
+            },
+            {
+              "name": "HideEmpty",
+              "in": "query",
+              "required": false,
+              "type": "boolean",
+              "description": "Only storage with at least one saved item. Excludes empty and unknown inventories; other categories remain visible."
+            },
+            {
+              "name": "NamedOnly",
+              "in": "query",
+              "required": false,
+              "type": "boolean",
+              "description": "Only saved objects with an explicit custom name. Other categories remain visible."
+            },
+            {
+              "name": "RenderIds",
+              "in": "query",
+              "required": false,
+              "type": "(integer / string)[]",
+              "description": "Optional 1–100 public render IDs. Restricts results to the selected captures."
+            },
+            {
+              "name": "BlockType",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Optional exact Minecraft block or entity ID, with or without minecraft: prefix."
+            },
+            {
+              "name": "SpawnerMob",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Optional captured spawner mob ID, for example minecraft:ghast or pig. Filters spawners only; other selected categories remain visible. Omitted includes all captured mob types. Discover currently indexed types with GET /api/find/spawner-mobs?dimension=overworld."
+            },
+            {
+              "name": "X",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": "Optional native radius origin X; requires z. Coordinates must be -33554432..33554431."
+            },
+            {
+              "name": "Z",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": "Optional native radius origin Z; requires x. No dimension scaling."
+            },
+            {
+              "name": "Radius",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": "Horizontal circle radius 1..65536 blocks, default 1024. Used only with x and z."
+            },
+            {
+              "name": "MinX",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": "Inclusive viewport bounds; supply minX, minZ, maxX and maxZ together. Intersects any radius filter."
+            },
+            {
+              "name": "MinZ",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": ""
+            },
+            {
+              "name": "MaxX",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": ""
+            },
+            {
+              "name": "MaxZ",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": ""
+            },
+            {
+              "name": "MinY",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": "Inclusive minimum Y, -2048..2047."
+            },
+            {
+              "name": "MaxY",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": "Inclusive maximum Y, -2048..2047."
+            },
+            {
+              "name": "From",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Optional inclusive capture/read date, YYYY-MM-DD. Unknown dates do not match."
+            },
+            {
+              "name": "To",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "Optional inclusive end capture/read date, YYYY-MM-DD."
+            },
+            {
+              "name": "Sort",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "description": "newest (default), oldest or nearest. Nearest requires x and z. Multiple categories are interleaved."
+            },
+            {
+              "name": "Limit",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": "Ignored by the marker endpoint; it returns all exact viewport positions."
+            },
+            {
+              "name": "Offset",
+              "in": "query",
+              "required": false,
+              "type": "integer / string",
+              "description": "Ignored by the marker endpoint; it returns all exact viewport positions."
+            }
+          ],
+          "responses": [
+            {
+              "status": 200,
+              "description": "Compact exact positions. styles rows contain kind and block type; points rows contain observation ID, X, Y, Z, style index, matching observations, matching captures, precise X and precise Z. No sign text, inventory or artwork is included. Supply all four viewport bounds and load evidence only when selected. There is no marker limit; limit and offset do not page this response.",
+              "contentType": "application/json",
+              "example": "{\n  \"dimension\": \"overworld\",\n  \"styles\": [\n    [\n      \"sign\",\n      \"minecraft:oak_sign\"\n    ]\n  ],\n  \"points\": [\n    [\n      1280935,\n      61176,\n      51,\n      197427,\n      0,\n      1,\n      1,\n      61176,\n      197427\n    ]\n  ]\n}",
+              "fields": [
+                {
+                  "path": "$",
+                  "type": "object"
+                },
+                {
+                  "path": "$.dimension",
+                  "type": "string"
+                },
+                {
+                  "path": "$.styles",
+                  "type": "array"
+                },
+                {
+                  "path": "$.styles[]",
+                  "type": "array"
+                },
+                {
+                  "path": "$.styles[][]",
+                  "type": "string"
+                },
+                {
+                  "path": "$.points",
+                  "type": "array"
+                },
+                {
+                  "path": "$.points[]",
+                  "type": "array"
+                },
+                {
+                  "path": "$.points[][]",
+                  "type": "integer"
+                }
+              ],
+              "exampleVerifiedOn": "November 10, 2026",
+              "exampleNote": "Recorded November 10, 2026 from a bounded public request. Values can change; field types describe this example, not the complete schema."
+            },
+            {
+              "status": 400,
+              "description": "Invalid filters or missing viewport bounds."
+            },
+            {
+              "status": 503,
+              "description": "Find index or current publication catalog is unavailable."
+            }
+          ],
+          "tryPath": "/api/find/markers?dimension=overworld&kinds=sign&minX=61176&minZ=197427&maxX=61176&maxZ=197427"
+        },
+        {
+          "method": "GET",
+          "route": "/api/find/observations/{id}",
+          "summary": "Loads evidence for one currently public marker.",
+          "isPublic": true,
+          "permission": "",
+          "canTry": true,
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "type": "integer",
+              "description": "Observation ID returned in points[][0] by /api/find/markers, or in a current Find result."
+            }
+          ],
+          "responses": [
+            {
+              "status": 200,
+              "description": "Evidence for one currently public observation. IDs belong to the current index; rediscover a marker after an index rebuild.",
+              "contentType": "application/json",
+              "example": "{\n  \"id\": 1280935,\n  \"sourceId\": \"nocom:overworld\",\n  \"sourceName\": \"NoCom historical observations\",\n  \"family\": \"nocom\",\n  \"provenance\": \"Historical NoCom observations; spawners are a reviewed subset\",\n  \"kind\": \"sign\",\n  \"dimension\": \"overworld\",\n  \"x\": 61176,\n  \"y\": 51,\n  \"z\": 197427,\n  \"blockType\": \"minecraft:oak_sign\",\n  \"text\": \"Mosex\\n7/7/2020\\n\\n\",\n  \"firstObservedUtc\": \"2020-07-07T10:03:35.182000+00:00\",\n  \"lastObservedUtc\": \"2020-07-07T10:03:35.182000+00:00\",\n  \"timeKind\": \"recorded read\",\n  \"sourceUrl\": \"https://api.blackportal.cloud/api/nocom/find/sign-history/sign%3A0%3A61176%3A51%3A197427\",\n  \"captureUrl\": \"https://2b2tatlas.com/nocom/\",\n  \"locationId\": null,\n  \"detailsJson\": \"{}\",\n  \"classification\": null,\n  \"displayName\": null,\n  \"customName\": null,\n  \"savedObject\": null\n}",
+              "fields": [
+                {
+                  "path": "$",
+                  "type": "object"
+                },
+                {
+                  "path": "$.id",
+                  "type": "integer"
+                },
+                {
+                  "path": "$.sourceId",
+                  "type": "string"
+                },
+                {
+                  "path": "$.sourceName",
+                  "type": "string"
+                },
+                {
+                  "path": "$.family",
+                  "type": "string"
+                },
+                {
+                  "path": "$.provenance",
+                  "type": "string"
+                },
+                {
+                  "path": "$.kind",
+                  "type": "string"
+                },
+                {
+                  "path": "$.dimension",
+                  "type": "string"
+                },
+                {
+                  "path": "$.x",
+                  "type": "integer"
+                },
+                {
+                  "path": "$.y",
+                  "type": "integer"
+                },
+                {
+                  "path": "$.z",
+                  "type": "integer"
+                },
+                {
+                  "path": "$.blockType",
+                  "type": "string"
+                },
+                {
+                  "path": "$.text",
+                  "type": "string"
+                },
+                {
+                  "path": "$.firstObservedUtc",
+                  "type": "string"
+                },
+                {
+                  "path": "$.lastObservedUtc",
+                  "type": "string"
+                },
+                {
+                  "path": "$.timeKind",
+                  "type": "string"
+                },
+                {
+                  "path": "$.sourceUrl",
+                  "type": "string"
+                },
+                {
+                  "path": "$.captureUrl",
+                  "type": "string"
+                },
+                {
+                  "path": "$.locationId",
+                  "type": "null"
+                },
+                {
+                  "path": "$.detailsJson",
+                  "type": "string"
+                },
+                {
+                  "path": "$.classification",
+                  "type": "null"
+                },
+                {
+                  "path": "$.displayName",
+                  "type": "null"
+                },
+                {
+                  "path": "$.customName",
+                  "type": "null"
+                },
+                {
+                  "path": "$.savedObject",
+                  "type": "null"
+                }
+              ],
+              "exampleVerifiedOn": "November 10, 2026",
+              "exampleNote": "Recorded November 10, 2026 from a bounded public request. Values can change; field types describe this example, not the complete schema."
+            },
+            {
+              "status": 404,
+              "description": "No currently public observation has this ID."
+            },
+            {
+              "status": 503,
+              "description": "Find index or current publication catalog is unavailable."
+            }
+          ],
+          "tryPath": "/api/find/observations/1280935"
         }
       ]
     },

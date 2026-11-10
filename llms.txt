@@ -1,9 +1,10 @@
 # 2b2tAtlas Public API
 
 Purpose: public read-only HTTP API and MCP reference, request examples, and a separate historical application source snapshot.
-Live contract checked October 26, 2026: 57 public GET routes and 38 read-only MCP tools. Recorded response examples are dated October 19. Use live schemas for current counts and parameters.
+Live contract checked November 10, 2026: 60 public GET routes and 38 read-only MCP tools. Most recorded responses are dated October 19; the three new Find routes have individually dated November 10 examples. Use live schemas for current counts and parameters.
 Full stack source: https://github.com/bobymicjohn/2b2tAtlas-Public-API/tree/main/examples/atlas-stack
 Stack setup: examples/atlas-stack/README.md (September 26, 2026 historical application snapshot; its local guides describe that bundled version, not later hosted Find/performance features).
+BlueMap controls reference: https://github.com/bobymicjohn/2b2tAtlas-Public-API/commit/95b3cbdc6501c460c0ed4346410d033fa03764eb (September 26, 2026). Keep the commit, file and snapshot date with code-search references; docs/SOURCE-STATUS.md explains the current source boundary.
 
 Canonical Atlas: https://2b2tatlas.com
 API discovery: https://api.blackportal.cloud/api
@@ -46,6 +47,7 @@ Data conventions:
 - Verified pre-Archive/community renders may link directly to preserved-render-source ZIPs without fabricating Archive warp identities.
 - Both download classes are partial historical Java saves, not complete 2b2t worlds; follow sourceType, scope, provenance, and warning fields.
 - The live Atlas API examples document anonymous reads. Never attempt private writes against the live service.
+- Start with /api/renders?limit=5. Set a request timeout, cache according to response headers, and load detail records on demand. Honor Retry-After on 429/503 and use bounded backoff; errors are not empty results.
 - /examples/atlas-stack contains a historical Unlicense application snapshot for self-hosting. Its authenticated admin routes operate on the operator's own data and credentials; see examples/atlas-stack/README.md. Current integrations should use the root guides and live schemas.
 - Respect third-party source terms and hosting: cache requests and prefer provided caching proxies. These courtesies add no conditions to Atlas-authored code or factual catalog reuse.
 - The MCP endpoint is public, stateless, read-only, bounded, and uses Streamable HTTP.
@@ -55,6 +57,8 @@ Data conventions:
 - Find savedObject.locationLink opens the location-based 3D view with its object and camera. Resolve relative Atlas page links against https://2b2tatlas.com, not the API host. blueMapUrl is the standalone viewer for a render.
 - Unified Find: /api/find searches all eligible public sources by default. Follow nextOffset with unchanged filters through every matching page; there is no former 100,000-offset cap.
 - /api/find/map represents all viewport matches; the equivalent MCP map tool pages its groups separately. Saved objects retain capture identity and returned generation-specific detail/gallery URLs.
+- /api/find/markers returns all exact positions in the required viewport without evidence payloads; limit/offset do not page it. Keep viewports small, cancel outdated requests, and load /api/find/observations/{id} only when a marker is selected. Observation IDs must come from current results.
+- /api/find/spawner-mobs?dimension=overworld lists captured mob IDs in searchable public illegal-spawner records. spawnerMob filters spawners in Find lists/maps/markers; other selected categories remain visible. Missing types do not establish absence.
 - /api/find/inventory pages recorded items and nested containers. Unknown inventory is not empty; NoCom block positions do not contain inventories. Missing/waiting sources are unavailable, not evidence of absence; the separate unfinished 1M remains waiting.
 - /api/find/sources accepts an optional renderId for one public capture. Unknown or unavailable captures return an empty list.
 - Each saved inventory belongs to its own source and date. Historical or missing records do not establish current contents, destruction, later visits or looting.

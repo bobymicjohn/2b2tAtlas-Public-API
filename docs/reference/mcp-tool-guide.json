@@ -6,6 +6,65 @@
     "arguments": {
       "query": "Mu",
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "description": "Words from a location name, description, tag, or Archive warp. Leave empty to browse.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "dimension": {
+          "description": "Minecraft dimension: 0 Overworld, 1 Nether, or 2 End.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "group": {
+          "description": "Builder or owning group name, including a partial name.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "type": {
+          "description": "Location classification or tag, such as base, spawn, monument, or world border.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "has_render": {
+          "description": "True to require a public map render; false to require none; omit for either.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "has_world_download": {
+          "description": "True to require a publicly downloadable preserved WDL; false to require none; omit for either.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "description": "Maximum results, from 1 to 100. Defaults to 20.",
+          "type": "integer",
+          "default": 20
+        }
+      }
     }
   },
   {
@@ -14,6 +73,19 @@
     "summary": "Get one location's history, coordinates, groups, warps, maps and source links by ID.",
     "arguments": {
       "id": 904
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Persistent numeric Atlas location ID.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ]
     }
   },
   {
@@ -22,6 +94,19 @@
     "summary": "Research a named place with nearby locations and related records. Ambiguous names or versions return candidate IDs to choose from.",
     "arguments": {
       "name": "Block Game Jerusalem"
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Location name or distinctive search phrase.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
     }
   },
   {
@@ -33,6 +118,91 @@
       "radius": 30000000,
       "exclude_origin": true,
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "description": "Native X coordinate; provide x/z OR location_id OR exact location_name.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "z": {
+          "description": "Native Z coordinate, paired with x.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "dimension": {
+          "description": "0 Overworld, 1 Nether, 2 End. Inferred for a named location; defaults to Overworld for coordinates.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "location_id": {
+          "description": "Atlas location ID as the origin; do not combine with x/z or name.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "location_name": {
+          "description": "Exact location name, case-insensitive. Ambiguous names require an ID.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "radius": {
+          "description": "Native-dimension radius, 1 to 30,000,000 blocks.",
+          "type": "integer",
+          "default": 10000
+        },
+        "limit": {
+          "description": "Maximum results, 1 to 100.",
+          "type": "integer",
+          "default": 20
+        },
+        "group": {
+          "description": "Optional group name or alias.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "has_render": {
+          "description": "Require or exclude a public render; omit for either.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "has_world_download": {
+          "description": "Require or exclude a downloadable WDL; omit for either.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "exclude_origin": {
+          "description": "Exclude the origin location ID when resolved by name/ID.",
+          "type": "boolean",
+          "default": false
+        }
+      }
     }
   },
   {
@@ -43,6 +213,75 @@
       "location_name": "Block Game Jerusalem",
       "radius": 25000,
       "preserved_only": true
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "description": "Native X coordinate; provide x/z OR location_id OR exact location_name.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "z": {
+          "description": "Native Z coordinate, paired with x.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "dimension": {
+          "description": "0 Overworld, 1 Nether, 2 End. Inferred for a named location; defaults to Overworld for coordinates.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "location_id": {
+          "description": "Atlas location ID as the origin; do not combine with x/z or name.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "location_name": {
+          "description": "Exact location name, case-insensitive. Ambiguous names require an ID.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "radius": {
+          "description": "Native-dimension radius, 1 to 30,000,000 blocks.",
+          "type": "integer",
+          "default": 10000
+        },
+        "limit": {
+          "description": "Maximum locations, 1 to 100.",
+          "type": "integer",
+          "default": 20
+        },
+        "group": {
+          "description": "Optional group name or alias for locations.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "preserved_only": {
+          "description": "Require both a public render and downloadable WDL.",
+          "type": "boolean",
+          "default": false
+        }
+      }
     }
   },
   {
@@ -53,6 +292,37 @@
       "from": "2017-01-01",
       "to": "2017-12-31",
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "description": "Inclusive start date in YYYY-MM-DD form.",
+          "type": "string"
+        },
+        "to": {
+          "description": "Inclusive end date in YYYY-MM-DD form.",
+          "type": "string"
+        },
+        "dimension": {
+          "description": "Optional Minecraft dimension: 0 Overworld, 1 Nether, or 2 End.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "description": "Maximum results, from 1 to 100. Defaults to 20.",
+          "type": "integer",
+          "default": 20
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ]
     }
   },
   {
@@ -64,6 +334,42 @@
       "to": "2026-09-26",
       "kind": "added",
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "description": "Inclusive UTC date YYYY-MM-DD.",
+          "type": "string"
+        },
+        "to": {
+          "description": "Inclusive UTC date YYYY-MM-DD.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "added, modified, or either.",
+          "type": "string",
+          "default": "either"
+        },
+        "dimension": {
+          "description": "Optional dimension 0, 1 or 2.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "description": "Maximum results, 1 to 100.",
+          "type": "integer",
+          "default": 20
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ]
     }
   },
   {
@@ -72,6 +378,19 @@
     "summary": "List a location's Archive warps, arrival coordinates, capture dates and available download links.",
     "arguments": {
       "location_id": 1241
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "location_id": {
+          "description": "Persistent numeric Atlas location ID.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "location_id"
+      ]
     }
   },
   {
@@ -80,6 +399,19 @@
     "summary": "Get a location's public map layers, tile URLs, bounds, dates, BlueMap links and source downloads.",
     "arguments": {
       "location_id": 904
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "location_id": {
+          "description": "Persistent numeric Atlas location ID.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "location_id"
+      ]
     }
   },
   {
@@ -88,6 +420,19 @@
     "summary": "List a location's downloadable snapshots and checksums. Returns links and metadata, not ZIP contents.",
     "arguments": {
       "location_id": 904
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "location_id": {
+          "description": "Persistent numeric Atlas location ID.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "location_id"
+      ]
     }
   },
   {
@@ -97,6 +442,57 @@
     "arguments": {
       "query": "DonFuer",
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "description": "Optional location or history search text.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "dimension": {
+          "description": "Optional Minecraft dimension: 0 Overworld, 1 Nether, or 2 End.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "group": {
+          "description": "Optional builder or owning group name.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "from_date": {
+          "description": "Optional inclusive earliest capture date in YYYY-MM-DD form.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "to_date": {
+          "description": "Optional inclusive latest capture date in YYYY-MM-DD form.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "description": "Maximum results, from 1 to 100. Defaults to 20.",
+          "type": "integer",
+          "default": 20
+        }
+      }
     }
   },
   {
@@ -106,6 +502,33 @@
     "arguments": {
       "query": "HWU",
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "description": "Group name, alias, or words from its description. Leave empty to browse.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "type": {
+          "description": "Optional Atlas classification: Build, Highway, Mixed, or Other.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "description": "Maximum results, from 1 to 100. Defaults to 20.",
+          "type": "integer",
+          "default": 20
+        }
+      }
     }
   },
   {
@@ -114,6 +537,19 @@
     "summary": "Get a group's history, links, build count and first 20 builds. Use get_group_builds for the rest.",
     "arguments": {
       "id": 1
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Persistent numeric Atlas group ID.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ]
     }
   },
   {
@@ -124,6 +560,29 @@
       "group_id": 15,
       "limit": 5,
       "offset": 0
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "group_id": {
+          "description": "Persistent numeric Atlas group ID.",
+          "type": "integer"
+        },
+        "limit": {
+          "description": "Maximum results, from 1 to 100. Defaults to 50.",
+          "type": "integer",
+          "default": 50
+        },
+        "offset": {
+          "description": "Zero-based result offset. Defaults to 0; must be non-negative.",
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "group_id"
+      ]
     }
   },
   {
@@ -134,6 +593,41 @@
       "group": "HWU",
       "dimension": 1,
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "description": "Highway/canal name or words from its description. Leave empty to browse.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "dimension": {
+          "description": "Optional Minecraft dimension: 0 Overworld, 1 Nether, or 2 End.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "group": {
+          "description": "Optional builder or maintainer group name.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "description": "Maximum results, from 1 to 100. Defaults to 20.",
+          "type": "integer",
+          "default": 20
+        }
+      }
     }
   },
   {
@@ -142,6 +636,19 @@
     "summary": "Get one highway's route geometry, history, groups and supporting sources.",
     "arguments": {
       "id": 8
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Persistent numeric Atlas highway ID.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ]
     }
   },
   {
@@ -152,13 +659,77 @@
       "location_name": "Block Game Jerusalem",
       "highway_dimension": 1,
       "limit": 3
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "description": "Native X coordinate; provide x/z OR location_id OR exact location_name.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "z": {
+          "description": "Native Z coordinate, paired with x.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "dimension": {
+          "description": "0 Overworld, 1 Nether, 2 End. Inferred for a named location; defaults to Overworld for coordinates.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "location_id": {
+          "description": "Atlas location ID as the origin; do not combine with x/z or name.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "location_name": {
+          "description": "Exact location name, case-insensitive. Ambiguous names require an ID.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "highway_dimension": {
+          "description": "Dimension of highways to compare; omit to use origin dimension. OW/Nether use nominal 8:1 conversion; End cannot convert.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "description": "Maximum results, 1 to 100.",
+          "type": "integer",
+          "default": 5
+        }
+      }
     }
   },
   {
     "name": "get_nocom_dataset",
     "category": "NoCom historical data",
     "summary": "Get NoCom sources, coverage, counts, data formats and download manifests. A starting point for using the dataset.",
-    "arguments": {}
+    "arguments": {},
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
   },
   {
     "name": "research_nocom_area",
@@ -168,6 +739,68 @@
       "x": 858407,
       "z": 1177384,
       "radius": 1024
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "location_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "x": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "radius": {
+          "type": "integer",
+          "default": 1024
+        },
+        "dimension": {
+          "description": "Optional native dimension: overworld, nether, end. Inferred from named/ID location; coordinate origins default to overworld. Never projects coordinates.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "location_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "include_storage": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_signs": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_portals": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_clusters": {
+          "type": "boolean",
+          "default": true
+        }
+      }
     }
   },
   {
@@ -179,6 +812,59 @@
       "z": 1177384,
       "radius": 1024,
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "z": {
+          "type": "integer"
+        },
+        "dimension": {
+          "description": "overworld, nether or end; never silently project coordinates.",
+          "type": "string",
+          "default": "overworld"
+        },
+        "radius": {
+          "type": "integer",
+          "default": 1024
+        },
+        "block_type": {
+          "description": "Optional chest, trapped_chest, ender_chest or shulker_box (all colors).",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "min_y": {
+          "type": "integer",
+          "default": 0
+        },
+        "max_y": {
+          "type": "integer",
+          "default": 255
+        },
+        "hide_changed": {
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "x",
+        "z"
+      ]
     }
   },
   {
@@ -188,6 +874,57 @@
     "arguments": {
       "text": "base",
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "x": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "dimension": {
+          "type": "string",
+          "default": "overworld"
+        },
+        "radius": {
+          "type": "integer",
+          "default": 1024
+        },
+        "min_y": {
+          "type": "integer",
+          "default": 0
+        },
+        "max_y": {
+          "type": "integer",
+          "default": 255
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      }
     }
   },
   {
@@ -199,6 +936,46 @@
       "z": 0,
       "radius": 8192,
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "z": {
+          "type": "integer"
+        },
+        "dimension": {
+          "type": "string",
+          "default": "overworld"
+        },
+        "radius": {
+          "type": "integer",
+          "default": 1024
+        },
+        "min_y": {
+          "type": "integer",
+          "default": 0
+        },
+        "max_y": {
+          "type": "integer",
+          "default": 255
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "x",
+        "z"
+      ]
     }
   },
   {
@@ -207,6 +984,36 @@
     "summary": "Read dimension-wide observations in fixed 30-day buckets. Date filters select whole buckets, not exact-day or local activity counts.",
     "arguments": {
       "dimension": "nether"
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "description": "overworld, nether or end; omit for all dimensions.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "from": {
+          "description": "Optional inclusive date YYYY-MM-DD; selects overlapping buckets.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "to": {
+          "description": "Optional inclusive date YYYY-MM-DD; selects overlapping buckets.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      }
     }
   },
   {
@@ -216,19 +1023,48 @@
     "arguments": {
       "dimension": "nether",
       "direction": "northeast"
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "description": "overworld or nether; defaults to nether.",
+          "type": "string",
+          "default": "nether"
+        },
+        "direction": {
+          "description": "Optional compass name: north, northeast, east, southeast, south, southwest, west, northwest.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      }
     }
   },
   {
     "name": "get_dataset_stats",
     "category": "Dataset information",
     "summary": "Get current public catalog counts and links to the API, schemas and data exports.",
-    "arguments": {}
+    "arguments": {},
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
   },
   {
     "name": "get_nocom_daily_dataset",
     "category": "NoCom historical data",
     "summary": "Discover exact daily hit coverage, source checksums, complete per-day CSV downloads and daily map tiles.",
-    "arguments": {}
+    "arguments": {},
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
   },
   {
     "name": "get_nocom_daily_hits",
@@ -242,6 +1078,54 @@
       "min_z": -512,
       "max_x": 511,
       "max_z": 511
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "dimension": {
+          "type": "string",
+          "default": "overworld"
+        },
+        "min_x": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "min_z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "max_x": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "max_z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ]
     }
   },
   {
@@ -255,6 +1139,49 @@
       "max_x": 511,
       "max_z": 511,
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "min_x": {
+          "type": "integer"
+        },
+        "min_z": {
+          "type": "integer"
+        },
+        "max_x": {
+          "type": "integer"
+        },
+        "max_z": {
+          "type": "integer"
+        },
+        "dimension": {
+          "type": "string",
+          "default": "overworld"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "date",
+        "min_x",
+        "min_z",
+        "max_x",
+        "max_z"
+      ]
     }
   },
   {
@@ -266,6 +1193,38 @@
       "z": 4096,
       "radius": 8192,
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "z": {
+          "type": "integer"
+        },
+        "dimension": {
+          "type": "string",
+          "default": "overworld"
+        },
+        "radius": {
+          "type": "integer",
+          "default": 1024
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "x",
+        "z"
+      ]
     }
   },
   {
@@ -275,6 +1234,57 @@
     "arguments": {
       "kind": "endPortalFrame",
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "default": "overworld"
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "x": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "radius": {
+          "type": "integer",
+          "default": 1024
+        },
+        "min_y": {
+          "type": "integer",
+          "default": 0
+        },
+        "max_y": {
+          "type": "integer",
+          "default": 255
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      }
     }
   },
   {
@@ -285,6 +1295,87 @@
       "text": "base",
       "match": "word",
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "dimension": {
+          "type": "string",
+          "default": "overworld"
+        },
+        "match": {
+          "type": "string",
+          "default": "phrase"
+        },
+        "from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "default": null
+        },
+        "to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "default": null
+        },
+        "changed_only": {
+          "type": "boolean",
+          "default": false
+        },
+        "min_x": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "min_z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "max_x": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "max_z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "sort": {
+          "type": "string",
+          "default": "newest"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      }
     }
   },
   {
@@ -293,6 +1384,18 @@
     "summary": "Read all captured versions and exact timestamps for a sign, with an interactive map link.",
     "arguments": {
       "id": "sign:0:-966409:64:-737293"
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
     }
   },
   {
@@ -301,6 +1404,46 @@
     "summary": "Find only corroborated illegal spawners, with WDL evidence, or inspect complete End gateway extraction coverage.",
     "arguments": {
       "kind": "illegalSpawner"
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "default": "illegalSpawner"
+        },
+        "dimension": {
+          "type": "string",
+          "default": "overworld"
+        },
+        "x": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        },
+        "radius": {
+          "type": "integer",
+          "default": 1024
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      }
     }
   },
   {
@@ -311,12 +1454,50 @@
       "dimension": "overworld",
       "family": "primary",
       "limit": 10
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "description": "Optional overworld, nether or end; omitted includes all dimensions.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "family": {
+          "description": "Optional nocom, wdl or primary.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "query": {
+          "description": "Literal substring of the source name or ID, up to 100 characters.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "type": "integer",
+          "default": 25
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      }
     }
   },
   {
     "name": "search_world_find",
     "category": "World Find",
-    "summary": "Search signs, storage, rare blocks and captured objects. Filter names, sources, captures and native coordinates.",
+    "summary": "Search signs, storage, rare blocks and captured objects. Filter names, sources, captures, native coordinates and captured spawner mob IDs.",
     "arguments": {
       "query": {
         "kinds": [
@@ -332,12 +1513,193 @@
         "radius": 512,
         "limit": 5
       }
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "description": "Find filters; defaults to signs across all public sources in the Overworld. Saved object observations expose displayName, customName and savedObject links without parsing detailsJson.",
+          "type": "object",
+          "properties": {
+            "dimension": {
+              "description": "Native dimension: overworld (default), nether or end.",
+              "type": "string"
+            },
+            "kind": {
+              "description": "Single category, default sign. Ignored when kinds is supplied.",
+              "type": "string"
+            },
+            "kinds": {
+              "description": "Categories: sign, storage, portal, bedrock, spawner, endPortalFrame, petrifiedOakSlab, mob, mapArt, banner, itemFrame, object. The last five use positioned objects from location captures and retain capture-specific identities. Rare blocks follow the illegal-block policy. Storage excludes ender chests.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "source": {
+              "description": "Single source ID or family (all, nocom, wdl, primary), default all. Explicit sources need searchable coverage. Ignored when sources is supplied.",
+              "type": "string"
+            },
+            "sources": {
+              "description": "1–100 public source IDs or families: all, nocom, wdl, primary. Omitted searches all. Empty arrays, unknown IDs and explicitly selected sources without searchable coverage are invalid. Discover IDs and coverage with list_world_find_sources.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "text": {
+              "description": "Up to 100 characters of sign text, saved item IDs or names, or object names. Matching uses Unicode NFKC, removes Minecraft color codes, collapses whitespace and ignores case. Categories without searchable text remain visible.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "match": {
+              "description": "phrase (default) is a literal substring; word matches one whole word; allWords requires every word within one captured version. Use word for Mu to exclude Maximus.",
+              "type": "string"
+            },
+            "changedSigns": {
+              "description": "Require differing captured sign text at the same position within selected sources. Other categories remain visible.",
+              "type": "boolean"
+            },
+            "hideBlankSigns": {
+              "description": "Only signs with saved text after whitespace and Minecraft formatting are removed. Blank or uncaptured text is excluded; other categories remain visible. Defaults to false.",
+              "type": "boolean"
+            },
+            "contentsRecorded": {
+              "description": "Only storage with a recorded inventory, including saved empty lists. Excludes unknown inventories and NoCom storage; other categories remain visible.",
+              "type": "boolean"
+            },
+            "hideEmpty": {
+              "description": "Only storage with at least one saved item. Excludes empty and unknown inventories; other categories remain visible.",
+              "type": "boolean"
+            },
+            "namedOnly": {
+              "description": "Only saved objects with an explicit custom name. Other categories remain visible.",
+              "type": "boolean"
+            },
+            "renderIds": {
+              "description": "Optional 1–100 public render IDs. Restricts results to the selected captures.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            },
+            "blockType": {
+              "description": "Optional exact Minecraft block or entity ID, with or without minecraft: prefix.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "spawnerMob": {
+              "description": "Optional captured spawner mob ID, for example minecraft:ghast or pig. Filters spawners only; other selected categories remain visible. Omitted includes all captured mob types. Discover currently indexed types with GET /api/find/spawner-mobs?dimension=overworld.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "x": {
+              "description": "Optional native radius origin X; requires z. Coordinates must be -33554432..33554431.",
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "z": {
+              "description": "Optional native radius origin Z; requires x. No dimension scaling.",
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "radius": {
+              "description": "Horizontal circle radius 1..65536 blocks, default 1024. Used only with x and z.",
+              "type": "integer"
+            },
+            "minX": {
+              "description": "Inclusive viewport bounds; supply minX, minZ, maxX and maxZ together. Intersects any radius filter.",
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "minZ": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "maxX": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "maxZ": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "minY": {
+              "description": "Inclusive minimum Y, -2048..2047.",
+              "type": "integer"
+            },
+            "maxY": {
+              "description": "Inclusive maximum Y, -2048..2047.",
+              "type": "integer"
+            },
+            "from": {
+              "description": "Optional inclusive capture/read date, YYYY-MM-DD. Unknown dates do not match.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "to": {
+              "description": "Optional inclusive end capture/read date, YYYY-MM-DD.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "sort": {
+              "description": "newest (default), oldest or nearest. Nearest requires x and z. Multiple categories are interleaved.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "1–50 results per page, default 25. MCP map queries use this to page aggregates.",
+              "type": "integer"
+            },
+            "offset": {
+              "description": "Nonnegative paging offset. Every matching result is browsable. Follow nextOffset with unchanged filters; null marks the end.",
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "required": [
+        "query"
+      ]
     }
   },
   {
     "name": "get_world_find_map",
     "category": "World Find",
-    "summary": "Spatial groups covering matching blocks and captured objects in a viewport.",
+    "summary": "Page spatial groups covering matching blocks and captured objects in a viewport. Follow nextOffset with unchanged filters; oversized views coarsen cells without dropping positions.",
     "arguments": {
       "query": {
         "kinds": [
@@ -351,6 +1713,196 @@
         "cellSize": 256,
         "limit": 5
       }
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "cellSize": {
+              "description": "Power of two from 1 through 67108864 blocks, default 256. Large viewports may return a coarser cellSize.",
+              "type": "integer"
+            },
+            "dimension": {
+              "description": "Native dimension: overworld (default), nether or end.",
+              "type": "string"
+            },
+            "kind": {
+              "description": "Single category, default sign. Ignored when kinds is supplied.",
+              "type": "string"
+            },
+            "kinds": {
+              "description": "Categories: sign, storage, portal, bedrock, spawner, endPortalFrame, petrifiedOakSlab, mob, mapArt, banner, itemFrame, object. The last five use positioned objects from location captures and retain capture-specific identities. Rare blocks follow the illegal-block policy. Storage excludes ender chests.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "source": {
+              "description": "Single source ID or family (all, nocom, wdl, primary), default all. Explicit sources need searchable coverage. Ignored when sources is supplied.",
+              "type": "string"
+            },
+            "sources": {
+              "description": "1–100 public source IDs or families: all, nocom, wdl, primary. Omitted searches all. Empty arrays, unknown IDs and explicitly selected sources without searchable coverage are invalid. Discover IDs and coverage with list_world_find_sources.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "text": {
+              "description": "Up to 100 characters of sign text, saved item IDs or names, or object names. Matching uses Unicode NFKC, removes Minecraft color codes, collapses whitespace and ignores case. Categories without searchable text remain visible.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "match": {
+              "description": "phrase (default) is a literal substring; word matches one whole word; allWords requires every word within one captured version. Use word for Mu to exclude Maximus.",
+              "type": "string"
+            },
+            "changedSigns": {
+              "description": "Require differing captured sign text at the same position within selected sources. Other categories remain visible.",
+              "type": "boolean"
+            },
+            "hideBlankSigns": {
+              "description": "Only signs with saved text after whitespace and Minecraft formatting are removed. Blank or uncaptured text is excluded; other categories remain visible. Defaults to false.",
+              "type": "boolean"
+            },
+            "contentsRecorded": {
+              "description": "Only storage with a recorded inventory, including saved empty lists. Excludes unknown inventories and NoCom storage; other categories remain visible.",
+              "type": "boolean"
+            },
+            "hideEmpty": {
+              "description": "Only storage with at least one saved item. Excludes empty and unknown inventories; other categories remain visible.",
+              "type": "boolean"
+            },
+            "namedOnly": {
+              "description": "Only saved objects with an explicit custom name. Other categories remain visible.",
+              "type": "boolean"
+            },
+            "renderIds": {
+              "description": "Optional 1–100 public render IDs. Restricts results to the selected captures.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            },
+            "blockType": {
+              "description": "Optional exact Minecraft block or entity ID, with or without minecraft: prefix.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "spawnerMob": {
+              "description": "Optional captured spawner mob ID, for example minecraft:ghast or pig. Filters spawners only; other selected categories remain visible. Omitted includes all captured mob types. Discover currently indexed types with GET /api/find/spawner-mobs?dimension=overworld.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "x": {
+              "description": "Optional native radius origin X; requires z. Coordinates must be -33554432..33554431.",
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "z": {
+              "description": "Optional native radius origin Z; requires x. No dimension scaling.",
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "radius": {
+              "description": "Horizontal circle radius 1..65536 blocks, default 1024. Used only with x and z.",
+              "type": "integer"
+            },
+            "minX": {
+              "description": "Inclusive viewport bounds; supply minX, minZ, maxX and maxZ together. Intersects any radius filter.",
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "minZ": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "maxX": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "maxZ": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "minY": {
+              "description": "Inclusive minimum Y, -2048..2047.",
+              "type": "integer"
+            },
+            "maxY": {
+              "description": "Inclusive maximum Y, -2048..2047.",
+              "type": "integer"
+            },
+            "from": {
+              "description": "Optional inclusive capture/read date, YYYY-MM-DD. Unknown dates do not match.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "to": {
+              "description": "Optional inclusive end capture/read date, YYYY-MM-DD.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "sort": {
+              "description": "newest (default), oldest or nearest. Nearest requires x and z. Multiple categories are interleaved.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "1–50 results per page, default 25. MCP map queries use this to page aggregates.",
+              "type": "integer"
+            },
+            "offset": {
+              "description": "Nonnegative paging offset. Every matching result is browsable. Follow nextOffset with unchanged filters; null marks the end.",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "minX",
+            "minZ",
+            "maxX",
+            "maxZ"
+          ]
+        }
+      },
+      "required": [
+        "query"
+      ]
     }
   },
   {
@@ -363,6 +1915,40 @@
       "x": -966409,
       "y": 64,
       "z": -737293
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "description": "overworld, nether or end.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Block kind: sign, storage, portal, bedrock, spawner, endPortalFrame or petrifiedOakSlab. Mobs and other saved objects use their capture/object links instead of position history.",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "z": {
+          "type": "integer"
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "dimension",
+        "kind",
+        "x",
+        "y",
+        "z"
+      ]
     }
   },
   {
@@ -372,6 +1958,38 @@
     "arguments": {
       "observation_id": 2925260,
       "limit": 5
+    },
+    "schemaVerifiedOn": "November 10, 2026",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "observation_id": {
+          "type": "integer"
+        },
+        "item_path": {
+          "description": "Empty for container contents; otherwise a returned item path, such as 0 or 0/2, up to eight levels.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "limit": {
+          "type": "integer",
+          "default": 25
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        },
+        "include_saved_data": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "observation_id"
+      ]
     }
   }
 ]

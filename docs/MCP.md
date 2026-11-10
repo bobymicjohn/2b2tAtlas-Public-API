@@ -29,11 +29,12 @@ exactly as shown; do not append `/api`. After connecting, ask the client to list
 its Atlas tools or find a named location. The server keeps no session state.
 
 [Validated tool examples](reference/mcp-tool-guide.json) provide arguments for
-every documented tool. Discover current schemas with `tools/list`.
+every documented tool, with the captured input schema and its verification date.
+Discover current schemas with `tools/list`.
 
 ## Choose a tool
 
-The October 26, 2026 check found 38 read-only tools. Discover the deployed
+The November 10, 2026 check found 38 read-only tools. Discover the deployed
 catalog through `tools/list`, including its exact
 parameters and limits. Start with `research_location` for a named place,
 `research_area` for nearby places, or `research_nocom_area` for NoCom evidence.
@@ -131,6 +132,11 @@ objects retain their capture identity. Use `namedOnly` for custom names and
 NoCom storage, and leave other selected categories visible. Storage excludes
 ender chest blocks.
 
+`query.spawnerMob` selects a captured spawner mob ID, such as `minecraft:ghast`
+or `pig`, in `search_world_find` and `get_world_find_map`. Other selected categories
+remain visible. Omit it for all captured types; the HTTP endpoint
+`/api/find/spawner-mobs?dimension=overworld` lists the currently searchable types.
+
 Object observations expose `displayName`, `customName` and `savedObject` without
 parsing `detailsJson`. `customName` is null for unnamed objects. `savedObject`
 contains the render ID, object ID, generation and links for the location's 3D
@@ -151,8 +157,8 @@ keeps its case-insensitive substring behavior.
 
 `get_world_find_map` requires `minX`, `minZ`, `maxX` and `maxZ` in `query`;
 these fields are required in its MCP schema. A radius alone is not a viewport.
-`cellSize` is a power of two and defaults to 256.
-They retain complete viewport counts while paging compact groups with
+`cellSize` is a power of two and defaults to 256. Broad views may coarsen cells
+while preserving all positions. The tool retains complete viewport counts while paging compact groups with
 `query.limit` and `query.offset` (maximum 50 per page). `total` counts positions;
 `groupCount` counts groups. Follow `nextOffset` with unchanged filters.
 Use a returned group's bounds to search members or its representative XYZ with

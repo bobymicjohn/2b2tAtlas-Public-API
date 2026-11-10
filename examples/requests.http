@@ -1,4 +1,9 @@
 @api = https://api.blackportal.cloud
+@observationId = 1280935
+
+### First request: five render records (reuse fresh results and load details on demand)
+GET {{api}}/api/renders?limit=5
+Accept: application/json
 
 ### Discover the public API
 GET {{api}}/api
@@ -74,6 +79,22 @@ Accept: application/json
 
 ### Saved signs with a whole-word match
 GET {{api}}/api/find?dimension=overworld&kinds=sign&text=Mu&match=word&hideBlankSigns=true&limit=5
+Accept: application/json
+
+### Captured mob IDs in public illegal-spawner records for one dimension
+GET {{api}}/api/find/spawner-mobs?dimension=overworld
+Accept: application/json
+
+### Captured ghast spawners, first five positions
+GET {{api}}/api/find?dimension=overworld&kinds=spawner&spawnerMob=minecraft:ghast&limit=5
+Accept: application/json
+
+### Exact positions in a small viewport; limit/offset do not page marker responses
+GET {{api}}/api/find/markers?dimension=overworld&kinds=sign&minX=61176&minZ=197427&maxX=61176&maxZ=197427
+Accept: application/json
+
+### Evidence on selection: replace this ID with points[0][0] from the current marker response
+GET {{api}}/api/find/observations/{{observationId}}
 Accept: application/json
 
 ### Saved containers holding totems

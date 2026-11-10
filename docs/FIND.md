@@ -3,7 +3,7 @@
 Unified Find searches indexed signs, storage, blocks and positioned saved objects
 across public NoCom observations, location world downloads and primary map saves.
 It describes historical captures, not the present server. No API key is required.
-Checked against the live API on October 26, 2026.
+Checked against the live API on November 10, 2026.
 
 ## Start with source coverage
 
@@ -46,6 +46,19 @@ Use `from` / `to` for inclusive UTC dates, `minY` / `maxY` for heights, and all
 four `minX`, `minZ`, `maxX`, `maxZ` bounds for an inclusive rectangle. `namedOnly`
 requires a saved custom name; repeated `renderIds` select particular captures.
 
+Use `spawnerMob` to select a captured mob ID, such as `minecraft:ghast` or `pig`.
+It filters spawners only; other selected categories remain visible. Omit it for
+all captured mob types. Discover available types in a dimension with:
+
+```http
+GET /api/find/spawner-mobs?dimension=overworld
+GET /api/find?dimension=overworld&kinds=spawner&spawnerMob=minecraft:ghast&limit=5
+```
+
+The option list covers currently searchable public illegal-spawner records,
+independently of the selected source, area or date filters. A missing type is not
+proof that it never existed. The filter also applies to maps and exact markers.
+
 ## Inventories and history
 
 Inventories come from saved WDL data. NoCom recorded container positions, not
@@ -79,6 +92,18 @@ filters. Its spatial groups cover all matching positions without list paging;
 `mapCount` sums to `total`. `cellSize` is a power of two, defaults to 256, and can
 be coarsened automatically. Query a group's returned bounds through `/api/find`
 to page its members. MCP map groups are paged separately; see [MCP](MCP.md).
+
+For an exact-position map, `/api/find/markers` takes the same filters and requires
+all four viewport bounds. It returns every matching position without sign text,
+inventory or artwork; `limit` and `offset` do not page this response. Keep the
+viewport small and cancel an old request when the view changes.
+
+`styles` rows hold `[kind, blockType]`. Each `points` row holds
+`[observationId, x, y, z, styleIndex, matchingObservations, matchingCaptures, preciseX, preciseZ]`.
+When someone selects a point, load its evidence with
+`GET /api/find/observations/{observationId}`. A withdrawn or unknown observation
+returns 404. IDs belong to the current index, so rediscover them after a rebuild.
+The grouped `/api/find/map` endpoint is useful for broad overviews.
 
 Object results provide `displayName`, nullable `customName` and `savedObject`,
 including the render/object IDs, generation and returned detail/gallery/map links.

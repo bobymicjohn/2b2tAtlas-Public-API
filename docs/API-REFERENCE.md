@@ -5,25 +5,27 @@ account or API key.
 
 **Base URL:** `https://api.blackportal.cloud`
 
-Checked October 26, 2026: 57 public GET routes and 38 read-only MCP
+Checked November 10, 2026: 60 public GET routes and 38 read-only MCP
 tools. The live OpenAPI schema and MCP discovery remain authoritative. Bundled
-response examples were recorded on October 19; their values can change.
+response examples were recorded on October 19, except the three new Find routes
+whose examples are dated November 10. Their values can change.
 
-The current release's [website reference](https://2b2tatlas.com/api) documents the public GET routes
-and MCP tools. Its checked date appears on the page. Its parameter
-tables, response excerpts and MCP guide are also available without JavaScript.
+The [website reference](https://2b2tatlas.com/api) documents public GET routes and
+MCP tools, including tables and examples available without JavaScript. Check its
+displayed verification date; website deployments can lag this repository.
 
-The [complete route catalog](reference/api-reference.json) includes every
-parameter, status and recorded response example used by the website reference.
+The [complete route catalog](reference/api-reference.json) contains the current
+documented parameters, statuses and dated response examples. The live OpenAPI
+schema remains authoritative for the deployed contract.
 
 ## Make your first request
 
-Open [the location list](https://api.blackportal.cloud/api/locations) in a browser.
-The response is JSON: a list of records with named fields such as `name`, `x`, and `z`.
+Open [five render records](https://api.blackportal.cloud/api/renders?limit=5) in a browser.
+The response is JSON: a short list with named fields such as `renderId` and `locationName`.
 You can also request it from a terminal:
 
 ```sh
-curl --fail "https://api.blackportal.cloud/api/locations"
+curl --fail --max-time 30 "https://api.blackportal.cloud/api/renders?limit=5"
 ```
 
 On Windows PowerShell 5.1, use `curl.exe` instead of `curl`.
@@ -31,14 +33,16 @@ On Windows PowerShell 5.1, use `curl.exe` instead of `curl`.
 To try JavaScript, run this in a browser console or in Node.js 18 or newer:
 
 ```javascript
-const response = await fetch("https://api.blackportal.cloud/api/locations");
+const response = await fetch("https://api.blackportal.cloud/api/renders?limit=5", {
+  signal: AbortSignal.timeout(30_000)
+});
 if (!response.ok) throw new Error(`Atlas returned HTTP ${response.status}`);
-const locations = await response.json();
-console.table(locations.slice(0, 5).map(location => ({
-  id: location.rowid,
-  name: location.name,
-  x: location.x,
-  z: location.z
+const renders = await response.json();
+console.table(renders.map(render => ({
+  id: render.renderId,
+  location: render.locationName,
+  captured: render.worldDownloadDate,
+  details: render.apiUrl
 })));
 ```
 
@@ -252,6 +256,8 @@ when a source ZIP is available.
 ```http
 GET /api/find/sources
 GET /api/find/source-options
+GET /api/find/spawner-mobs?dimension=overworld
+GET /api/find?dimension=overworld&kinds=spawner&spawnerMob=minecraft:ghast&limit=5
 GET /api/find?dimension=overworld&kinds=sign&kinds=petrifiedOakSlab&sources=nocom&sources=primary&limit=25
 GET /api/find?kind=sign&text=base&match=word&changedSigns=true
 GET /api/find?kind=sign&hideBlankSigns=true
@@ -293,10 +299,26 @@ Preserve source, text, date, height and recorded-contents filters while paging.
 It is safe to merge nearby groups visually, provided every original group remains
 available for browsing. Increasing marker density must not truncate the results.
 
+For exact positions, `/api/find/markers` accepts the same filters and requires
+all four viewport bounds. It returns every match, without sign text, inventory
+or artwork. `limit` and `offset` do not page this response; use a small viewport
+and cancel outdated requests. Its `styles` rows are `[kind, blockType]`; `points`
+rows are `[observationId, x, y, z, styleIndex, matchingObservations, matchingCaptures, preciseX, preciseZ]`.
+Load evidence on selection with `/api/find/observations/{observationId}`.
+An unknown or withdrawn ID returns 404. Rediscover IDs from current results after
+an index rebuild. Use the grouped map route for broad overviews.
+
 Categories are `sign`, `storage`, `portal`, `bedrock`, `spawner`, `endPortalFrame`,
 `petrifiedOakSlab`, `mob`, `mapArt`, `banner`, `itemFrame` and `object`.
 Rare blocks follow the documented classification policy. Storage excludes ender chest blocks, including in map counts and
 capture history. Ender chest items saved inside other containers remain searchable.
+
+`spawnerMob` filters captured mob IDs on spawner results only. Accepts IDs such as
+`minecraft:ghast` or `pig`; other selected categories remain visible. Omit it to
+include all captured mob types. `/api/find/spawner-mobs?dimension=overworld`
+returns available IDs in public, searchable illegal-spawner records for that
+dimension. Its options are independent of source, area and date filters. Missing
+types do not establish absence from the historical or present world.
 
 `hideBlankSigns=true` excludes signs without saved text, including whitespace or
 formatting alone. It applies to lists and maps and leaves other categories visible.
