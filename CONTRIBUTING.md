@@ -41,6 +41,12 @@ files and run `python scripts/check-private-code.py` plus
 range with `python scripts/check-private-code.py --base origin/main --head HEAD`
 before pushing. These checks do not publish or enable GitHub Actions.
 
+Run `python tests/test_private_code.py` for the offline publication-guard checks.
+Set `ATLAS_TEST_TEMP_ROOT` to choose where its temporary Git fixtures are created.
+The local pre-push hook may use `--repo <repository-root> --ref <commit>` to check
+each complete outgoing snapshot. The guard also retains staged and commit-range
+modes; removing private content in a later commit does not clear an earlier one.
+
 Registry metadata is published locally with the official `mcp-publisher` CLI.
 Verify its release checksum, increment `server.json` to a previously unpublished
 version, and keep its description within 100 characters. After the checks above,
