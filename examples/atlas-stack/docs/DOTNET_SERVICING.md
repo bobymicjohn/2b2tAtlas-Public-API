@@ -2,8 +2,10 @@
 
 This example targets .NET 10 for the browser client, API, ingestion worker and
 tests. Use SDK 10.0.401 or a newer .NET 10 feature band. The current runtime,
-ASP.NET Core and EF Core packages are 10.0.12. Microsoft.OpenApi 2.12.0 satisfies
-the ASP.NET Core OpenAPI dependency.
+ASP.NET Core and EF Core packages are 10.0.12, except the Blazor debugger-host
+packages WebAssembly.Server and WebAssembly.DevServer, which are pinned to 10.0.14
+for [GHSA-g27p-qf6j-c96c](https://github.com/advisories/GHSA-g27p-qf6j-c96c).
+Microsoft.OpenApi 2.12.0 satisfies the ASP.NET Core OpenAPI dependency.
 
 Run `dotnet --version`, build the solution in Release, and run its tests before
 publishing. A self-contained API or worker includes its runtime: republish it
